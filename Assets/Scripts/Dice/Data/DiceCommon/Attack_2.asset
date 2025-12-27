@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9f0bb68c4025b2458614157cee0d2d1, type: 3}
+  m_Name: Attack_2
+  m_EditorClassIdentifier: 
+  diceName: "\u57FA\u7840\u653B\u51FB\u9AB0"
+  bodyColor: {r: 1, g: 0.4198113, b: 0.4198113, a: 1}
+  faces:
+  - value: 1
+    type: 0
+    icon: {fileID: 0}
+    color: {r: 0, g: 0, b: 0, a: 1}
+    effectDescription: 
+  - value: 6
+    type: 0
+    icon: {fileID: 0}
+    color: {r: 0, g: 0, b: 0, a: 1}
+    effectDescription: 
+  - value: 2
+    type: 0
+    icon: {fileID: 0}
+    color: {r: 0, g: 0, b: 0, a: 1}
+    effectDescription: 
+  - value: 5
+    type: 0
+    icon: {fileID: 0}
+    color: {r: 0, g: 0, b: 0, a: 1}
+    effectDescription: 
+  - value: 3
+    type: 0
+    icon: {fileID: 0}
+    color: {r: 0, g: 0, b: 0, a: 1}
+    effectDescription: 
+  - value: 4
+    type: 0
+    icon: {fileID: 0}
+    color: {r: 0, g: 0, b: 0, a: 1}
+    effectDescription: 
+  abilities:
+  - {fileID: 11400000, guid: d9a68f983c05e354ea18c0e2b5e5f237, type: 2}
