@@ -205,54 +205,54 @@ public class DiceDragger : MonoBehaviour
         }
 
         // 撞击结算
-        if (target != null)
-        {
-            // 获取骰子身上的所有能力
-            var abilities = physicsDice.GetAbilities();
-            int finalDamage = damageData.value;
-
-            // ---> 触发钩子：OnCalculateDamage <---
-            // 让每一个能力都有机会修改伤害（比如暴击、易伤）
-            foreach (var ability in abilities)
-            {
-                finalDamage = ability.OnCalculateDamage(finalDamage, target);
-            }
-
-            // 造成最终伤害
-            DiceFaceData finalData = damageData; 
-            finalData.value = finalDamage; 
-            if(target.team == TargetTeam.Enemy)
-                target.TakeDamage(finalData);
-            else
-                target.GainArmor(finalData.value);
-
-            // ---> 触发钩子：OnPostHit <---
-            // 造成伤害后，触发吸血、燃烧等效果
-            foreach (var ability in abilities)
-            {
-                ability.OnPostHit(target, finalDamage);
-            }
-        }
+        // if (target != null)
+        // {
+        //     // 获取骰子身上的所有能力
+        //     var abilities = physicsDice.GetAbilities();
+        //     int finalDamage = damageData.value;
+        //
+        //     // ---> 触发钩子：OnCalculateDamage <---
+        //     // 让每一个能力都有机会修改伤害（比如暴击、易伤）
+        //     foreach (var ability in abilities)
+        //     {
+        //         finalDamage = ability.OnCalculateDamage(finalDamage, target);
+        //     }
+        //
+        //     // 造成最终伤害
+        //     DiceFaceData finalData = damageData; 
+        //     finalData.value = finalDamage; 
+        //     if(target.team == TargetTeam.Enemy)
+        //         target.TakeDamage(finalData);
+        //     else
+        //         target.GainArmor(finalData.value);
+        //
+        //     // ---> 触发钩子：OnPostHit <---
+        //     // 造成伤害后，触发吸血、燃烧等效果
+        //     foreach (var ability in abilities)
+        //     {
+        //         ability.OnPostHit(target, finalDamage);
+        //     }
+        // }
         if (target != null)
         {
             // 1. 造成伤害 (触发 OnHit -> 触发 Ability.OnPostHit)
             target.OnHit(damageData); 
-
-            // 2. 【关键修改】检查是否是幽灵骰，并生成幽灵
+            
+            // 获取骰子身上的所有能力
             var abilities = physicsDice.GetAbilities();
+            int finalDamage = damageData.value;
             if (abilities != null)
             {
                 foreach (var ability in abilities)
                 {
+                    finalDamage = ability.OnCalculateDamage(finalDamage, target);
+                    ability.OnPostHit(target, finalDamage);
                     // 判断当前能力是不是幽灵能力
                     if (ability is Ability_Ghost ghostAbility)
                     {
                         // 获取场景里的骰子管理器
                         DiceThrower thrower = FindObjectOfType<DiceThrower>();
                     
-                        // 调用生成方法
-                        // 参数1: originalPos (DiceDragger 知道骰子是从哪拿起来的)
-                        // 参数2: thrower (刚刚获取的引用)
                         ghostAbility.SpawnGhost(originalPos, thrower); 
                     }
                 }
