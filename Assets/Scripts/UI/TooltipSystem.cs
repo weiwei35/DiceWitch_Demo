@@ -31,15 +31,22 @@ public class TooltipSystem : MonoBehaviour
         // 1. 获取鼠标位置
         Vector2 mousePos = Input.mousePosition;
         
-        // 2. 设置偏移量 (向右下偏移，防止鼠标遮住文字)
-        float pivotOffsetX = 15f;
-        float pivotOffsetY = -15f;
+        // 2. 转换为 Canvas 内的坐标
+        // 你的 TooltipPanel 的父物体应该是 Canvas 或者某个全屏 Panel
+        RectTransform parentRect = panelRect.parent as RectTransform;
+        
+        Vector2 localPoint;
+        // 注意：这里必须传 uiCamera (MainCamera)
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, mousePos, Camera.main, out localPoint))
+        {
+            // 3. 设置偏移量 (在局部坐标系下)
+            // Camera 模式下单位比较小，偏移量也要改小
+            float pivotOffsetX = 20f; 
+            float pivotOffsetY = -20f;
 
-        // 3. 直接移动 Panel
-        // 注意：如果你的 Canvas 是 Screen Space - Overlay，直接赋值 position 是最稳的
-        panelRect.position = mousePos + new Vector2(pivotOffsetX, pivotOffsetY);
-
-        // (进阶：防止跑出屏幕的代码可以以后加)
+            // 4. 赋值局部坐标
+            panelRect.localPosition = localPoint + new Vector2(pivotOffsetX, pivotOffsetY);
+        }
     }
 
     public void Show(string content, string header = "")

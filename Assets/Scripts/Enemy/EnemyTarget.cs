@@ -2,7 +2,8 @@ using UnityEngine;
 using TMPro;
 using System.Collections;
 using System.Collections.Generic;
-using DG.Tweening; // 需要用到协程
+using DG.Tweening;
+using UnityEngine.UI; // 需要用到协程
 
 public class EnemyTarget : BattleTarget
 {
@@ -18,7 +19,11 @@ public class EnemyTarget : BattleTarget
     public Transform statusPanel; // 在敌人头顶放一个 Horizontal Layout Group
     public GameObject statusIconPrefab; // 状态图标的预制体
     
+    [Header("Rewards")]
+    public int xpReward = 5;
+    public int manaDustReward = 10;
     private Vector3 originalPosition;
+    private Vector3 originalScale;
     // 存储当前身上的状态：Key=状态配置, Value=层数
     private Dictionary<StatusEffectSO, int> currentStatuses = new Dictionary<StatusEffectSO, int>();
     
@@ -26,11 +31,12 @@ public class EnemyTarget : BattleTarget
     private Dictionary<StatusEffectSO, GameObject> statusUIMap = new Dictionary<StatusEffectSO, GameObject>();
     void Start()
     {
-        team = TargetTeam.Enemy;
+        team = Enum.TargetTeam.Enemy;
         // 初始设为极小
+        originalScale = transform.localScale;
         transform.localScale = Vector3.zero;
         // 弹出来的动画 (0.5秒内变回原大小)
-        transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutBack);
+        transform.DOScale(originalScale, 0.5f).SetEase(Ease.OutBack);
         currentHp = maxHp;
         UpdateUI();
         // 游戏开始时先随机一个意图
@@ -60,15 +66,16 @@ public class EnemyTarget : BattleTarget
         Vector3 targetPos = transform.position + Vector3.back * 1.5f; // 往前冲一点
 
         // 冲出去
-        float t = 0;
-        while(t < 0.1f) { transform.position = Vector3.Lerp(originalPos, targetPos, t/0.1f); t+=Time.deltaTime; yield return null; }
+        transform.DOShakePosition(0.5f, 1);
+        // float t = 0;
+        // while(t < 0.1f) { transform.position = Vector3.Lerp(originalPos, targetPos, t/0.1f); t+=Time.deltaTime; yield return null; }
         
         // 造成伤害
         PlayerManager.Instance.TakeDamage(nextDamageValue);
-
+        yield return null;
         // 回来
-        t = 0;
-        while(t < 0.2f) { transform.position = Vector3.Lerp(targetPos, originalPos, t/0.2f); t+=Time.deltaTime; yield return null; }
+        // t = 0;
+        // while(t < 0.2f) { transform.position = Vector3.Lerp(targetPos, originalPos, t/0.2f); t+=Time.deltaTime; yield return null; }
     }
     void UpdateUI()
     {
@@ -118,6 +125,7 @@ public class EnemyTarget : BattleTarget
             {
                 Destroy(statusUIMap[status]);
                 statusUIMap.Remove(status);
+                LayoutRebuilder.ForceRebuildLayoutImmediate(statusPanel as RectTransform);
             }
         }
     }
@@ -169,7 +177,7 @@ public class EnemyTarget : BattleTarget
     public override void TakeDamage(DiceFaceData damageData)
     {
         // 这里可以判断类型，比如必须是 Attack 类型才扣血
-        if (damageData.type == DiceActionType.Attack)
+        if (damageData.type == Enum.DiceActionType.Attack)
         {
             currentHp -= damageData.value;
             Debug.Log($"<color=red>敌人受到 {damageData.value} 点伤害！剩余HP: {currentHp}</color>");
@@ -198,6 +206,27 @@ public class EnemyTarget : BattleTarget
 
     public override void ApplyDirectValue(int value)
     {
-        ApplyDirectDamage(value);
+        // 简单的扣血逻辑
+        int damageToTake = value;
+        
+        // 如果有护甲逻辑，在这里处理
+        // if (currentArmor > 0) ... 
+
+        currentHp -= damageToTake;
+        UpdateUI(); // 刷新血条
+        
+        // 飘字特效
+        // DamageNumberManager.Instance.ShowDamage(transform.position, damageToTake);
+
+        if (currentHp <= 0)
+        {
+            // 调用死亡逻辑
+            // 如果是 EnemyTarget，可能需要通知 BattleManager
+            if (this is EnemyTarget enemy) 
+            {
+                BattleManager.Instance.RemoveEnemy(enemy);
+                Destroy(gameObject); // 或者播放死亡动画后销毁
+            }
+        }
     }
 }

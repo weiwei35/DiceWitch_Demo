@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Split Dice
   m_EditorClassIdentifier: 
   abilityName: "\u5206\u88C2\u9AB0"
+  diceColor: {r: 0.2924528, g: 0.2924528, b: 0.2924528, a: 1}
+  icon: {fileID: 474471849, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   description: "\u547D\u4E2D\u540E\u5206\u88C2\u5E76\u5F39\u5C04\u81F3\u5176\u4ED6\u654C\u4EBA\uFF0C\u9020\u6210\u4E00\u534A\u4F24\u5BB3\uFF0C\u76F4\u81F3\u4F24\u5BB3\u8017\u5C3D\u3002"
   projectilePrefab: {fileID: 4547681140208780369, guid: f6c610fb4aeb62a41952e8845dafa84f, type: 3}
   damageMultiplier: 0.5

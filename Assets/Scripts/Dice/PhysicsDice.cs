@@ -15,13 +15,15 @@ public class PhysicsDice : MonoBehaviour
     private DiceDataSO _sourceData;
     public DiceFaceData currentResultData; 
     private List<DiceAbilitySO> myAbilities = new List<DiceAbilitySO>(); // 运行时缓存能力
+    
+    public PlayerDice sourceDataRef; 
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
     }
 
-    public void Initialize(DiceDataSO data)
+    public void Initialize(DiceDataSO data, PlayerDice sourceRef = null)
     {
         // 1. (可选) 修改骰子本体颜色，方便区分
         diceRenderer.material.color = data.bodyColor;
@@ -35,6 +37,7 @@ public class PhysicsDice : MonoBehaviour
 
         _sourceData = data;
         myAbilities = data.abilities;
+        sourceDataRef = sourceRef; // 记录引用
     }
 
     public void Roll(Vector3 throwForce, Vector3 rotationTorque)
@@ -95,14 +98,14 @@ public class PhysicsDice : MonoBehaviour
             DiceFaceData resultData = visualManager.GetResultData(resultIndex);
         
             // 赋值最终结果
-            finalValue = resultData.value;
+            finalValue = resultData.TotalValue;
             // ---> 触发钩子：OnRollEnd <---
             // 让所有能力有机会修改最终点数
             foreach (var ability in myAbilities)
             {
-                finalValue = ability.OnRollEnd(finalValue);
+                finalValue = ability.OnRollEnd(finalValue, this); 
             }
-            currentResultData.value = finalValue;
+            currentResultData= resultData;
         
             Debug.Log($"检测结束 -> 朝上的面索引: {resultIndex}, 对应名称: {faces[resultIndex].name}, 结果数值: {finalValue}");
         }
@@ -121,11 +124,54 @@ public class PhysicsDice : MonoBehaviour
     {
         return myAbilities;
     }
+    // 【新增】供外部调用，给所有面增加临时属性加成
+    public void ApplyTemporaryBonus(int bonusAmount)
+    {
+        if (bonusAmount == 0) return;
+
+        // 修改 VisualManager 里的数据
+        if (visualManager != null && visualManager.faceDatas != null)
+        {
+            for (int i = 0; i < visualManager.faceDatas.Length; i++)
+            {
+                visualManager.faceDatas[i].bonusValue += bonusAmount;
+                // 刷新视觉显示
+                visualManager.UpdateFaceVisual(i, visualManager.faceDatas[i]);
+            }
+        }
+        
+        // 同时更新当前缓存的结果（如果有的话）
+        if (currentResultData != null)
+        {
+            currentResultData.bonusValue += bonusAmount;
+        }
+    }
     // 生成最终的提示文本
     public string GetFullDescription()
     {
         StringBuilder sb = new StringBuilder();
-
+        if (currentResultData != null)
+        {
+            // 只有当点数大于0时才显示（防止刚生成没扔时显示0）
+            if (currentResultData.TotalValue > 0)
+            {
+                // 如果有加成值
+                if (currentResultData.bonusValue > 0)
+                {
+                    // 格式： 3 + 1 = 4 (用富文本上色)
+                    // 基础值(白) + 加成(绿) = 总值(黄/大)
+                    sb.AppendLine($"点数: <color=white>{currentResultData.value}</color> <color=#00FF00>+{currentResultData.bonusValue}</color> = <size=120%><color=yellow><b>{currentResultData.TotalValue}</b></color></size>");
+                }
+                else
+                {
+                    // 没有加成，直接显示大大的数字
+                    sb.AppendLine($"点数: <size=120%><b>{currentResultData.value}</b></size>");
+                }
+                
+                // 加个分割线或者空行，把数值和下面的技能描述分开
+                sb.AppendLine("<color=#666666>----------------</color>"); 
+            }
+        }
         // 1. 遍历所有能力
         if (myAbilities != null && myAbilities.Count > 0)
         {

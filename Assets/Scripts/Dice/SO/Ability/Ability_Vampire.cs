@@ -3,7 +3,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Abilities/Vampire")]
 public class Ability_Vampire : DiceAbilitySO
 {
-    public override void OnPostHit(BattleTarget target, int finalDamage)
+    public override void OnPostHit(BattleTarget target, int finalDamage, PhysicsDice sourceDice = null)
     {
         // 调用玩家单例回血
         PlayerManager.Instance.Heal(finalDamage/2);

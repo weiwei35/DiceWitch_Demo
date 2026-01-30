@@ -38,7 +38,8 @@ public class TargetingArrow : MonoBehaviour
         // 1. 计算控制点 (Control Point)
         // 我们取起点和终点的中点，然后往上抬高一点，形成拱形
         Vector3 midPoint = Vector3.Lerp(start, end, 0.5f);
-        Vector3 controlPoint = midPoint + Vector3.up * 1.0f; // 3.0f 是拱起的高度，可调整
+        float dist = Vector3.Distance(start, end);
+        Vector3 controlPoint = midPoint + Vector3.up * (dist * 0.3f); // 高度是距离的 30%
 
         lineRenderer.positionCount = segments + 1;
 

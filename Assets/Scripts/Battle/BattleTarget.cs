@@ -1,10 +1,8 @@
 using UnityEngine;
 
-public enum TargetTeam { Player, Enemy }
-
 public abstract class BattleTarget : MonoBehaviour
 {
-    public TargetTeam team; // 属于哪一队
+    public Enum.TargetTeam team; // 属于哪一队
 
     // 通用的受击/生效接口
     public virtual void OnHit(DiceFaceData data)
@@ -12,13 +10,13 @@ public abstract class BattleTarget : MonoBehaviour
         // 根据骰子类型决定做什么
         switch (data.type)
         {
-            case DiceActionType.Attack:
+            case Enum.DiceActionType.Attack:
                 TakeDamage(data);
                 break;
-            case DiceActionType.Defend: // 假设你在 DiceFaceData 里定义了 Defend
+            case Enum.DiceActionType.Defend: // 假设你在 DiceFaceData 里定义了 Defend
                 GainArmor(data.value);
                 break;
-            case DiceActionType.Magic:
+            case Enum.DiceActionType.Magic:
                 // 处理魔法...
                 break;
         }

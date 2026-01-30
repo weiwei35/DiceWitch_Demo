@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Ghost Dice
   m_EditorClassIdentifier: 
   abilityName: "\u5E7D\u7075\u9AB0"
+  diceColor: {r: 0.21115166, g: 0.6594572, b: 0.6886792, a: 1}
+  icon: {fileID: -1538136914, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   description: "\u751F\u6548\u540E\u4F1A\u751F\u6210\u5E7D\u7075\uFF0C\u5F53\u6709\u654C\u4EBA\u6B7B\u4EA1\u65F6\u5E7D\u7075\u8F6C\u6362\u4E3A\u5B9E\u4F53"
-  dicePrefab: {fileID: 4547681140208780369, guid: b26e9eaedc9383244a67795d9e93acf6, type: 3}
-  diceData: {fileID: 11400000, guid: f4d33f62608c9194885dd9c63774818e, type: 2}
-  ghostMaterial: {fileID: 2100000, guid: f9075d426c4d77148a9368e9ba9953ee, type: 2}
+  overrideGhostData: {fileID: 11400000, guid: 6425af67dfea3a943b540786fd86399f, type: 2}

@@ -15,6 +15,19 @@ public class DiceVisualManager : MonoBehaviour
     {
         for (int i = 0; i < 6; i++)
         {
+            // 必须创建一个新的对象进行深拷贝！
+            DiceFaceData source = initialData[i];
+            
+            DiceFaceData newData = new DiceFaceData();
+            newData.value = source.value;
+            newData.type = source.type;
+            newData.icon = source.icon;
+            newData.color = source.color;
+            newData.effectDescription = source.effectDescription;
+            newData.bonusValue = source.bonusValue; // 这里拷贝过来的是当时的初始值
+
+            // 将新对象存入数组
+            faceDatas[i] = newData;
             UpdateFaceVisual(i, initialData[i]);
         }
     }
@@ -22,12 +35,32 @@ public class DiceVisualManager : MonoBehaviour
     // 核心功能：升级/修改某一面的内容
     public void UpdateFaceVisual(int faceIndex, DiceFaceData data)
     {
-        faceDatas[faceIndex] = data;
+        // faceDatas[faceIndex] = data;
         Transform faceObj = faceTransforms[faceIndex];
 
-        // 假设你的FacePrefab里有一个 TextMeshPro 组件
         TextMeshPro text = faceObj.GetComponentInChildren<TextMeshPro>();
-        if(text != null) text.text = data.value.ToString();
+        if (text != null)
+        {
+            // --- 修改显示逻辑 ---
+            if (data.bonusValue > 0)
+            {
+                // 方案 A: 显示总数，但用绿色表示有加成
+                // text.text = data.TotalValue.ToString();
+                // text.color = Color.green;
+
+                // 方案 B: 显示 "基础+加成" (推荐，更直观)
+                text.text = $"{data.value}<size=60%><color=#00FF00>+{data.bonusValue}</color></size>";
+                
+                // 方案 C: 仅显示总数 (如果你觉得骰子上字太多看不清)
+                // text.text = data.TotalValue.ToString();
+                // 可以在这里改变材质发光或者字体颜色来提示玩家
+            }
+            else
+            {
+                text.text = data.value.ToString();
+                // text.color = Color.white; // 记得重置颜色
+            }
+        }
 
         // 假设你还有一个 SpriteRenderer 显示图标（比如剑、盾）
         SpriteRenderer icon = faceObj.GetComponentInChildren<SpriteRenderer>();
@@ -49,10 +82,13 @@ public class DiceVisualManager : MonoBehaviour
 public class DiceFaceData
 {
     public int value;        // 数值：1, 2, 6...
-    public DiceActionType type; // 类型：物理、魔法、治疗
+    public Enum.DiceActionType type; // 类型：物理、魔法、治疗
     public Sprite icon;      // 图标
     public Color color;      // 颜色：红、蓝...
     public string effectDescription; // "造成流血"
+    
+    public int bonusValue;   // 【新增】加成数值 (来自槽位属性)
+    
+    // 【新增】获取总值的快捷属性
+    public int TotalValue => value + bonusValue; 
 }
-
-public enum DiceActionType { Attack, Defend, Magic, Empty }

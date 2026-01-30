@@ -13,4 +13,6 @@ MonoBehaviour:
   m_Name: Vampire
   m_EditorClassIdentifier: 
   abilityName: "\u5438\u8840\u9B3C"
+  diceColor: {r: 0.5, g: 0, b: 0, a: 1}
+  icon: {fileID: -26982495, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   description: "\u6062\u590D X/2 \u751F\u547D\u503C"

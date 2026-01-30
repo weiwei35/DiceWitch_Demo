@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5db3a4b830ad51449947d3dd17e4a834, type: 3}
+  m_Name: AOE
+  m_EditorClassIdentifier: 
+  abilityName: "\u68F1\u955C\u5C04\u7EBF"
+  diceColor: {r: 1, g: 0, b: 0.53754234, a: 0}
+  icon: {fileID: 1113924942, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  description: "\u5BF9\u6240\u6709\u654C\u4EBA\u9020\u6210\u539F\u70B9\u6570 50%
+    \u7684\u4F24\u5BB3\u3002"
+  damageRatio: 0.5
+  explosionVFX: {fileID: 0}

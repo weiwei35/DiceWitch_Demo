@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Fire Effect
   m_EditorClassIdentifier: 
   abilityName: "\u706B\u7130\u9644\u9B54"
+  diceColor: {r: 1, g: 0.40765655, b: 0, a: 1}
+  icon: {fileID: 1048356331, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   description: "\u547D\u4E2D\u654C\u4EBA\u540E\uFF0C\u65BD\u52A0 X \u5C42 [\u71C3\u70E7]
     \u72B6\u6001\uFF0C\u6BCF\u56DE\u5408\u9020\u6210\u5C42\u6570\u7684\u4F24\u5BB3\u3002"
   burnStatus: {fileID: 11400000, guid: 431cf231079c0b541a23f12a51816925, type: 2}

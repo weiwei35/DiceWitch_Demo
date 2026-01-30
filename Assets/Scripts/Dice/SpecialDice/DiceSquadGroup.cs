@@ -39,62 +39,21 @@ public class DiceSquadGroup : MonoBehaviour
     {
         if (!_isDragging || _leader == null) return;
 
-        // A. 绘制攻击箭头 (逻辑与 DiceDragger 单体一致)
-        // ---------------------------------------------------------
-        Vector3 startPos = _leader.transform.position;
-        Vector3 endPos = mouseWorldPos; // 默认终点
+        // 1. 队长不动，只画箭头 (逻辑同 DiceDragger)
+        // 我们可以直接调用 leader 的方法来画线，或者在这里重写一遍
+        // 为了方便，我们在 DiceDragger 里把 UpdateTargetingArrow 设为 public 或者 internal
+        _leader.UpdateTargetingArrow(); // 需要你去 Dragger 里把那个方法改成 public
 
-        // 简单的吸附检测 (为了箭头能吸附到怪身上)
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-        int mask = (1 << LayerMask.NameToLayer("Enemy")) | (1 << LayerMask.NameToLayer("Player"));
-        if (Physics.Raycast(ray, out hit, 1000f, mask))
-        {
-            endPos = hit.transform.position; // 吸附
-        }
+        // 2. 队员动作
+        // 既然队长不动了，队员们也可以不动，或者围着队长转圈/跳动（增加动感）
+        // 之前的蛇形跟随是基于队长位移的，如果队长不动，队员也不会动。
+        // 你可以加一点 Perlin Noise 让它们原地抖动，显得很急切想攻击。
         
-        // 调用箭头单例显示
-        TargetingArrow.Instance.Show(startPos, endPos);
-
-
-        // B. 队员蛇形排队 (修复数组越界 Bug)
-        // ---------------------------------------------------------
-        // 逻辑：所有队员在 Leader 身后排成一串，像贪吃蛇一样
-        float spacing = 0.6f; // 排队间距
-        float moveSpeed = 10f; // 归队速度
-
-        // 链式目标：第一个人跟Leader，第二个人跟第一个人...
-        Transform targetToFollow = _leader.transform; 
-
-        foreach (var member in memberDice)
-        {
-            // 队长自己不用动，他是锚点
-            if (member == _leader) continue;
-
-            // 计算目标位置：目标(前一个人)的位置
-            Vector3 targetPos = targetToFollow.position;
-
-            // 保持距离逻辑：如果离得太近就不动，离远了就靠过去
-            // 这里做一个简单的“背后吸附”：往目标位置移动，但保留 spacing 距离
-            Vector3 direction = (member.transform.position - targetPos).normalized;
-            // 防止重叠导致的向量为0
-            if (direction == Vector3.zero) direction = Random.onUnitSphere; 
-
-            // 我们希望队员排在目标 "后面" (这里简化为直接 Lerp 过去)
-            // 如果你想做得很精致，可以计算箭头的反方向，让它们排在屁股后面
-            // 这里使用最稳健的“链式逼近”：
-            float dist = Vector3.Distance(member.transform.position, targetPos);
-            
-            if (dist > spacing)
-            {
-                // 目标位置是：前一个人位置 + 指向我的方向 * 间距
-                // 这样就像是被绳子牵着走
-                Vector3 desiredPos = targetPos + (member.transform.position - targetPos).normalized * spacing;
-                member.transform.position = Vector3.Lerp(member.transform.position, desiredPos, Time.deltaTime * moveSpeed);
-            }
-
-            // 更新链条：下一个人跟着我
-            targetToFollow = member.transform;
+        foreach(var member in memberDice) {
+            if(member == _leader) continue;
+            // 简单的原地抖动
+            member.transform.position += Random.insideUnitSphere * Time.deltaTime * 0.5f; 
+            // 记得加限制让它们别跑太远
         }
     }
 
@@ -139,7 +98,7 @@ public class DiceSquadGroup : MonoBehaviour
             // --- 关键检查：目标死了没？ ---
             bool isTargetDead = false;
             if (target == null) isTargetDead = true;
-            else if (target.team == TargetTeam.Enemy)
+            else if (target.team == Enum.TargetTeam.Enemy)
             {
                 EnemyTarget enemy = (EnemyTarget)target;
                 if(enemy.currentHp <= 0)

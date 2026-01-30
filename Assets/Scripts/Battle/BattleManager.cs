@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-using UnityEngine.UI; // 用于按钮
+using UnityEngine.UI; 
 using System.Collections;
 using System.Collections.Generic;
 using Random = UnityEngine.Random;
@@ -10,233 +10,349 @@ public class BattleManager : MonoBehaviour
     public static BattleManager Instance;
 
     [Header("References")]
-    public DiceThrower diceThrower; // 引用之前的投掷脚本
-    public Button endTurnButton;    // 引用 UI 上的结束回合按钮
+    public DiceThrower diceThrower; 
+    public Button endTurnButton;    
     
-    [Header("Wave Config")]
-    public List<Transform> spawnPoints; // 拖入场景里的生成点 (SpawnPoint_1, 2, 3...)
-    public List<WaveDataSO> levelWaves; // 拖入你配置好的波次文件 (Wave1, Wave2...)
-    private int currentWaveIndex = 0;   // 当前第几波
+    [Header("Scene Config")]
+    // 【恢复】直接在 Inspector 里拖入场景里的固定生成点
+    public List<Transform> fixedSpawnPoints; 
     
     [Header("Runtime State")]
     public List<EnemyTarget> enemies = new List<EnemyTarget>();
     public bool isPlayerTurn = true;
+    private bool _isBattleActive = false; // 战斗锁
     
-    [Header("Player Deck")]
-    public List<DiceDataSO> playerDeck = new List<DiceDataSO>(); 
+    private Transform _enemyContainer;
     
-    // 当敌人死亡时触发
     public event Action OnEnemyKilledEvent;
 
-    void Awake()
-    {
-        Instance = this;
-    }
+    private bool _isLevelingUp = false;    // 是否正在处理升级界面
+    private bool _isVictoryPending = false; // 是否有一场胜利正在排队等待结算
+    void Awake() { Instance = this; }
 
     void Start()
     {
-        endTurnButton.onClick.AddListener(OnEndTurnClicked);
+        // 之前让你删空了，现在把监听逻辑加回来
+        if (PlayerProgressionManager.Instance != null)
+        {
+            PlayerProgressionManager.Instance.OnLevelUp += HandleLevelUp;
+        }
+    }
+    // --- 新入口：由 GameFlowController 调用 ---
+    public void StartNewBattle(BattleRoomSO roomData)
+    {
+        // 1. 清理战场 (这是单场景最重要的一步！)
+        CleanUpBattlefield();
+
+        // 2. 重置玩家状态 (可选，比如重置护甲)
+        // PlayerManager.Instance.ResetStatus();
         
-        // 游戏开始，加载第一波
-        currentWaveIndex = 0;
-        StartCoroutine(LoadWaveRoutine());
+        // 3. 开始战斗逻辑
+        if (roomData != null && roomData.enemyWave != null)
+        {
+            Debug.Log($"<color=orange>开始战斗：{roomData.roomName}</color>");
+            StartBattle(roomData.enemyWave); // 调用你原有的 StartBattle
+        }
+        else
+        {
+            Debug.LogError("战斗数据为空！");
+        }
+        endTurnButton.onClick.AddListener(OnEndTurnClicked);
     }
 
-    // --- 核心：加载波次协程 ---
-    IEnumerator LoadWaveRoutine()
+    // --- 清理逻辑 ---
+    private void CleanUpBattlefield()
     {
-        isPlayerTurn = false;
-        endTurnButton.interactable = false; // 禁用按钮防止乱点
-        // 1. 检查是否通关
-        if (currentWaveIndex >= levelWaves.Count)
+        // 1. 销毁所有活着的敌人
+        foreach (var enemy in enemies)
         {
-            Debug.Log("<color=green>关卡胜利！所有波次已清除！</color>");
-            // ShowVictoryUI();
-            yield break;
+            if (enemy != null) Destroy(enemy.gameObject);
         }
+        enemies.Clear();
 
-        // 2. 获取当前波次数据
-        WaveDataSO currentWave = levelWaves[currentWaveIndex];
-        Debug.Log($"--- 开始第 {currentWaveIndex + 1} 波 ---");
+        // 2. 销毁尸体 (如果你的尸体是单独的 GameObject)
+        // 3. 清理地上的骰子
+        diceThrower.ClearOldDice();
+        
+        if (GhostDiceUIManager.Instance != null)
+        {
+            GhostDiceUIManager.Instance.ClearAllGhosts();
+        }
+        // 4. 重置 UI 状态
+        _isBattleActive = true;
+        _isVictoryPending = false;
+        // endTurnButton.interactable = true;
+    }
 
-        // 3. 生成敌人
-        SpawnEnemies(currentWave);
+    void OnDestroy()
+    {
+        if (PlayerProgressionManager.Instance != null)
+            PlayerProgressionManager.Instance.OnLevelUp -= HandleLevelUp;
+    }
 
-        // 4. (可选) 给一点特写时间或UI显示 "Wave 2 Start"
-        yield return new WaitForSeconds(1.0f);
+    // =========================================================
+    // 战斗入口与出口 (Exploration Interface)
+    // =========================================================
 
-        // 5. 开始新回合
+    public void StartBattle(WaveDataSO waveData)
+    {
+        _isBattleActive = true;
+        
+        // 使用固定的生成点
+        SpawnEnemies(waveData, fixedSpawnPoints);
+        
+        // 开启第一回合
         StartNewRound();
     }
 
-    void SpawnEnemies(WaveDataSO waveData)
+    // 【出口】战斗胜利，清理现场，通知 GameManager
+    private void EndBattleVictory()
     {
-        // 清理旧列表 (理论上是空的，但为了保险)
-        enemies.Clear();
+        if (!_isBattleActive) return;
+        _isBattleActive = false;
+        
+        Debug.Log("战斗胜利！");
+        StopAllCoroutines();
+        
+        diceThrower.ClearOldDice();
+        // 【新增修复】战斗赢了，也要把没用掉的幽灵清空
+        if (GhostDiceUIManager.Instance != null)
+        {
+            GhostDiceUIManager.Instance.ClearAllGhosts();
+        }
 
-        // 遍历配置里的怪物
+        // 1. 通知地图：这个房间搞定了
+        if (MapManager.Instance != null)
+        {
+            MapManager.Instance.CompleteCurrentRoom();
+        }
+
+        // 2. 叫 GameFlow 切回地图界面
+        GameFlowController.Instance.EnterMapState();
+    }
+
+    // =========================================================
+    // 战斗逻辑 (Battle Logic)
+    // =========================================================
+
+    // 生成敌人逻辑
+    void SpawnEnemies(WaveDataSO waveData, List<Transform> spawnPoints)
+    {
+        // 清理旧列表
+        enemies.Clear();
+        
+        // 创建或获取容器
+        if (_enemyContainer == null) _enemyContainer = new GameObject("--- Enemies ---").transform;
+        
+        // 遍历生成
         for (int i = 0; i < waveData.enemyPrefabs.Count; i++)
         {
             // 防止生成点不够用
-            if (i >= spawnPoints.Count) break; 
+            if (spawnPoints == null || i >= spawnPoints.Count) break; 
 
             GameObject prefab = waveData.enemyPrefabs[i];
             Transform point = spawnPoints[i];
 
             // 实例化
             GameObject enemyObj = Instantiate(prefab, point.position, point.rotation);
+            enemyObj.transform.SetParent(_enemyContainer);
             
-            // 获取脚本并加入列表
             EnemyTarget target = enemyObj.GetComponent<EnemyTarget>();
             if (target != null)
             {
                 enemies.Add(target);
-                
-                // 确保新生成的敌人UI是初始化的
-                // 如果需要手动初始化可以在这里调用 target.Init();
             }
         }
     }
 
-    // --- 修改移除敌人的逻辑 ---
+    // 敌人死亡逻辑
     public void RemoveEnemy(EnemyTarget enemy)
     {
         if (enemies.Contains(enemy))
         {
+            // 1. 结算奖励
+            PlayerProgressionManager.Instance.AddExperience(enemy.xpReward);
+            PlayerProgressionManager.Instance.AddManaDust(enemy.manaDustReward);
+
+            // 2. 移除列表
             enemies.Remove(enemy);
             OnEnemyKilledEvent?.Invoke();
         }
 
-        // 检查：当前场上是否还有活着的敌人？
+        // 3. 检查战斗是否结束
         if (enemies.Count == 0)
         {
-            Debug.Log("波次清除！准备下一波...");
-            
-            // 索引+1
-            currentWaveIndex++;
-            
-            // 清理桌上的骰子 (可选，看你设计：是保留骰子到下一波，还是清空)
-            // diceThrower.ClearOldDice(); 
-
-            // 延迟一点时间后加载下一波
-            StartCoroutine(LoadWaveRoutine());
-        }
-    }
-    // 获取同队的随机目标
-    public BattleTarget GetRandomTargetOfTeam(TargetTeam team, BattleTarget exclusion)
-    {
-        List<BattleTarget> candidates = new List<BattleTarget>();
-
-        if (team == TargetTeam.Enemy)
-        {
-            // 找敌人
-            foreach (var e in enemies) {
-                if (e != null && e.currentHp > 0 && e != exclusion) candidates.Add(e);
+            // 如果是正在升级，就不要立刻结算胜利
+            if (_isLevelingUp)
+            {
+                Debug.Log("战斗结束，但正在升级中... 胜利结算挂起。");
+                _isVictoryPending = true; // 挂起
+            }
+            else
+            {
+                // 正常结算
+                EndBattleVictory();
             }
         }
-        else if (team == TargetTeam.Player)
-        {
-            // 找玩家 (目前可能只有1个玩家，就是 exclusion 自己)
-            // 如果你想支持弹射回自己，就把它加入列表
-            var playerTarget = FindObjectOfType<PlayerTarget>(); // 简单获取
-            if (playerTarget != null) candidates.Add(playerTarget);
-        }
-
-        if (candidates.Count > 0)
-        {
-            return candidates[Random.Range(0, candidates.Count)];
-        }
-        
-        return null;
     }
-    public BattleTarget GetRandomTarget(BattleTarget exclusion)
-    {
-        List<BattleTarget> candidates = new List<BattleTarget>();
 
-        // 找敌人
-        foreach (var e in enemies) {
-            if (e != null && e.currentHp > 0 && e != exclusion) candidates.Add(e);
-        }
-        // 找玩家 (目前可能只有1个玩家，就是 exclusion 自己)
-        // 如果你想支持弹射回自己，就把它加入列表
-        var playerTarget = FindObjectOfType<PlayerTarget>(); // 简单获取
-        if (playerTarget != null) candidates.Add(playerTarget);
-
-        if (candidates.Count > 0)
-        {
-            return candidates[Random.Range(0, candidates.Count)];
-        }
-        
-        return null;
-    }
-    // --- 阶段 1: 新回合开始 ---
+    // 开始新回合
     public void StartNewRound()
     {
+        if (!_isBattleActive) return; 
         isPlayerTurn = true;
         endTurnButton.interactable = true;
 
         PlayerManager.Instance.ResetArmor();
 
+        // 敌人预告意图
         foreach (var enemy in enemies)
         {
             if(enemy != null) enemy.PlanNextMove();
         }
 
-        // --- 修改这里 ---
-        // 以前是 diceThrower.ThrowAllDice();
-        // 现在指定生成数量，比如 3 个（或者根据你的装备变量来）
-        diceThrower.SpawnAndThrow(playerDeck);
+        // 从养成系统获取骰子数据
+        var newDeck = PlayerProgressionManager.Instance.GetBattleDeck();
+        diceThrower.SpawnAndThrow(newDeck);
     
         Debug.Log("--- 玩家回合开始 ---");
     }
 
-    // --- 阶段 2: 玩家点击结束回合 ---
+    // 点击结束回合按钮
     public void OnEndTurnClicked()
     {
+        if (!_isBattleActive) return; // 如果战斗结束了，按钮无效
         if (!isPlayerTurn) return;
+        
+        // 清理当前回合的骰子
         diceThrower.ClearOldDice();
+        if (GhostDiceUIManager.Instance != null)
+        {
+            GhostDiceUIManager.Instance.ClearAllGhosts();
+        }
         // 进入敌人回合
         StartCoroutine(EnemyTurnRoutine());
     }
 
-    // --- 阶段 3: 敌人行动 (协程控制节奏) ---
+    // 敌人回合流程
     IEnumerator EnemyTurnRoutine()
     {
         isPlayerTurn = false;
-        endTurnButton.interactable = false; // 禁用按钮防止乱点
-
-        // 清理掉桌上没用完的骰子 (可选)
-        // CleanupRemainingDice(); 
+        endTurnButton.interactable = false;
 
         Debug.Log("--- 敌人回合开始 ---");
-        // 先触发所有敌人的 OnTurnStart (处理燃烧等)
+        
+        // 1. 结算状态 (如燃烧)
+        // 如果这里有怪被烧死了，触发了升级，_isLevelingUp 会变成 true
         for (int i = enemies.Count - 1; i >= 0; i--)
         {
-            // 二次检查：防止对象已经被销毁
-            if (enemies[i] != null)
-            {
-                enemies[i].OnTurnStart();
-            }
+            if (enemies[i] != null) enemies[i].OnTurnStart();
         }
         
-        // 等一点时间展示扣血效果
-        yield return new WaitForSeconds(0.5f);
-        // 攻击阶段的代码建议稍微改一下，确保安全
-        // 这里可以用 ToList() 创建一个副本列表来遍历，这样原列表删除了也不影响当前循环
+        // =========================================================
+        // 🚦【核心修复】红绿灯检查
+        // =========================================================
+        
+        // 如果正在升级，协程暂停在这里，直到 _isLevelingUp 变为 false
+        if (_isLevelingUp)
+        {
+            Debug.Log("检测到升级事件，暂停敌人回合...");
+            yield return new WaitUntil(() => _isLevelingUp == false);
+            Debug.Log("升级完成，恢复敌人回合。");
+        }
 
-        var livingEnemies = new List<EnemyTarget>(enemies); // 创建一个快照
+        // 再次检查战斗锁 (防止在暂停期间战斗已经通过燃烧结束了)
+        if (!_isBattleActive) yield break; 
+
+        // =========================================================
+
+        yield return new WaitForSeconds(0.5f);
+
+        // 2. 敌人行动
+        var livingEnemies = new List<EnemyTarget>(enemies); 
 
         foreach (var enemy in livingEnemies)
         {
-            // 必须检查：因为在快照里它还在，但在真实世界里它可能刚刚被燃烧烫死了
+            // 每次行动前，最好也检查一下（防止多重触发，虽然概率低）
+            if (_isLevelingUp) yield return new WaitUntil(() => !_isLevelingUp);
+            if (!_isBattleActive) yield break;
+            if (PlayerManager.Instance.currentHp <= 0) break;
+
             if (enemy != null && enemy.gameObject.activeInHierarchy) 
             {
                 yield return StartCoroutine(enemy.ExecuteAction());
                 yield return new WaitForSeconds(0.5f);
             }
         }
+        // 3. 检查玩家死活
+        if (PlayerManager.Instance.currentHp <= 0)
+        {
+            Debug.Log("游戏结束！");
+            // ShowGameOverUI(); // 可以在这里调用游戏失败界面
+        }
+        else
+        {
+            // 4. 下一回合
+            if (_isBattleActive)
+            {
+                StartNewRound();
+            }
+        }
+    }
 
-        // 所有敌人动完了，开始新回合
-        StartNewRound();
+    // 升级事件回调
+    void HandleLevelUp()
+    {
+        Debug.Log("战斗中触发升级！开启抽卡...");
+        // 1. 标记状态
+        _isLevelingUp = true;
+
+        // 2. 启动抽卡，并传入【回调函数】
+        GameFlowController.Instance.StartDraftProcess(OnLevelUpDraftFinished);
+    }
+    // 当升级抽卡结束时调用
+    void OnLevelUpDraftFinished()
+    {
+        Debug.Log("升级抽卡完成。");
+        _isLevelingUp = false;
+
+        // 3. 检查是否有挂起的胜利
+        if (_isVictoryPending)
+        {
+            Debug.Log("检测到挂起的胜利，现在结算！");
+            _isVictoryPending = false;
+            EndBattleVictory(); // 补发胜利结算
+        }
+    }
+    // =========================================================
+    // 辅助方法 (Targeting Helpers)
+    // =========================================================
+
+    public BattleTarget GetRandomTargetOfTeam(Enum.TargetTeam team, BattleTarget exclusion)
+    {
+        List<BattleTarget> candidates = new List<BattleTarget>();
+
+        if (team == Enum.TargetTeam.Enemy)
+        {
+            foreach (var e in enemies) {
+                if (e != null && e.currentHp > 0 && e != exclusion) candidates.Add(e);
+            }
+        }
+        else if (team == Enum.TargetTeam.Player)
+        {
+            var playerTarget = FindObjectOfType<PlayerUITarget>();
+            if (playerTarget != null) candidates.Add(playerTarget);
+        }
+
+        if (candidates.Count > 0)
+            return candidates[Random.Range(0, candidates.Count)];
+        
+        return null;
+    }
+
+    public BattleTarget GetRandomTarget(BattleTarget exclusion)
+    {
+        // 默认找敌人
+        return GetRandomTargetOfTeam(Enum.TargetTeam.Enemy, exclusion);
     }
 }

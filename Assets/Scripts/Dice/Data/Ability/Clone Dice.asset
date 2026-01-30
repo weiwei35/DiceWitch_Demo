@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Clone Dice
   m_EditorClassIdentifier: 
   abilityName: "\u5206\u8EAB\u9AB0"
+  diceColor: {r: 0.4811321, g: 0.03404236, b: 1, a: 1}
+  icon: {fileID: -1394824093, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   description: "\u9AB0\u5B50\u4F1A\u5206\u88C2\u6210X\u4E2A1\u70B9\u9AB0\uFF0C\u62D6\u52A8\u5176\u4E2D\u4EFB\u4E00\u9AB0\u5B50\u5176\u4ED6\u5206\u8EAB\u4F1A\u503E\u5DE2\u800C\u51FA\uFF0C\u76F4\u5230\u5BF9\u8C61\u6B7B\u4EA1"
   minionDicePrefab: {fileID: 4547681140208780369, guid: 37ae103fec5eae24d88930d17c2884c7, type: 3}
   minionDiceData: {fileID: 11400000, guid: 8645a7844f3d9a64ca9bd97f8f0bd42a, type: 2}

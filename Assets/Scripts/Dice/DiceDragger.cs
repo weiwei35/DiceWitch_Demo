@@ -1,10 +1,15 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 [RequireComponent(typeof(PhysicsDice))]
 public class DiceDragger : MonoBehaviour
 {
     private PhysicsDice physicsDice;
+    private Rigidbody rb;
+    private Collider _collider; // 缓存碰撞体引用
+
     public bool isDragging = false;
     public bool IsDragging => isDragging;
     
@@ -12,171 +17,237 @@ public class DiceDragger : MonoBehaviour
     private Vector3 originalPos; 
     private Quaternion originalRot;
     
-    private Rigidbody rb;
-    
-    // 鼠标在屏幕上的深度（Z轴距离）
-    private float mZCoord;
-
     void Awake()
     {
         physicsDice = GetComponent<PhysicsDice>();
         rb = GetComponent<Rigidbody>();
+        _collider = GetComponent<Collider>(); // 或者是 GetComponentInChildren<Collider>()，视你Prefab结构而定
+        
         originalPos = transform.position;
         originalRot = transform.rotation;
     }
+
     // 提供给外部控制物理的接口
     public void SetKinematic(bool state)
     {
-        rb.isKinematic = state;
-    }
-    void OnMouseDown()
-    {
-        if (physicsDice.isRolling) return;
-        
-        // 记录当前位置为“归位点”，这样每次拖拽失败都会回到拿起的地方，而不是出生点
-        originalPos = transform.position;
-        originalRot = transform.rotation;
-        if (squadGroup != null)
-        {
-            // 如果有小队，通知小队“我被抓了，我是队长”
-            squadGroup.OnSquadDragStart(this);
-        }
-        else
-        {
-            isDragging = true;
-            
-            // 计算摄像机到骰子的距离，用于后续鼠标坐标转换
-            mZCoord = Camera.main.WorldToScreenPoint(transform.position).z;
-            rb.isKinematic = true;
-        }
-        
-        // TODO:播放个音效？
+        if(rb != null) rb.isKinematic = state;
     }
 
-    void OnMouseDrag()
+    // --- 手动输入入口 (由 DiceInputManager 调用) ---
+
+    public void OnManualMouseDown()
+    {
+        if (physicsDice.isRolling) return;
+
+        // 记录归位点
+        originalPos = transform.position;
+        originalRot = transform.rotation;
+        
+        if (squadGroup != null)
+        {
+            squadGroup.OnSquadDragStart(this);
+        }
+        else 
+        {
+            isDragging = true;
+            rb.isKinematic = true;
+        }
+    }
+
+    public void OnManualMouseDrag()
     {
         if (squadGroup != null)
         {
-            // 让小队去计算位置，我自己不跑了
-            squadGroup.OnSquadDragUpdate(GetMouseAsWorldPoint());
+            UpdateTargetingArrow();
         }
         else
         {
             if (!isDragging) return;
-
-            // 1. 默认终点：鼠标位置
-            Vector3 endPos = GetMouseAsWorldPoint();
-
-            // 2. 射线检测：看看鼠标是不是正指着某个敌人
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-            int enemyLayer = LayerMask.NameToLayer("Enemy");
-            int playerLayer = LayerMask.NameToLayer("Player");
-            int finalMask = (1 << enemyLayer) | (1 << playerLayer);
-
-            // 如果指着敌人，强行把终点改成敌人的中心位置！
-            if (Physics.Raycast(ray, out hit, 1000f, finalMask))
-            {
-                // 稍微往相机方向拉一点 (-Vector3.forward)，防止线条穿插进怪物模型里
-                endPos = hit.transform.position; 
-        
-                // 可选：在这里让 TargetingArrow 变色 (比如变成高亮红)
-            }
-
-            // 3. 起点修正 (同上一步)
-            Vector3 startPos = transform.position;
-
-            // 4. 绘制
-            TargetingArrow.Instance.Show(startPos, endPos);
+            
+            UpdateTargetingArrow();
         }
     }
 
-    void OnMouseUp()
+    public void OnManualMouseUp()
     {
         if (squadGroup != null)
         {
-            // 检测鼠标下的目标
-            BattleTarget target = GetTargetUnderMouse();
+            BattleTarget target = GetTargetUnderMouse_MainCamera();
             squadGroup.OnSquadDragEnd(target);
         }
         else
         {
             if (!isDragging) return;
             isDragging = false;
-
+            
             // 隐藏箭头
             TargetingArrow.Instance.Hide();
-
-            // 检测是否命中
-            CheckTarget();
+            
+            // 检测是否松开在了目标上
+            CheckDrop();
         }
     }
-    private BattleTarget GetTargetUnderMouse()
+
+    // --- 核心辅助逻辑 ---
+
+    private BattleTarget GetTargetUnderMouse_MainCamera()
     {
+        // --- 1. 先检测 UI (玩家) ---
+        PointerEventData pointerData = new PointerEventData(EventSystem.current);
+        pointerData.position = Input.mousePosition;
+
+        List<RaycastResult> uiResults = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(pointerData, uiResults);
+
+        foreach (var result in uiResults)
+        {
+            // 看看 UI 上有没有挂 PlayerUITarget
+            PlayerUITarget uiTarget = result.gameObject.GetComponent<PlayerUITarget>();
+            if (uiTarget != null)
+            {
+                return uiTarget;
+            }
+        }
+
+        // --- 2. 再检测 3D (敌人) ---
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-        int mask = (1 << LayerMask.NameToLayer("Enemy")) | (1 << LayerMask.NameToLayer("Player"));
-        
-        if (Physics.Raycast(ray, out hit, 1000f, mask))
+        int mask = (1 << LayerMask.NameToLayer("Enemy")); // 只检测敌人层即可，因为玩家在UI层
+
+        if (Physics.Raycast(ray, out RaycastHit hit, 1000f, mask))
         {
             return hit.collider.GetComponent<BattleTarget>();
         }
+
         return null;
     }
-    // 获取鼠标的世界坐标（保持和骰子同一个深度平面，或者根据射线检测地面）
-    private Vector3 GetMouseAsWorldPoint()
-    {
-        // 射线打到哪里算哪里 (更精确，适合箭头指哪打哪)
-        // 我们创建一个虚拟平面在骰子的高度
-        Plane boardPlane = new Plane(Vector3.up, transform.position);
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        float enter;
-        if (boardPlane.Raycast(ray, out enter))
-        {
-            return ray.GetPoint(enter);
-        }
-        return transform.position; // 兜底
-    }
 
-    void CheckTarget()
+    // --- 结算逻辑 ---
+
+    void CheckDrop()
     {
-        BattleTarget target = GetTargetUnderMouse();
+        BattleTarget target = GetTargetUnderMouse_MainCamera();
+        
         if (target != null)
         {
             Debug.Log("命中目标！");
-            
             DiceFaceData data = physicsDice.GetCurrentData();
             
             // 视觉效果：让骰子飞过去撞击
             StartCoroutine(FlyAndHit(target, data));
-            return;
         }
-
-        // 如果没打中，什么都不用做，箭头消失了，骰子还在原地// 没打中，归位
-        ReturnToTray();
+        else
+        {
+            // 没打中，归位
+            ReturnToTray();
+        }
     }
+
+    public void ReturnToTray()
+    {
+        if (this == null || gameObject == null) return;
+
+        transform.position = originalPos;
+        transform.rotation = originalRot;
+        
+        if (rb != null)
+        {
+            rb.isKinematic = false; // 恢复物理让它自然掉落
+            rb.velocity = Vector3.zero;
+        }
+        
+        isDragging = false;
+    }
+
+    // --- 箭头绘制 (跨次元) ---
+    public void UpdateTargetingArrow()
+    {
+        // --- 1. 计算视觉起点 (简化版) ---
+        // 我们不需要去算复杂的屏幕坐标再转回来。
+        // 骰子盘是 Camera 模式的 UI，它就在 3D 世界里！
+        // 我们直接把骰子在 DiceCamera 里的相对位置，映射到 RawImage 在 MainCamera 前的世界位置。
+
+        // A. 获取骰子在 DiceCamera 视口中的比例 (0~1)
+        Vector3 viewportPos = DiceViewMonitor.Instance.diceCamera.WorldToViewportPoint(transform.position);
+
+        // B. 获取 RawImage 的矩形角落 (世界坐标)
+        // [0]=左下, [1]=左上, [2]=右上, [3]=右下
+        Vector3[] corners = new Vector3[4];
+        DiceViewMonitor.Instance.rectTrans.GetWorldCorners(corners);
+
+        // C. 插值计算出 RawImage 表面上的那个点 (世界坐标)
+        Vector3 bottomEdge = Vector3.Lerp(corners[0], corners[3], viewportPos.x);
+        Vector3 topEdge = Vector3.Lerp(corners[1], corners[2], viewportPos.x);
+        Vector3 uiWorldPos = Vector3.Lerp(bottomEdge, topEdge, viewportPos.y);
+
+        // D. 稍微往摄像机反方向拉一点点，防止穿模
+        Vector3 arrowStart = uiWorldPos + new Vector3(0, 0, -2);
+
+        // --- 2. 计算终点 (保持不变) ---
+        Ray mouseRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Vector3 arrowEnd;
+        BattleTarget target = GetTargetUnderMouse_MainCamera();
+        if (target != null)
+        {
+            arrowEnd = target.transform.position;
+        }
+        else
+        {
+            // 简单的地面检测
+            Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
+            if (groundPlane.Raycast(mouseRay, out float enter)) arrowEnd = mouseRay.GetPoint(enter);
+            else arrowEnd = mouseRay.GetPoint(10f);
+        }
+        
+        TargetingArrow.Instance.Show(arrowStart, arrowEnd);
+    }
+
+    // --- 攻击与飞行 ---
+
     public IEnumerator FlyAndHit(BattleTarget target, DiceFaceData damageData)
     {
-        // 1. 准备阶段
+        // 1. 准备阶段：冻结物理
         isDragging = false;
         rb.isKinematic = true;
-        GetComponentInChildren<Collider>().enabled = false; // 关闭碰撞，防止半路撞飞
+        // 关闭碰撞，防止飞行途中撞到玩家的 CharacterController 或其他东西
+        if(GetComponent<Collider>()) GetComponent<Collider>().enabled = false;
 
-        float duration = 0.4f; // 飞行时间可以稍微加长一点点，让弧线更明显
+        // =================================================================
+        // 🪄 核心修改：偷天换日 (Teleport & Layer Switch)
+        // =================================================================
+
+        // A. 计算视觉起点 (和抛物线起点的算法一模一样)
+        Vector3 viewportPos = DiceViewMonitor.Instance.diceCamera.WorldToViewportPoint(transform.position);
+        
+        Vector3[] corners = new Vector3[4];
+        DiceViewMonitor.Instance.rectTrans.GetWorldCorners(corners);
+        
+        Vector3 bottomEdge = Vector3.Lerp(corners[0], corners[3], viewportPos.x);
+        Vector3 topEdge = Vector3.Lerp(corners[1], corners[2], viewportPos.x);
+        Vector3 uiWorldPos = Vector3.Lerp(bottomEdge, topEdge, viewportPos.y);
+
+        // B. 瞬移：把骰子直接搬到摄像机面前
+        // 稍微往里面推一点点 (+ forward * 0.2f)，防止穿插进摄像机近裁剪面导致看不见
+        Vector3 visualStartPos = uiWorldPos + Camera.main.transform.forward * 0.2f;
+        transform.position = visualStartPos;
+
+        // C. 换层：让主相机能看见它
+        // 必须把子物体(Mesh, Text)也一起换了，否则你看不到模型和数字
+        SetLayerRecursively(gameObject, LayerMask.NameToLayer("Default"));
+
+        // =================================================================
+
+        float duration = 0.35f; // 飞行稍微快一点，打击感更强
         float timer = 0f;
 
-        Vector3 startPos = transform.position;
-        // 目标位置：建议稍微抬高一点，打在怪物胸口而不是脚底
         Vector3 endPos = target.transform.position + Vector3.up * 0.5f; 
 
-        // --- 核心：计算贝塞尔曲线的控制点 ---
-        // 1. 取起点和终点的中点
-        Vector3 midPoint = (startPos + endPos) / 2;
-        // 2. 往上抬高一定高度 (这里设为距离的 0.5 倍，扔得越远弧度越高)
-        float distance = Vector3.Distance(startPos, endPos);
-        float arcHeight = distance * 0.5f; 
-        // 3. 得到控制点
-        Vector3 controlPoint = midPoint + Vector3.up * arcHeight;
+        // 贝塞尔曲线控制点
+        Vector3 midPoint = (visualStartPos + endPos) / 2;
+        // 弧度不用太高，因为现在是从屏幕射出去的
+        Vector3 controlPoint = midPoint + Vector3.up * Vector3.Distance(visualStartPos, endPos) * 0.2f;
+
+        Vector3 initialScale = transform.localScale; // 记录当前的 UI 尺寸
+        Vector3 targetScale = Vector3.one;
 
         while (timer < duration)
         {
@@ -187,94 +258,65 @@ public class DiceDragger : MonoBehaviour
             }
 
             timer += Time.deltaTime;
-            float t = timer / duration; // t 从 0 到 1
+            float t = timer / duration;
 
-            // --- 贝塞尔曲线计算公式 ---
-            // 简单的理解：从 p0 到 p1 的插值，和 p1 到 p2 的插值，再取插值
-            // B(t) = (1-t)^2 * P0 + 2(1-t)t * P1 + t^2 * P2
-            
-            // 这里用两次 Lerp 来模拟贝塞尔 (性能开销极小，更易读)
-            Vector3 m1 = Vector3.Lerp(startPos, controlPoint, t);
+            // 移动
+            Vector3 m1 = Vector3.Lerp(visualStartPos, controlPoint, t);
             Vector3 m2 = Vector3.Lerp(controlPoint, endPos, t);
             transform.position = Vector3.Lerp(m1, m2, t);
 
-            // 旋转效果：让骰子根据飞行进度疯狂旋转
-            transform.Rotate(new Vector3(360, 180, 90) * Time.deltaTime * 3f);
+            // 旋转：疯狂旋转
+            transform.Rotate(new Vector3(360, 180, 90) * Time.deltaTime * 5f);
+
+            // (可选) 视觉优化：从 UI 出来时可以由小变大，或者保持原样
+            transform.localScale = Vector3.Lerp(initialScale, targetScale, t);
 
             yield return null;
         }
 
-        // 撞击结算
-        // if (target != null)
-        // {
-        //     // 获取骰子身上的所有能力
-        //     var abilities = physicsDice.GetAbilities();
-        //     int finalDamage = damageData.value;
-        //
-        //     // ---> 触发钩子：OnCalculateDamage <---
-        //     // 让每一个能力都有机会修改伤害（比如暴击、易伤）
-        //     foreach (var ability in abilities)
-        //     {
-        //         finalDamage = ability.OnCalculateDamage(finalDamage, target);
-        //     }
-        //
-        //     // 造成最终伤害
-        //     DiceFaceData finalData = damageData; 
-        //     finalData.value = finalDamage; 
-        //     if(target.team == TargetTeam.Enemy)
-        //         target.TakeDamage(finalData);
-        //     else
-        //         target.GainArmor(finalData.value);
-        //
-        //     // ---> 触发钩子：OnPostHit <---
-        //     // 造成伤害后，触发吸血、燃烧等效果
-        //     foreach (var ability in abilities)
-        //     {
-        //         ability.OnPostHit(target, finalDamage);
-        //     }
-        // }
+        // --- 撞击结算 (代码保持不变) ---
         if (target != null)
         {
-            // 1. 造成伤害 (触发 OnHit -> 触发 Ability.OnPostHit)
-            target.OnHit(damageData); 
-            
-            // 获取骰子身上的所有能力
+            // 1. 伤害副本
+            DiceFaceData calculatedData = new DiceFaceData();
+            calculatedData.value = damageData.TotalValue;
+            calculatedData.type = damageData.type;
+            calculatedData.icon = damageData.icon;
+            calculatedData.color = damageData.color;
+            calculatedData.effectDescription = damageData.effectDescription;
+
+            // 2. 能力修饰
             var abilities = physicsDice.GetAbilities();
-            int finalDamage = damageData.value;
             if (abilities != null)
             {
                 foreach (var ability in abilities)
                 {
-                    finalDamage = ability.OnCalculateDamage(finalDamage, target);
-                    ability.OnPostHit(target, finalDamage);
-                    // 判断当前能力是不是幽灵能力
-                    if (ability is Ability_Ghost ghostAbility)
-                    {
-                        // 获取场景里的骰子管理器
-                        DiceThrower thrower = FindObjectOfType<DiceThrower>();
-                    
-                        ghostAbility.SpawnGhost(originalPos, thrower); 
-                    }
+                    calculatedData.value = ability.OnCalculateDamage(calculatedData.value, target);
+                }
+            }
+
+            // 3. 造成伤害
+            target.OnHit(calculatedData); 
+
+            // 4. 击后效果
+            if (abilities != null)
+            {
+                foreach (var ability in abilities)
+                {
+                    ability.OnPostHit(target, calculatedData.value, physicsDice);
                 }
             }
         }
         Destroy(gameObject);
     }
 
-    public void ReturnToTray()
+    // --- 辅助方法：递归修改层级 ---
+    void SetLayerRecursively(GameObject obj, int newLayer)
     {
-        // 只有当物体还存在时才执行
-        if (this == null || gameObject == null) return;
-
-        transform.position = originalPos;
-        transform.rotation = originalRot;
-        
-        if (rb != null)
+        obj.layer = newLayer;
+        foreach (Transform child in obj.transform)
         {
-            rb.isKinematic = false; // 恢复物理让它自然掉落
-            rb.velocity = Vector3.zero; // 清空残留速度
+            SetLayerRecursively(child.gameObject, newLayer);
         }
-        
-        isDragging = false;
     }
 }

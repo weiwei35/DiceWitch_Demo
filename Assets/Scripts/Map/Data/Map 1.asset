@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0088774e3ffed9c45bf8ffd60183c2d8, type: 3}
+  m_Name: Map 1
+  m_EditorClassIdentifier: 
+  totalLayers: 5
+  battleRoomPool:
+  - {fileID: 11400000, guid: b4e7176daff4d3643ab1af9e2953d523, type: 2}
+  eliteRoomPool: []
+  eventRoomPool: []
+  bossRoom: {fileID: 11400000, guid: 8c20b8ce83763d84bb603c871f010981, type: 2}
+  treasureRoom: {fileID: 0}
+  shopRoom: {fileID: 0}
+  restRoom: {fileID: 0}
+  defaultRule:
+    note: "\u7B2C N \u5C42\u914D\u7F6E"
+    minNodes: 3
+    maxNodes: 4
+    overrideType: 1
+    fixedType: 0
+    weights: []
+  specificLayers:
+  - layerIndex: 0
+    rule:
+      note: "\u7B2C 1 \u5C42\u914D\u7F6E"
+      minNodes: 0
+      maxNodes: 0
+      overrideType: 1
+      fixedType: 0
+      weights: []
+  - layerIndex: 1
+    rule:
+      note: "\u7B2C 2 \u5C42\u914D\u7F6E"
+      minNodes: 2
+      maxNodes: 3
+      overrideType: 1
+      fixedType: 0
+      weights: []
+  - layerIndex: 2
+    rule:
+      note: "\u7B2C 3 \u5C42\u914D\u7F6E"
+      minNodes: 0
+      maxNodes: 3
+      overrideType: 1
+      fixedType: 0
+      weights: []
+  - layerIndex: 3
+    rule:
+      note: "\u7B2C 4 \u5C42\u914D\u7F6E"
+      minNodes: 2
+      maxNodes: 2
+      overrideType: 1
+      fixedType: 0
+      weights: []
+  - layerIndex: 4
+    rule:
+      note: "\u7B2C 5 \u5C42\u914D\u7F6E"
+      minNodes: 0
+      maxNodes: 0
+      overrideType: 1
+      fixedType: 2
+      weights: []

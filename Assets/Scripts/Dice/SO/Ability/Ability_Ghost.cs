@@ -3,30 +3,33 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Abilities/Ghost Dice")]
 public class Ability_Ghost : DiceAbilitySO
 {
-    [Header("Ghost Settings")]
-    public GameObject dicePrefab; // 骰子预制体 (通常就是它自己)
-    public DiceDataSO diceData;   // 它自己的数据
-    public Material ghostMaterial; // 一个半透明的材质球
+    [Header("Ghost Data")]
+    // 务必在这里拖入配置了本 Ability 的 DiceDataSO，以实现无限循环
+    public DiceDataSO overrideGhostData; 
 
-    public void SpawnGhost(Vector3 spawnPos, DiceThrower thrower)
+    public override void OnPostHit(BattleTarget target, int finalDamage, PhysicsDice sourceDice)
     {
-        if (dicePrefab == null || thrower == null) return;
-
-        // 1. 生成新骰子
-        // 稍微抬高一点，防止穿模
-        GameObject ghostObj = Instantiate(dicePrefab, spawnPos + Vector3.up * 0.5f, Random.rotation);
-        
-        // 2. 初始化数据
-        PhysicsDice pDice = ghostObj.GetComponent<PhysicsDice>();
-        if (pDice != null)
+        if (overrideGhostData != null)
         {
-            pDice.Initialize(diceData);
-            // 注册到管理器 (这样回合结束会被清理)
-            thrower.RegisterDice(pDice);
-        }
+            int bonusToPass = 0;
 
-        // 3. 挂载幽灵行为组件
-        GhostDiceBehavior ghostBehavior = ghostObj.AddComponent<GhostDiceBehavior>();
-        ghostBehavior.EnterGhostMode(ghostMaterial);
+            // 1. 从来源骰子获取当前的属性加成值
+            if (sourceDice != null)
+            {
+                // 获取当前那一面的数据
+                DiceFaceData currentFace = sourceDice.GetCurrentData();
+                if (currentFace != null)
+                {
+                    bonusToPass = currentFace.bonusValue;
+                }
+            }
+
+            // 2. 传给 UI 管理器
+            GhostDiceUIManager.Instance.AddGhost(overrideGhostData, bonusToPass);
+        }
+        else
+        {
+            Debug.LogWarning("Ability_Ghost: 未配置 GhostData");
+        }
     }
 }

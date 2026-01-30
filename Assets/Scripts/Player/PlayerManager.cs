@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using DG.Tweening;
 using UnityEngine;
@@ -11,8 +12,8 @@ public class PlayerManager : MonoBehaviour
     public int currentHp;
     public int currentArmor;
 
-    public TextMeshPro hpText; 
-    public TextMeshPro armorText;
+    public TMP_Text hpText; 
+    public TMP_Text armorText;
 
     void Awake()
     {
@@ -48,7 +49,7 @@ public class PlayerManager : MonoBehaviour
         Debug.Log($"玩家受到 {dmg} 点伤害 (护甲抵挡后实际扣血: {damageToHp})");
         
         // 简单的屏幕震动反馈（可选）
-        transform.DOShakePosition(0.5f, 0.5f);
+        transform.DOShakePosition(0.5f, 100f);
 
         UpdateUI();
     }

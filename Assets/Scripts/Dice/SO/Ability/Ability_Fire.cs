@@ -5,7 +5,7 @@ public class Ability_Fire : DiceAbilitySO
 {
     public StatusEffectSO burnStatus; 
 
-    public override void OnPostHit(BattleTarget target, int finalDamage)
+    public override void OnPostHit(BattleTarget target, int finalDamage, PhysicsDice sourceDice = null)
     {
         if (burnStatus != null)
         {

@@ -45,31 +45,57 @@
     <Analyzer Include="D:\UnityHub\2022.3.62f2c1\Editor\Data\Tools\Unity.SourceGenerators\Unity.Properties.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Scripts\Player\PlayerTarget.cs" />
+    <Compile Include="Assets\Scripts\Map\SO\RoomDataSO.cs" />
     <Compile Include="Assets\Scripts\Dice\DiceHover.cs" />
     <Compile Include="Assets\Scripts\Battle\SO\StatusEffect\Status_BurnSO.cs" />
+    <Compile Include="Assets\Scripts\Magic\MagicSlotUI.cs" />
     <Compile Include="Assets\Scripts\Battle\SO\StatusEffectSO.cs" />
     <Compile Include="Assets\Scripts\Dice\SO\Ability\Ability_Ghost.cs" />
+    <Compile Include="Assets\Scripts\Enum.cs" />
+    <Compile Include="Assets\Scripts\Dice\SpecialDice\GhostDiceUIManager.cs" />
     <Compile Include="Assets\Scripts\Dice\SO\Ability\Ability_Vampire.cs" />
     <Compile Include="Assets\Scripts\Dice\SO\Ability\Ability_CritOnSix.cs" />
     <Compile Include="Assets\Scripts\Enemy\SO\WaveDataSO.cs" />
     <Compile Include="Assets\Scripts\Dice\DiceThrower.cs" />
+    <Compile Include="Assets\Scripts\UI\XPBarUI.cs" />
+    <Compile Include="Assets\Scripts\Map\SO\BattleRoomSO.cs" />
+    <Compile Include="Assets\Scripts\UI\AttributeDraftCard.cs" />
     <Compile Include="Assets\Scripts\Dice\PhysicsDice.cs" />
     <Compile Include="Assets\Scripts\Dice\SO\Ability\Ability_Split.cs" />
+    <Compile Include="Assets\Scripts\Map\SO\EventRoomSO.cs" />
     <Compile Include="Assets\Scripts\Battle\BattleManager.cs" />
+    <Compile Include="Assets\Scripts\UI\SpellDraftPanel.cs" />
     <Compile Include="Assets\Scripts\Dice\DiceVisualManager.cs" />
     <Compile Include="Assets\Scripts\Dice\SpecialDice\DiceSquadGroup.cs" />
+    <Compile Include="Assets\Scripts\PlayerProgressionManager.cs" />
+    <Compile Include="Assets\Scripts\GameFlowController.cs" />
     <Compile Include="Assets\Scripts\Dice\SO\Ability\Ability_Fire.cs" />
     <Compile Include="Assets\Scripts\Player\PlayerManager.cs" />
+    <Compile Include="Assets\Scripts\Dice\SO\Ability\Ability_AOE.cs" />
     <Compile Include="Assets\Scripts\Dice\SO\DiceDataSO.cs" />
+    <Compile Include="Assets\Scripts\UI\MiniActionMenu.cs" />
     <Compile Include="Assets\Scripts\Battle\BattleTarget.cs" />
+    <Compile Include="Assets\Scripts\UI\AttributeDraftPanel.cs" />
     <Compile Include="Assets\Scripts\Dice\SO\Ability\Ability_Clone.cs" />
-    <Compile Include="Assets\Scripts\Dice\SpecialDice\GhostDiceBehavior.cs" />
+    <Compile Include="Assets\Scripts\UI\ResourceUI.cs" />
+    <Compile Include="Assets\Scripts\Magic\SO\SlotAttributeSO.cs" />
+    <Compile Include="Assets\Scripts\UI\SpellDraftCard.cs" />
     <Compile Include="Assets\Scripts\Dice\SO\DiceAbilitySO.cs" />
+    <Compile Include="Assets\Scripts\GameManager.cs" />
     <Compile Include="Assets\Scripts\UI\TooltipSystem.cs" />
     <Compile Include="Assets\Scripts\Dice\SpecialDice\SplittingProjectile.cs" />
+    <Compile Include="Assets\Scripts\Magic\MagicCircleDisplay.cs" />
+    <Compile Include="Assets\Scripts\Map\MapNodeButton.cs" />
+    <Compile Include="Assets\Scripts\Player\PlayerUITarget.cs" />
+    <Compile Include="Assets\Scripts\Map\MapManager.cs" />
+    <Compile Include="Assets\Scripts\Dice\UI_DiceView\DiceViewMonitor.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyTarget.cs" />
+    <Compile Include="Assets\Scripts\Map\MapViewController.cs" />
+    <Compile Include="Assets\Scripts\Dice\SO\Ability\Ability_Explosion.cs" />
+    <Compile Include="Assets\Scripts\Map\MapNode.cs" />
     <Compile Include="Assets\Scripts\Dice\DiceDragger.cs" />
+    <Compile Include="Assets\Scripts\Dice\UI_DiceView\DiceInputManager.cs" />
+    <Compile Include="Assets\Scripts\Map\SO\MapConfigSO.cs" />
     <Compile Include="Assets\Scripts\Battle\TargetingArrow.cs" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
@@ -341,6 +367,9 @@
     </Reference>
     <Reference Include="UnityEditor.UnityConnectModule">
       <HintPath>D:\UnityHub\2022.3.62f2c1\Editor\Data\Managed\UnityEngine\UnityEditor.UnityConnectModule.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Collections.LowLevel.ILSupport">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\PackageCache\com.unity.collections@1.2.4\Unity.Collections.LowLevel.ILSupport\Unity.Collections.LowLevel.ILSupport.dll</HintPath>
     </Reference>
     <Reference Include="ReportGeneratorMerged">
       <HintPath>D:\UnityProject\DiceWitch_Demo\Library\PackageCache\com.unity.testtools.codecoverage@1.2.6\lib\ReportGenerator\ReportGeneratorMerged.dll</HintPath>
@@ -717,6 +746,81 @@
     <Reference Include="System.Xml.Serialization">
       <HintPath>D:\UnityHub\2022.3.62f2c1\Editor\Data\NetStandard\compat\2.1.0\shims\netfx\System.Xml.Serialization.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.2D.IK.Runtime">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.IK.Runtime.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.EditorCoroutines.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.EditorCoroutines.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="PsdPlugin">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\PsdPlugin.dll</HintPath>
+    </Reference>
+    <Reference Include="com.unity.cinemachine.editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\com.unity.cinemachine.editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Burst.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.Burst.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Burst">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.Burst.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.2D.Common.Path.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.Common.Path.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Timeline.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.Timeline.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.VisualScripting.Shared.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualScripting.Shared.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.VisualStudio.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualStudio.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEditor.UI">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\UnityEditor.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.VisualScripting.Core">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualScripting.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.2D.Animation.Runtime">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.Animation.Runtime.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.2D.Tilemap.Extras">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.Tilemap.Extras.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.VisualScripting.Core.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualScripting.Core.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Rider.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.Rider.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.2D.PixelPerfect.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.PixelPerfect.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.2D.Aseprite.Common">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.Aseprite.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.VisualScripting.Flow">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualScripting.Flow.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.InternalAPIEngineBridge.001">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.InternalAPIEngineBridge.001.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Mathematics.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.Mathematics.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.VisualScripting.Flow.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualScripting.Flow.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.2D.Common.Runtime">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.Common.Runtime.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.2D.Tilemap.Extras.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.Tilemap.Extras.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.2D.Sprite.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.Sprite.Editor.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.Timeline">
       <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.Timeline.dll</HintPath>
     </Reference>
@@ -725,9 +829,6 @@
     </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\UnityEngine.UI.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.EditorCoroutines.Editor">
-      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.EditorCoroutines.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.VisualScripting.SettingsProvider.Editor">
       <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualScripting.SettingsProvider.Editor.dll</HintPath>
@@ -741,41 +842,44 @@
     <Reference Include="Unity.TestTools.CodeCoverage.Editor.OpenCover.Model">
       <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.TestTools.CodeCoverage.Editor.OpenCover.Model.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.Collections">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.Collections.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.PlasticSCM.Editor">
       <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.PlasticSCM.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.2D.Psdimporter.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.Psdimporter.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.InternalAPIEditorBridge.001">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.InternalAPIEditorBridge.001.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.2D.SpriteShape.Runtime">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.SpriteShape.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="Unity.VisualScripting.State.Editor">
       <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualScripting.State.Editor.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.Timeline.Editor">
-      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.Timeline.Editor.dll</HintPath>
+    <Reference Include="Unity.2D.PixelPerfect">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.PixelPerfect.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Settings.Editor">
       <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.Settings.Editor.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.VisualScripting.Shared.Editor">
-      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualScripting.Shared.Editor.dll</HintPath>
+    <Reference Include="Unity.Mathematics">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.Mathematics.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.VisualStudio.Editor">
-      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualStudio.Editor.dll</HintPath>
+    <Reference Include="Unity.2D.Common.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.Common.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.TextMeshPro.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.VisualScripting.Core">
-      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualScripting.Core.dll</HintPath>
-    </Reference>
     <Reference Include="Unity.TextMeshPro.Editor">
       <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.TextMeshPro.Editor.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEditor.UI">
-      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\UnityEditor.UI.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.VisualScripting.Core.Editor">
-      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualScripting.Core.Editor.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.Rider.Editor">
-      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.Rider.Editor.dll</HintPath>
+    <Reference Include="Unity.2D.Aseprite.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.Aseprite.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.VisualScripting.State">
       <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualScripting.State.dll</HintPath>
@@ -783,11 +887,20 @@
     <Reference Include="Unity.VSCode.Editor">
       <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VSCode.Editor.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.VisualScripting.Flow">
-      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualScripting.Flow.dll</HintPath>
+    <Reference Include="Cinemachine">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Cinemachine.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.VisualScripting.Flow.Editor">
-      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.VisualScripting.Flow.Editor.dll</HintPath>
+    <Reference Include="Unity.2D.SpriteShape.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.SpriteShape.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.2D.Tilemap.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.Tilemap.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.2D.Animation.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.Animation.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.2D.IK.Editor">
+      <HintPath>D:\UnityProject\DiceWitch_Demo\Library\ScriptAssemblies\Unity.2D.IK.Editor.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
