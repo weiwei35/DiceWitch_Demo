@@ -1,27 +1,40 @@
-using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Abilities/Explosion")]
+[CreateAssetMenu(menuName = "Abilities/Chain Link (Explosion)")]
 public class Ability_Explosion : DiceAbilitySO
 {
-    public GameObject vfxPrefab; // 爆炸特效
+    [Header("Chain Settings")]
+    public float transferRatio = 0.5f; // 传递比例
+    public GameObject linkVFX;         // 链枷激活时的特效
+    public GameObject damageVFX;       // 传递伤害时的爆炸特效
 
+    // 1. 抹除初始伤害
+    // 因为需求说“被攻击的敌人本次不会收到伤害”
+    public override int OnCalculateDamage(int baseDamage, BattleTarget target, PhysicsDice sourceDice)
+    {
+        // 返回 0，表示本次物理撞击不扣血
+        return 0;
+    }
+
+    // 2. 挂载链枷状态
     public override void OnPostHit(BattleTarget target, int finalDamage, PhysicsDice sourceDice)
     {
-        // 1. 播放特效
-        if (vfxPrefab) Instantiate(vfxPrefab, target.transform.position, Quaternion.identity);
+        // 播放激活特效（比如一个锁链套在敌人身上）
+        if (linkVFX != null) 
+            Instantiate(linkVFX, target.transform.position, Quaternion.identity);
 
-        // 2. 检测周围敌人 (使用 Physics.OverlapSphere)
-        List<EnemyTarget> enemyies = BattleManager.Instance.enemies;
-        int aoeDamage = Mathf.FloorToInt(finalDamage * 0.5f); // 50% 溅射
-
-        foreach (var enemy in enemyies)
+        // 检查是否已经有这个状态了，避免重复挂载
+        var existingStatus = target.GetComponent<DamageLinkStatus>();
+        if (existingStatus == null)
         {
-            if (enemy != target)
-            {
-                enemy.ApplyDirectValue(aoeDamage);
-            }
+            // 挂载新组件
+            DamageLinkStatus status = target.gameObject.AddComponent<DamageLinkStatus>();
+            status.Setup((EnemyTarget)target, transferRatio, damageVFX);
         }
-        Debug.Log($"爆炸造成了 {enemyies.Count - 1} 个目标的溅射伤害！");
+        else
+        {
+            // 如果已经有了，可以刷新持续时间，或者叠加倍率（看你设计）
+            Debug.Log("目标已有链枷，跳过。");
+        }
     }
 }

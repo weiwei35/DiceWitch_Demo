@@ -25,6 +25,7 @@ public class BattleManager : MonoBehaviour
     private Transform _enemyContainer;
     
     public event Action OnEnemyKilledEvent;
+    public event Action OnPlayerTurnEnd;
 
     private bool _isLevelingUp = false;    // 是否正在处理升级界面
     private bool _isVictoryPending = false; // 是否有一场胜利正在排队等待结算
@@ -230,6 +231,8 @@ public class BattleManager : MonoBehaviour
         {
             GhostDiceUIManager.Instance.ClearAllGhosts();
         }
+        // 【新增】广播回合结束，通知链枷等状态自我销毁
+        OnPlayerTurnEnd?.Invoke();
         // 进入敌人回合
         StartCoroutine(EnemyTurnRoutine());
     }

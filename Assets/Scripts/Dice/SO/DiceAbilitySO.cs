@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 // 这是一个抽象基类，不能直接创建实例，只能继承
@@ -13,7 +14,7 @@ public abstract class DiceAbilitySO : ScriptableObject
 
     // 1. 当骰子物理停下，数值确定时调用
     // 返回值：修改后的数值 (如果不修改就返回 primitiveValue)
-    public virtual int OnRollEnd(int primitiveValue, PhysicsDice sourceDice = null) 
+    public virtual int OnRollEnd(int primitiveValue, PhysicsDice sourceDice = null)
     {
         return primitiveValue;
     }

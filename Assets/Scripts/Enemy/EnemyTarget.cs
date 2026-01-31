@@ -7,6 +7,8 @@ using UnityEngine.UI; // 需要用到协程
 
 public class EnemyTarget : BattleTarget
 {
+    // 1. 定义一个事件：当收到伤害时触发 (参数：收到的伤害值)
+    public event System.Action<int> OnDamageTaken;
     [Header("Stats")]
     public int maxHp = 50;
     public int currentHp;
@@ -176,17 +178,26 @@ public class EnemyTarget : BattleTarget
 
     public override void TakeDamage(DiceFaceData damageData)
     {
-        // 这里可以判断类型，比如必须是 Attack 类型才扣血
         if (damageData.type == Enum.DiceActionType.Attack)
         {
-            currentHp -= damageData.value;
-            Debug.Log($"<color=red>敌人受到 {damageData.value} 点伤害！剩余HP: {currentHp}</color>");
+            // 1. 扣血
+            int damage = damageData.value;
+            currentHp -= damage;
             
-            // 播放受击动画/特效 (Juice)
-            // 1. 立刻杀掉当前正在进行的任何抖动，防止叠加
-            transform.DOKill(true); 
+            // =========================================================
+            // 【核心修复】触发受伤事件！
+            // 这样 DamageLinkStatus 才能监听到这次物理攻击
+            // =========================================================
+            if (damage > 0)
+            {
+                OnDamageTaken?.Invoke(damage);
+            }
+            // =========================================================
 
-            // 2. 【关键】强制瞬间回到原点
+            Debug.Log($"<color=red>敌人受到 {damage} 点伤害！剩余HP: {currentHp}</color>");
+            
+            // ... (原本的动画代码) ...
+            transform.DOKill(true); 
             transform.position = originalPosition;
             transform.DOShakePosition(0.5f, 0.5f);
         }
@@ -204,7 +215,7 @@ public class EnemyTarget : BattleTarget
         // currentArmor += amount;
     }
 
-    public override void ApplyDirectValue(int value)
+    public override void ApplyDirectValue(int value,bool isChainReaction = false)
     {
         // 简单的扣血逻辑
         int damageToTake = value;
@@ -217,7 +228,13 @@ public class EnemyTarget : BattleTarget
         
         // 飘字特效
         // DamageNumberManager.Instance.ShowDamage(transform.position, damageToTake);
-
+        
+        // 【新增】如果不是连锁反应造成的伤害，且伤害大于0，则广播事件
+        // 这样可以防止：A连B，B连A，导致无限死循环炸机
+        if (!isChainReaction && value > 0)
+        {
+            OnDamageTaken?.Invoke(value);
+        }
         if (currentHp <= 0)
         {
             // 调用死亡逻辑

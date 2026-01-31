@@ -26,5 +26,5 @@ public abstract class BattleTarget : MonoBehaviour
     public abstract void TakeDamage(DiceFaceData damageData);
     public abstract void ApplyStatus(StatusEffectSO status, int amount);
     public abstract void GainArmor(int amount);
-    public abstract void ApplyDirectValue(int value); // 用于分裂造成的直接数值影响
+    public abstract void ApplyDirectValue(int value,bool isChainReaction = false); // 用于分裂造成的直接数值影响
 }

@@ -44,7 +44,7 @@ public class PlayerUITarget : BattleTarget
         // 可选：播放护甲特效
     }
 
-    public override void ApplyDirectValue(int value)
+    public override void ApplyDirectValue(int value,bool isChainReaction = false)
     {
         // 处理分身骰等直接数值
         GainArmor(value);
