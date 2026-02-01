@@ -18,9 +18,10 @@ public abstract class StatusEffectSO : ScriptableObject
     public virtual void OnTurnEnd(EnemyTarget target, int stacks) {}
 
     // 3. 当受到伤害时触发 (比如：易伤增加伤害)
-    // 返回值：修改后的伤害
-    public virtual int OnTakeDamage(int incomingDamage, int stacks) 
+    // incomingDamage: 实际受到的伤害值
+    // isChainReaction: 标记这次伤害是否由连锁反应引起 (防止死循环)
+    public virtual void OnPostTakeDamage(EnemyTarget target, int incomingDamage, int stacks, bool isChainReaction) 
     {
-        return incomingDamage;
+        // 默认不做任何事
     }
 }

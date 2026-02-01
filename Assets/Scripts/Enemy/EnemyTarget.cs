@@ -183,16 +183,17 @@ public class EnemyTarget : BattleTarget
             // 1. 扣血
             int damage = damageData.value;
             currentHp -= damage;
-            
-            // =========================================================
-            // 【核心修复】触发受伤事件！
+            if (damage > 0 && DamageNumberManager.Instance != null)
+            {
+                DamageNumberManager.Instance.ShowDamage(transform.position, damage, false);
+            }
+            // 触发受伤事件！
             // 这样 DamageLinkStatus 才能监听到这次物理攻击
-            // =========================================================
             if (damage > 0)
             {
                 OnDamageTaken?.Invoke(damage);
             }
-            // =========================================================
+            if (damage > 0) TriggerStatusOnDamage(damage, false); // 物理攻击肯定不是连锁
 
             Debug.Log($"<color=red>敌人受到 {damage} 点伤害！剩余HP: {currentHp}</color>");
             
@@ -227,7 +228,10 @@ public class EnemyTarget : BattleTarget
         UpdateUI(); // 刷新血条
         
         // 飘字特效
-        // DamageNumberManager.Instance.ShowDamage(transform.position, damageToTake);
+        if (damageToTake > 0 && DamageNumberManager.Instance != null)
+        {
+            DamageNumberManager.Instance.ShowDamage(transform.position, damageToTake, isChainReaction);
+        }
         
         // 【新增】如果不是连锁反应造成的伤害，且伤害大于0，则广播事件
         // 这样可以防止：A连B，B连A，导致无限死循环炸机
@@ -235,6 +239,7 @@ public class EnemyTarget : BattleTarget
         {
             OnDamageTaken?.Invoke(value);
         }
+        if (value > 0) TriggerStatusOnDamage(value, isChainReaction);
         if (currentHp <= 0)
         {
             // 调用死亡逻辑
@@ -244,6 +249,17 @@ public class EnemyTarget : BattleTarget
                 BattleManager.Instance.RemoveEnemy(enemy);
                 Destroy(gameObject); // 或者播放死亡动画后销毁
             }
+        }
+    }
+    private void TriggerStatusOnDamage(int damage, bool isChainReaction)
+    {
+        if (currentStatuses.Count == 0) return;
+
+        // 复制 Keys 防止在遍历中修改字典导致报错
+        var keys = new List<StatusEffectSO>(currentStatuses.Keys);
+        foreach (var status in keys)
+        {
+            status.OnPostTakeDamage(this, damage, currentStatuses[status], isChainReaction);
         }
     }
 }

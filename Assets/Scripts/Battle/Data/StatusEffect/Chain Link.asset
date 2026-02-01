@@ -9,10 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bfa401045ab862e4db14e109d66e3893, type: 3}
-  m_Name: Burn
+  m_Script: {fileID: 11500000, guid: c0f41e56ee2b8504485ba7b403ece776, type: 3}
+  m_Name: Chain Link
   m_EditorClassIdentifier: 
-  statusName: "\u71C3\u70E7"
-  icon: {fileID: 1992201677, guid: 577f6d5b6e8c5234e9876bf0a88f4aec, type: 3}
+  statusName: "\u94FE\u67B7"
+  icon: {fileID: 86257912, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   color: {r: 1, g: 1, b: 1, a: 1}
   isDebuff: 1
+  transferRatio: 0.5
+  damageVFX: {fileID: 0}

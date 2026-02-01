@@ -1698,7 +1698,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 70fb67ee898a7024884d47a16789dffa, type: 2}
   - {fileID: 11400000, guid: a99c9f0ec42492541a3caf5aeb65c8e8, type: 2}
   allAttributesLibrary_Dice:
-  - {fileID: 11400000, guid: 519ea7c0524f4a14ca558a53d9e8b6e2, type: 2}
+  - {fileID: 11400000, guid: 9c58c2f3ca4036249868b79d23447f35, type: 2}
   - {fileID: 11400000, guid: d9a68f983c05e354ea18c0e2b5e5f237, type: 2}
   - {fileID: 11400000, guid: e40630b9c733d5040abe92ed8d5e6dc3, type: 2}
 --- !u!4 &381501085
@@ -5693,6 +5693,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1542465698}
   - component: {fileID: 1542465697}
+  - component: {fileID: 1542465700}
   - component: {fileID: 1542465699}
   m_Layer: 0
   m_Name: BattleManager
@@ -5750,6 +5751,19 @@ MonoBehaviour:
   battleManager: {fileID: 1542465697}
   battleUI: {fileID: 1826222281}
   victoryUI: {fileID: 1224888048}
+--- !u!114 &1542465700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1542465696}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef5bbfef91abcf7479096c851a024648, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  popupPrefab: {fileID: 3782343712356603139, guid: c973c2ae6a1e13e4f8fbcf5f69c73e13, type: 3}
 --- !u!1 &1552046251
 GameObject:
   m_ObjectHideFlags: 0

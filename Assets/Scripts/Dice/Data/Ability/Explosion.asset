@@ -16,4 +16,5 @@ MonoBehaviour:
   diceColor: {r: 0.4245283, g: 0.1742168, b: 0.1742168, a: 0}
   icon: {fileID: 1334556711, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   description: "\u9009\u5B9A\u4E00\u4E2A\u76EE\u6807\uFF0C\u5176\u53D7\u5230\u7684\u4F24\u5BB3\u5C0650%\u4F20\u9012\u7ED9\u573A\u4E0A\u6240\u6709\u5176\u4ED6\u654C\u4EBA"
-  vfxPrefab: {fileID: 0}
+  chainLinkStatus: {fileID: 11400000, guid: a063efc7c63cbbb499cd2cf7212bb808, type: 2}
+  linkVFX: {fileID: 0}
