@@ -67,12 +67,28 @@ public class MiniActionMenu : MonoBehaviour
         // 逻辑：如果有属性显示升级，没属性显示附魔？
         // 或者两者都显示，看你设计。通常有了属性也可以重新附魔(替换)
         // 这里假设：有属性才能升级，附魔按钮一直都在(用于注入或替换)
-        bool hasAttribute = (slot.currentAttribute != null);
+        bool hasAttribute = (slot.currentAttribute != null && slot.currentAttribute.data != null);
         
         upgradeButton.gameObject.SetActive(hasAttribute);
         enchantButton.gameObject.SetActive(true); 
 
         gameObject.SetActive(true);
+        
+        // 获取当前资源
+        int currentDust = PlayerProgressionManager.Instance.manaDust;
+        int upgradeCost = 5; // 建议设为常量
+        int enchantCost = 10;
+
+        // 控制按钮是否可点
+        if (hasAttribute)
+        {
+            upgradeButton.interactable = (currentDust >= upgradeCost);
+            // 如果钱不够，可以把文字变红
+            upgradeCostText.color = (currentDust >= upgradeCost) ? Color.white : Color.red;
+        }
+
+        enchantButton.interactable = (currentDust >= enchantCost);
+        enchantCostText.color = (currentDust >= enchantCost) ? Color.white : Color.red;
     }
 
     public void Close()

@@ -157,23 +157,33 @@ public class EnemyTarget : BattleTarget
     // --- UI 更新逻辑 ---
     void UpdateStatusUI(StatusEffectSO status)
     {
-        // 如果还没有这个状态的图标，就生成一个
+        // 1. 如果还没有这个状态的图标，就生成一个
         if (!statusUIMap.ContainsKey(status))
         {
             GameObject iconObj = Instantiate(statusIconPrefab, statusPanel);
             statusUIMap.Add(status, iconObj);
         }
 
-        // 更新图标显示 (假设Prefab里有 Image 和 TextMeshProUGUI)
-        GameObject ui = statusUIMap[status];
+        // 2. 获取图标对象
+        GameObject uiObj = statusUIMap[status];
         
-        // 设置图片
-        var img = ui.GetComponent<UnityEngine.UI.Image>();
-        if(img) { img.sprite = status.icon; img.color = status.color; }
+        // 3. 【修改】获取交互脚本并初始化
+        StatusIconUI iconScript = uiObj.GetComponent<StatusIconUI>();
         
-        // 设置层数文字
-        var text = ui.GetComponentInChildren<TextMeshProUGUI>();
-        if(text) text.text = currentStatuses[status].ToString();
+        // 如果你的 Prefab 上还没挂这个脚本，先尝试 Get 现在的逻辑做兼容，但建议去编辑器挂上
+        if (iconScript != null)
+        {
+            iconScript.Setup(status, currentStatuses[status]);
+        }
+        else
+        {
+            // (兜底逻辑，防止你还没去改 Prefab 报错)
+            // 建议删掉下面这块，直接去 Prefab 挂脚本
+            var img = uiObj.GetComponent<UnityEngine.UI.Image>();
+            if(img) { img.sprite = status.icon; img.color = status.color; }
+            var text = uiObj.GetComponentInChildren<TextMeshProUGUI>();
+            if(text) text.text = currentStatuses[status].ToString();
+        }
     }
 
     public override void TakeDamage(DiceFaceData damageData)

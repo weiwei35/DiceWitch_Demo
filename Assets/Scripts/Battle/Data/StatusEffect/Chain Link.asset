@@ -16,5 +16,6 @@ MonoBehaviour:
   icon: {fileID: 86257912, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   color: {r: 1, g: 1, b: 1, a: 1}
   isDebuff: 1
+  description: "\u53D7\u5230\u7684\u4F24\u5BB3\u4F1A\u670950%\u4F20\u9012\u7ED9\u5176\u4ED6\u654C\u4EBA\u3002"
   transferRatio: 0.5
   damageVFX: {fileID: 0}

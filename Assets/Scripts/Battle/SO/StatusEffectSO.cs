@@ -8,6 +8,8 @@ public abstract class StatusEffectSO : ScriptableObject
     public Sprite icon;       // 图标
     public Color color = Color.white; // 图标颜色
     public bool isDebuff = true; // 是增益还是减益
+    
+    [TextArea] public string description = "回合开始时造成 {0} 点伤害。";
 
     // --- 状态的钩子函数 (Hooks) ---
     
@@ -23,5 +25,19 @@ public abstract class StatusEffectSO : ScriptableObject
     public virtual void OnPostTakeDamage(EnemyTarget target, int incomingDamage, int stacks, bool isChainReaction) 
     {
         // 默认不做任何事
+    }
+    
+    public virtual string GetDescription(int stacks)
+    {
+        // 简单处理：如果有 {0} 就替换为层数，没有就直接返回文本
+        // 你可以根据具体逻辑重写这个方法
+        try
+        {
+            return string.Format(description, stacks);
+        }
+        catch
+        {
+            return description;
+        }
     }
 }
