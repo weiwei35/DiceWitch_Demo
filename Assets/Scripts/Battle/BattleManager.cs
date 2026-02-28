@@ -26,6 +26,7 @@ public class BattleManager : MonoBehaviour
     
     public event Action OnEnemyKilledEvent;
     public event Action OnPlayerTurnEnd;
+    public event Action<int> OnPlayerUseDice;
 
     private bool _isLevelingUp = false;    // 是否正在处理升级界面
     private bool _isVictoryPending = false; // 是否有一场胜利正在排队等待结算
@@ -357,5 +358,9 @@ public class BattleManager : MonoBehaviour
     {
         // 默认找敌人
         return GetRandomTargetOfTeam(Enum.TargetTeam.Enemy, exclusion);
+    }
+    public void TriggerPlayerUseDice()
+    {
+        OnPlayerUseDice?.Invoke(1);
     }
 }

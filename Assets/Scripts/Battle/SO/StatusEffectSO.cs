@@ -27,6 +27,15 @@ public abstract class StatusEffectSO : ScriptableObject
         // 默认不做任何事
     }
     
+    public virtual int OnTakeDamage(EnemyTarget target, int incomingDamage, int stacks) 
+    {
+        return incomingDamage; // 默认不修改
+    }
+    // 4. 【新增】当玩家使用骰子时触发
+    public virtual void OnPlayerUseDice(EnemyTarget target, int stacks) 
+    {
+        // 默认不做事
+    }
     public virtual string GetDescription(int stacks)
     {
         // 简单处理：如果有 {0} 就替换为层数，没有就直接返回文本

@@ -4,7 +4,13 @@ using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine.UI; // 需要用到协程
-
+[System.Serializable]
+public struct EnemyStatusConfig
+{
+    public StatusEffectSO status;
+    public int initialStacks;      // 初始几层？
+    public bool resetPerTurn;      // 是否每回合重置到这个层数？
+}
 public class EnemyTarget : BattleTarget
 {
     // 1. 定义一个事件：当收到伤害时触发 (参数：收到的伤害值)
@@ -16,11 +22,16 @@ public class EnemyTarget : BattleTarget
     
     [Header("Intent")]
     public int nextDamageValue; // 下回合要打多少
+    private int _permanentGrowthValue;//累计成长值
+    // 最终伤害 = 基础 + 成长
+    public int CurrentFinalDamage => nextDamageValue + _permanentGrowthValue;
     public TextMeshPro intentText; // 拖入头顶的一个新的 3D Text
-    
+    public List<EnemyStatusConfig> initialStatusConfigs; 
     public Transform statusPanel; // 在敌人头顶放一个 Horizontal Layout Group
     public GameObject statusIconPrefab; // 状态图标的预制体
-    
+    [Header("Runtime Links")]
+    // 【新增】当前绑定的灵魂链接伙伴
+    public EnemyTarget soulLinkPartner;
     [Header("Rewards")]
     public int xpReward = 5;
     public int manaDustReward = 10;
@@ -41,9 +52,24 @@ public class EnemyTarget : BattleTarget
         transform.DOScale(originalScale, 0.5f).SetEase(Ease.OutBack);
         currentHp = maxHp;
         UpdateUI();
+        //初始化附加状态
+        _permanentGrowthValue = 0;
+        if (initialStatusConfigs != null)
+        {
+            foreach (var config in initialStatusConfigs)
+            {
+                if (config.status != null && config.initialStacks > 0)
+                {
+                    ApplyStatus(config.status, config.initialStacks);
+                }
+            }
+        }
         // 游戏开始时先随机一个意图
         PlanNextMove();
         originalPosition = transform.position;
+        
+        if (BattleManager.Instance != null)
+            BattleManager.Instance.OnPlayerUseDice += HandlePlayerDiceUsed;
     }
 
     // --- 1. 策划阶段：决定下回合干嘛 ---
@@ -55,7 +81,7 @@ public class EnemyTarget : BattleTarget
         // 更新头顶UI显示意图
         if (intentText != null)
         {
-            intentText.text = $"A: {nextDamageValue}";
+            intentText.text = $"A: {CurrentFinalDamage}";
             intentText.color = Color.red;
         }
     }
@@ -63,21 +89,20 @@ public class EnemyTarget : BattleTarget
     // --- 2. 行动阶段：真正的攻击 ---
     public IEnumerator ExecuteAction()
     {
-        // 播放攻击动画（这里用简单的位移模拟）
-        Vector3 originalPos = transform.position;
-        Vector3 targetPos = transform.position + Vector3.back * 1.5f; // 往前冲一点
-
         // 冲出去
         transform.DOShakePosition(0.5f, 1);
-        // float t = 0;
-        // while(t < 0.1f) { transform.position = Vector3.Lerp(originalPos, targetPos, t/0.1f); t+=Time.deltaTime; yield return null; }
-        
         // 造成伤害
-        PlayerManager.Instance.TakeDamage(nextDamageValue);
-        yield return null;
-        // 回来
-        // t = 0;
-        // while(t < 0.2f) { transform.position = Vector3.Lerp(targetPos, originalPos, t/0.2f); t+=Time.deltaTime; yield return null; }
+        Vector3 originalPos = transform.position;
+        transform.DOShakePosition(0.5f, 0.5f);
+        yield return new WaitForSeconds(0.5f);
+        
+        // 使用最终计算出的伤害
+        int damageDeal = CurrentFinalDamage;
+        
+        PlayerManager.Instance.TakeDamage(damageDeal);
+        Debug.Log($"{name} 攻击，伤害 {damageDeal} (基础{nextDamageValue} + 成长{_permanentGrowthValue})");
+
+        yield return new WaitForSeconds(0.2f);
     }
     void UpdateUI()
     {
@@ -85,8 +110,15 @@ public class EnemyTarget : BattleTarget
     }
     void Die()
     {
+        if (BattleManager.Instance != null)
+            BattleManager.Instance.OnPlayerUseDice -= HandlePlayerDiceUsed;// 如果我有伙伴，告诉伙伴我挂了，断开链接
+        if (soulLinkPartner != null)
+        {
+            soulLinkPartner.soulLinkPartner = null; // 对方也清空
+            soulLinkPartner = null;
+        }
+
         DOTween.Kill(transform);
-        // 死了要通知 BattleManager 从列表中移除自己，否则报错
         BattleManager.Instance.RemoveEnemy(this);
         Destroy(gameObject);
     }
@@ -131,6 +163,39 @@ public class EnemyTarget : BattleTarget
             }
         }
     }
+    // 事件处理函数
+    private void HandlePlayerDiceUsed(int amount)
+    {
+        // 只有活着的时候才成长
+        if (currentHp <= 0) return;
+
+        // 遍历所有状态触发钩子
+        var keys = new List<StatusEffectSO>(currentStatuses.Keys);
+        foreach (var status in keys)
+        {
+            status.OnPlayerUseDice(this, currentStatuses[status]);
+        }
+    }
+    // --- 核心逻辑：伤害预处理 ---
+    // 遍历所有状态，让它们有机会修改或拦截伤害
+    private int ProcessDamageModifiers(int rawDamage)
+    {
+        int finalDamage = rawDamage;
+        
+        // 复制 Keys 防止遍历时修改字典报错
+        var keys = new List<StatusEffectSO>(currentStatuses.Keys);
+        
+        foreach (var status in keys)
+        {
+            // 调用 StatusEffectSO.OnTakeDamage
+            // 如果状态想免疫伤害，它会返回 0
+            finalDamage = status.OnTakeDamage(this, finalDamage, currentStatuses[status]);
+            
+            // 如果伤害已经被减为0了，通常后面的状态也不用跑了 (看具体需求，这里先继续跑)
+        }
+        
+        return finalDamage;
+    }
 
     // --- 辅助：造成直接伤害 (不触发受击特效/反伤等) ---
     public void ApplyDirectDamage(int dmg)
@@ -146,6 +211,32 @@ public class EnemyTarget : BattleTarget
     // 1. 在 BattleManager 调用敌人回合开始时调用此方法
     public void OnTurnStart()
     {
+        // 1. 【新增】重置/再生机制
+        // 这一步必须在处理具体状态逻辑之前执行
+        if (initialStatusConfigs != null)
+        {
+            foreach (var config in initialStatusConfigs)
+            {
+                // 如果配置了每回合重置
+                if (config.resetPerTurn && config.status != null)
+                {
+                    // 获取当前层数 (如果没有就是 0)
+                    int currentStack = 0;
+                    if (currentStatuses.ContainsKey(config.status))
+                    {
+                        currentStack = currentStatuses[config.status];
+                    }
+
+                    // 如果当前层数少于目标层数，补齐
+                    if (currentStack < config.initialStacks)
+                    {
+                        int amountToAdd = config.initialStacks - currentStack;
+                        ApplyStatus(config.status, amountToAdd);
+                        Debug.Log($"<color=cyan>{name} 的 {config.status.statusName} 自动重置/再生了 {amountToAdd} 层。</color>");
+                    }
+                }
+            }
+        }
         // 遍历所有状态 (复制一份Key防止在遍历时修改字典报错)
         var keys = new List<StatusEffectSO>(currentStatuses.Keys);
         foreach (var status in keys)
@@ -192,6 +283,15 @@ public class EnemyTarget : BattleTarget
         {
             // 1. 扣血
             int damage = damageData.value;
+            damage = ProcessDamageModifiers(damage);
+            if (damage <= 0)
+            {
+                Debug.Log("伤害被格挡/免疫！");
+                // 也可以在这里播一个 "Block" 的特效或飘字
+                if (DamageNumberManager.Instance != null) 
+                    DamageNumberManager.Instance.ShowDamage(transform.position, 0, false);
+                return; 
+            }
             currentHp -= damage;
             if (damage > 0 && DamageNumberManager.Instance != null)
             {
@@ -230,7 +330,11 @@ public class EnemyTarget : BattleTarget
     {
         // 简单的扣血逻辑
         int damageToTake = value;
-        
+        if (!isChainReaction) 
+        {
+            damageToTake = ProcessDamageModifiers(value);
+        }
+        if (damageToTake <= 0) return; // 被免疫了
         // 如果有护甲逻辑，在这里处理
         // if (currentArmor > 0) ... 
 
@@ -270,6 +374,28 @@ public class EnemyTarget : BattleTarget
         foreach (var status in keys)
         {
             status.OnPostTakeDamage(this, damage, currentStatuses[status], isChainReaction);
+        }
+    }
+    public void AddGrowth(int amount)
+    {
+        _permanentGrowthValue += amount;
+        
+        // 实时刷新 UI，并播放跳动动画
+        UpdateIntentUI();
+        if (intentText != null)
+        {
+            intentText.transform.DOKill();
+            intentText.transform.localScale = Vector3.one;
+            intentText.transform.DOPunchScale(Vector3.one * 0.4f, 0.2f);
+            intentText.color = Color.red; 
+        }
+    }
+    void UpdateIntentUI()
+    {
+        if (intentText != null)
+        {
+            // 显示总伤害
+            intentText.text = $"A: {CurrentFinalDamage}";
         }
     }
 }

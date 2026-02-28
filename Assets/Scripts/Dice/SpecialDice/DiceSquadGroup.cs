@@ -65,6 +65,17 @@ public class DiceSquadGroup : MonoBehaviour
 
         if (target != null)
         {
+            if (BattleManager.Instance != null)
+            {
+                // 方案 A: 整个小队算 1 次使用
+                // BattleManager.Instance.TriggerPlayerUseDice();
+
+                // 方案 B (建议): 小队里有几颗骰子，就算几次 (成长怪会疯涨，但符合"每颗骰子"的描述)
+                for (int i = 0; i < memberDice.Count; i++)
+                {
+                    BattleManager.Instance.TriggerPlayerUseDice();
+                }
+            }
             // 攻击！
             StartCoroutine(SequenceAttack(target));
         }

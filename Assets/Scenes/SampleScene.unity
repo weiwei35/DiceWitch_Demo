@@ -337,7 +337,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1359,13 +1359,13 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 326361652}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -8730}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 13289575}
-  m_Father: {fileID: 1806863098}
+  m_Father: {fileID: 1616334467}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -1425,7 +1425,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.392}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1698,9 +1698,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 70fb67ee898a7024884d47a16789dffa, type: 2}
   - {fileID: 11400000, guid: a99c9f0ec42492541a3caf5aeb65c8e8, type: 2}
   allAttributesLibrary_Dice:
-  - {fileID: 11400000, guid: 9c58c2f3ca4036249868b79d23447f35, type: 2}
-  - {fileID: 11400000, guid: d9a68f983c05e354ea18c0e2b5e5f237, type: 2}
-  - {fileID: 11400000, guid: e40630b9c733d5040abe92ed8d5e6dc3, type: 2}
+  - {fileID: 11400000, guid: aec8a0886c6a95249a24d352f54384c5, type: 2}
+  - {fileID: 11400000, guid: 519ea7c0524f4a14ca558a53d9e8b6e2, type: 2}
+  - {fileID: 11400000, guid: b34eb3352ab2045f585b57d6a2107a91, type: 2}
 --- !u!4 &381501085
 Transform:
   m_ObjectHideFlags: 0
@@ -5976,6 +5976,7 @@ RectTransform:
   m_Children:
   - {fileID: 816943602}
   - {fileID: 1224888049}
+  - {fileID: 326361653}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -6914,7 +6915,6 @@ RectTransform:
   - {fileID: 1826222282}
   - {fileID: 980687323}
   - {fileID: 2325095}
-  - {fileID: 326361653}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -6983,7 +6983,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_TargetDisplay: 0
 --- !u!1 &1825690116
 GameObject:

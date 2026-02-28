@@ -58,7 +58,7 @@ public class TooltipSystem : MonoBehaviour
         }
         else
         {
-            tooltipText.text = $"<size=110%><b>{header}</b></size>\n<color=#CCCCCC>{content}</color>";
+            tooltipText.text = $"<size=110%><b>{header}</b></size>\n<color=#000000>{content}</color>";
         }
 
         // 2. 激活物体

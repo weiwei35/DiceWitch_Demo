@@ -130,6 +130,13 @@ public class DiceDragger : MonoBehaviour
         if (target != null)
         {
             Debug.Log("命中目标！");
+            
+            //通知战斗管理器，使用了一个骰子
+            if (BattleManager.Instance != null)
+            {
+                BattleManager.Instance.TriggerPlayerUseDice();
+            }
+            
             DiceFaceData data = physicsDice.GetCurrentData();
             
             // 视觉效果：让骰子飞过去撞击

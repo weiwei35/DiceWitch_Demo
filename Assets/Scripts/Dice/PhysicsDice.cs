@@ -1,7 +1,9 @@
+using System;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using DG.Tweening;
 
 public class PhysicsDice : MonoBehaviour
 {
@@ -211,5 +213,10 @@ public class PhysicsDice : MonoBehaviour
             // 如果你想让它掉在地上时正好是 1 点朝上，可以设置 rotation
             // 这里为了简单，暂不修改 transform，因为蛇形跟随会覆盖位置
         }
+    }
+
+    private void OnDestroy()
+    {
+        transform.DOKill();
     }
 }

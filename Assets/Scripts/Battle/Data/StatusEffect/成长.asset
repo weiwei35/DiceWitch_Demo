@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 413e2a3d9b0ac48c4bee359c43de9e34, type: 3}
+  m_Name: "\u6210\u957F"
+  m_EditorClassIdentifier: 
+  statusName: "\u6210\u957F"
+  icon: {fileID: 1239431036, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  color: {r: 1, g: 1, b: 1, a: 1}
+  isDebuff: 0
+  description: "\u73A9\u5BB6\u6BCF\u4F7F\u7528\u4E00\u9897\u9AB0\u5B50\uFF0C\u5176\u653B\u51FB\u529B
+    +1\u3002"
+  damagePerDice: 1

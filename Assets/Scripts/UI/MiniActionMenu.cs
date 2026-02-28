@@ -84,11 +84,11 @@ public class MiniActionMenu : MonoBehaviour
         {
             upgradeButton.interactable = (currentDust >= upgradeCost);
             // 如果钱不够，可以把文字变红
-            upgradeCostText.color = (currentDust >= upgradeCost) ? Color.white : Color.red;
+            upgradeCostText.color = (currentDust >= upgradeCost) ? Color.green : Color.red;
         }
 
         enchantButton.interactable = (currentDust >= enchantCost);
-        enchantCostText.color = (currentDust >= enchantCost) ? Color.white : Color.red;
+        enchantCostText.color = (currentDust >= enchantCost) ? Color.green : Color.red;
     }
 
     public void Close()

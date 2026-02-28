@@ -85,6 +85,7 @@ public class DiceThrower : MonoBehaviour
     // 清理逻辑
     public void ClearOldDice()
     {
+        StopHighlight();
         // 倒序遍历删除，比较安全
         for (int i = activeDiceList.Count - 1; i >= 0; i--)
         {
@@ -116,7 +117,9 @@ public class DiceThrower : MonoBehaviour
                 // 执行视觉效果 (变大/发光)
                 dice.transform.DOKill();
                 _originalScale = dice.transform.localScale;
-                dice.transform.DOScale(dice.transform.localScale * 1.3f, 0.2f).SetLoops(-1, LoopType.Yoyo);
+                dice.transform.DOScale(dice.transform.localScale * 1.3f, 0.2f)
+                    .SetLoops(-1, LoopType.Yoyo)
+                    .SetLink(dice.gameObject);
             }
         }
     }
