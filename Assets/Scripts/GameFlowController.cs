@@ -10,9 +10,10 @@ public class GameFlowController : MonoBehaviour
     [SerializeField] private SpellDraftPanel _draftPanel;
     [SerializeField] private AttributeDraftPanel _attrDraftPanel;
     [SerializeField] private MiniActionMenu _miniMenu;
+    [SerializeField] private EventUIManager _eventUIManager; // 事件 UI 管理器
     [Header("Map UI")]
     [SerializeField] private GameObject _mapPanel; // 整个地图界面的根节点
-    [SerializeField] private GameObject _battleUIRoot; // 战斗界面的根节点
+    [SerializeField] private GameObject _roomUIRoot; // 战斗界面的根节点
 
     [Header("Visual Feedback")]
     [SerializeField] private GameObject _selectionModeTip; // 比如显示一行字："请选择目标槽位..."
@@ -60,30 +61,103 @@ public class GameFlowController : MonoBehaviour
         
         // 显隐控制
         if(_mapPanel) _mapPanel.SetActive(true);
-        if(_battleUIRoot) _battleUIRoot.SetActive(false);
+        if(_roomUIRoot) _roomUIRoot.SetActive(false);
         
         // 通知地图绘制器刷新
-        FindObjectOfType<MapViewController>()?.DrawMap();
+        // FindObjectOfType<MapViewController>()?.DrawMap();
     }
-    
+    public void EnterRoom(RoomDataSO roomData)
+    {
+        if (roomData == null)
+        {
+            Debug.LogError("试图进入的房间数据为空！");
+            return;
+        }
+
+        Debug.Log($"<color=cyan>GameFlow: 准备处理房间事件 -> {roomData.roomName} ({roomData.roomType})</color>");
+
+        // 根据房间类型，切换到不同的状态和UI
+        switch (roomData.roomType)
+        {
+            // --- 战斗类房间 ---
+            case Enum.RoomType.Battle:
+            case Enum.RoomType.Elite:
+            case Enum.RoomType.Boss:
+                // 将基类强转为子类并进入战斗状态
+                BattleRoomSO battleData = roomData as BattleRoomSO;
+                if (battleData != null)
+                {
+                    EnterBattleState(battleData);
+                }
+                else
+                {
+                    Debug.LogError("房间类型是战斗，但数据不是 BattleRoomSO！");
+                }
+                break;
+
+            // --- 非战斗类房间 (UI 交互类) ---
+            case Enum.RoomType.Shop:
+            case Enum.RoomType.Rest:
+            case Enum.RoomType.Treasure:
+            case Enum.RoomType.Event:
+                EnterNonBattleState(roomData, roomData.roomType);
+                break;
+
+            default:
+                Debug.LogWarning($"未处理的房间类型: {roomData.roomType}");
+                break;
+        }
+    }
     public void EnterBattleState(BattleRoomSO roomData)
     {
         _currentState = Enum.GameState.Idle; // 战斗里的 Idle 状态
 
         // 1. UI 开关
         if(_mapPanel) _mapPanel.SetActive(false);
-        if(_battleUIRoot) _battleUIRoot.SetActive(true);
+        if(_roomUIRoot) _roomUIRoot.SetActive(true);
 
         // 2. 通知 BattleManager 开打 (直接调用，不用 LoadScene)
         BattleManager.Instance.StartNewBattle(roomData);
     }
     public void EnterNonBattleState(RoomDataSO data, Enum.RoomType type)
     {
-        // 保持地图显示，但在上面叠加一个窗口
-        // _mapCanvasRoot.SetActive(true); 
-        
         Debug.Log($"打开 {type} 面板: {data.name}");
-        // TODO: _shopPanel.SetActive(true);
+
+        if (type == Enum.RoomType.Event && data is EventRoomSO eventRoom)
+        {
+            // 防空检查
+            if (_eventUIManager == null)
+            {
+                Debug.LogError("GameFlowController 中未绑定 EventUIManager！");
+                EnterMapState();
+                return;
+            }
+            if(_mapPanel) _mapPanel.SetActive(false);
+            if(_roomUIRoot) _roomUIRoot.SetActive(true);
+            // 从事件房间配置的“可能事件列表”中，随机抽取一个事件
+            if (eventRoom.possibleEvents.Count > 0)
+            {
+                int randomIndex = UnityEngine.Random.Range(0, eventRoom.possibleEvents.Count);
+                RandomEventSO randomEvent = eventRoom.possibleEvents[randomIndex];
+
+                // 呼出事件 UI，并传入回调函数：当事件结束时，回到大地图状态
+                _eventUIManager.ShowEvent(randomEvent, () => 
+                {
+                    Debug.Log("事件处理完毕，返回大地图。");
+                    EnterMapState();
+                    // 这里可以通知 MapDiceThrower 允许再次投掷地图骰子
+                });
+            }
+            else
+            {
+                Debug.LogWarning("这个事件房间没有配置任何事件！直接无事发生返回。");
+                EnterMapState();
+            }
+        }
+        else if (type == Enum.RoomType.Shop)
+        {
+            // TODO: _shopPanel.SetActive(true);
+        }
     }
 
     // --- 流程入口 1：触发抽卡 (外部调用，比如升级后) ---

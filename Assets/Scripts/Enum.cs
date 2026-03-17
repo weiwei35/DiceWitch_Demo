@@ -44,4 +44,13 @@ public static class Enum
     
     //骰子属性类型
     public enum DiceActionType { Attack, Defend, Magic, Empty }
+    // 棋盘节点效果类型
+    public enum BoardNodeType
+    {
+        Empty,      // 空地（无事发生）
+        Heal,       // 恢复泉水 (加血)
+        Trap,       // 陷阱 (扣血)
+        Treasure,   // 小金币 (加钱)
+        RoomEvent   // 房间主事件 (进入战斗、大宝箱、商店等)
+    }
 }

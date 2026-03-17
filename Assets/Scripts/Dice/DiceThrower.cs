@@ -56,7 +56,7 @@ public class DiceThrower : MonoBehaviour
     }
     // 【新增】为了方便 UI 管理器调用，提取一个生成单个骰子的方法
     // isGhostSpawn: 仅仅是为了逻辑区分，目前逻辑一样
-    public void SpawnSingleDice(DiceDataSO data, PlayerDice sourceRef = null)
+    public PhysicsDice SpawnSingleDice(DiceDataSO data, PlayerDice sourceRef = null)
     {
         Vector3 randomOffset = new Vector3(Random.Range(-0.2f, 0.2f), 0, Random.Range(-0.2f, 0.2f));
         Vector3 spawnPos = spawnPoint.position + randomOffset;
@@ -71,16 +71,16 @@ public class DiceThrower : MonoBehaviour
         PhysicsDice pDice = newDiceObj.GetComponent<PhysicsDice>();
         if (pDice != null)
         {
-            // 初始化
             pDice.Initialize(data, sourceRef); 
-        
             activeDiceList.Add(pDice);
-        
-            // 投掷力度
+            
             Vector3 force = Vector3.down * 2f + new Vector3(Random.Range(-1f,1f), 0, Random.Range(-1f,1f)) * throwForce;
             Vector3 torque = Random.insideUnitSphere * torqueForce;
             pDice.Roll(force, torque);
+
+            return pDice; // 【新增】返回它
         }
+        return null;
     }
     // 清理逻辑
     public void ClearOldDice()

@@ -146,6 +146,7 @@ MonoBehaviour:
     resetPerTurn: 0
   statusPanel: {fileID: 6572216700980490057}
   statusIconPrefab: {fileID: 7129629971497389732, guid: 803eb6469bc27b847a5b8ab3591bb450, type: 3}
+  soulLinkPartner: {fileID: 0}
   xpReward: 5
   manaDustReward: 10
 --- !u!65 &3533126524503290208
@@ -366,7 +367,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 2}
-  m_SizeDelta: {x: 100, y: 100}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!223 &4455230606001925493
 Canvas:
@@ -389,7 +390,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 10
+  m_SortingOrder: 0
   m_TargetDisplay: 0
 --- !u!114 &5757793741357459209
 MonoBehaviour:

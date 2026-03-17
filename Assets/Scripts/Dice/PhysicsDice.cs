@@ -19,7 +19,9 @@ public class PhysicsDice : MonoBehaviour
     private List<DiceAbilitySO> myAbilities = new List<DiceAbilitySO>(); // 运行时缓存能力
     
     public PlayerDice sourceDataRef; 
-
+    
+    // 当骰子停下并算出结果时触发的事件
+    public event Action<int> OnDiceSettled;
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -110,6 +112,8 @@ public class PhysicsDice : MonoBehaviour
             currentResultData= resultData;
         
             Debug.Log($"检测结束 -> 朝上的面索引: {resultIndex}, 对应名称: {faces[resultIndex].name}, 结果数值: {finalValue}");
+            
+            OnDiceSettled?.Invoke(finalValue);
         }
         // 触发 OnRollFinished
         foreach(var ability in myAbilities) {

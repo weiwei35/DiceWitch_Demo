@@ -73,7 +73,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 1526130207, guid: b06ccdc9d0d81480f9303dae705f234e, type: 3}
+  m_Sprite: {fileID: -207181732, guid: 577f6d5b6e8c5234e9876bf0a88f4aec, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -96,7 +96,7 @@ GameObject:
   - component: {fileID: 1077997682446175049}
   - component: {fileID: 3533126524503290208}
   m_Layer: 6
-  m_Name: Monster_001
+  m_Name: Monster_003
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -135,13 +135,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   team: 1
-  maxHp: 20
-  currentHp: 20
+  maxHp: 25
+  currentHp: 25
   hpText: {fileID: 4489467330734253488}
   nextDamageValue: 4
   intentText: {fileID: 4607735741030965775}
   initialStatusConfigs:
-  - status: {fileID: 11400000, guid: b9030e93405b84c5496cc9c78231dccf, type: 2}
+  - status: {fileID: 11400000, guid: f7f3b3702bd684346bd54329be9a0512, type: 2}
     initialStacks: 1
     resetPerTurn: 1
   statusPanel: {fileID: 6572216700980490057}

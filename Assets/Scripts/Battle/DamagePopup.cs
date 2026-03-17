@@ -12,18 +12,27 @@ public class DamagePopup : MonoBehaviour
 
     public void Setup(int damageAmount, bool isChainReaction)
     {
-        textMesh.text = damageAmount.ToString();
-        
-        // 1. 设置颜色
-        if (isChainReaction)
+        if (damageAmount <= 0)
         {
-            textMesh.color = chainColor;
-            textMesh.fontSize *= 0.8f; // 连锁伤害稍微小一点
+            textMesh.text = "无效";
+            textMesh.color = Color.gray; // 灰色代表没打动
         }
         else
         {
-            textMesh.color = normalColor;
+            textMesh.text = damageAmount.ToString();
+                    
+             // 1. 设置颜色
+             if (isChainReaction)
+             {
+                 textMesh.color = chainColor;
+                 textMesh.fontSize *= 0.8f; // 连锁伤害稍微小一点
+             }
+             else
+             {
+                 textMesh.color = normalColor;
+             }
         }
+        
 
         // 2. 动画效果 (Juice!)
         

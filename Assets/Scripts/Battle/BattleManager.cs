@@ -126,7 +126,7 @@ public class BattleManager : MonoBehaviour
         // 1. 通知地图：这个房间搞定了
         if (MapManager.Instance != null)
         {
-            MapManager.Instance.CompleteCurrentRoom();
+            // MapManager.Instance.CompleteCurrentRoom();
         }
 
         // 2. 叫 GameFlow 切回地图界面

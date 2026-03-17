@@ -37,6 +37,8 @@ public class EnemyTarget : BattleTarget
     public int manaDustReward = 10;
     private Vector3 originalPosition;
     private Vector3 originalScale;
+    // 记录本回合受到的总伤害
+    public int damageTakenThisRound { get; private set; } = 0;
     // 存储当前身上的状态：Key=状态配置, Value=层数
     private Dictionary<StatusEffectSO, int> currentStatuses = new Dictionary<StatusEffectSO, int>();
     
@@ -84,24 +86,46 @@ public class EnemyTarget : BattleTarget
             intentText.text = $"A: {CurrentFinalDamage}";
             intentText.color = Color.red;
         }
+        
+        damageTakenThisRound = 0; 
+        
+        UpdateIntentUI();
     }
 
     // --- 2. 行动阶段：真正的攻击 ---
     public IEnumerator ExecuteAction()
     {
-        // 冲出去
-        transform.DOShakePosition(0.5f, 1);
-        // 造成伤害
+        // 1. 获取最终计算出的伤害
+        int damageDeal = CurrentFinalDamage;
+
+        // =========================================================
+        // 检查攻击力是否为 0
+        // =========================================================
+        if (damageDeal <= 0)
+        {
+            Debug.Log($"<color=gray>{name} 攻击力为 0，放弃了攻击行动。</color>");
+            
+            // 可选：播放一个“发呆”或“无奈”的小动效，让玩家知道轮到它了但它没打
+            transform.DOPunchScale(new Vector3(0.05f, -0.05f, 0), 0.2f);
+            
+            // 稍微停顿极短的时间，让玩家看清它跳过了，然后直接退出协程
+            yield return new WaitForSeconds(0.2f);
+            yield break; 
+        }
+        // =========================================================
+
+        // 2. 如果攻击力 > 0，才执行正常的攻击动画和伤害逻辑
         Vector3 originalPos = transform.position;
+        
+        // 攻击前摇 (震动/冲刺)
         transform.DOShakePosition(0.5f, 0.5f);
         yield return new WaitForSeconds(0.5f);
         
-        // 使用最终计算出的伤害
-        int damageDeal = CurrentFinalDamage;
-        
+        // 造成伤害
         PlayerManager.Instance.TakeDamage(damageDeal);
-        Debug.Log($"{name} 攻击，伤害 {damageDeal} (基础{nextDamageValue} + 成长{_permanentGrowthValue})");
+        Debug.Log($"{name} 攻击玩家，造成 {damageDeal} 点伤害 (基础{nextDamageValue} + 成长{_permanentGrowthValue})");
 
+        // 攻击后摇
         yield return new WaitForSeconds(0.2f);
     }
     void UpdateUI()
@@ -293,6 +317,7 @@ public class EnemyTarget : BattleTarget
                 return; 
             }
             currentHp -= damage;
+            damageTakenThisRound += damage;
             if (damage > 0 && DamageNumberManager.Instance != null)
             {
                 DamageNumberManager.Instance.ShowDamage(transform.position, damage, false);
@@ -339,6 +364,7 @@ public class EnemyTarget : BattleTarget
         // if (currentArmor > 0) ... 
 
         currentHp -= damageToTake;
+        damageTakenThisRound += damageToTake;
         UpdateUI(); // 刷新血条
         
         // 飘字特效
@@ -388,6 +414,30 @@ public class EnemyTarget : BattleTarget
             intentText.transform.localScale = Vector3.one;
             intentText.transform.DOPunchScale(Vector3.one * 0.4f, 0.2f);
             intentText.color = Color.red; 
+        }
+    }
+    // =========================================================
+    // 回血方法 (供状态系统调用)
+    // =========================================================
+    public void Heal(int amount)
+    {
+        if (currentHp <= 0 || currentHp >= maxHp) return; // 死了或者满血就不加了
+
+        currentHp += amount;
+        if (currentHp > maxHp) currentHp = maxHp; // 防止溢出
+
+        UpdateUI();
+
+        // 视觉反馈：变绿、放大
+        transform.DOKill(true);
+        transform.DOPunchScale(Vector3.one * 0.3f, 0.5f);
+        
+        // 可选：利用你现有的跳字系统显示绿色的回复数字
+        // 如果你的 DamagePopup 还不支持绿色，下面教你稍微改一下
+        if (DamageNumberManager.Instance != null)
+        {
+            // 传个负数或者你可以单独写个 ShowHeal 方法，这里假设用 -amount 表示回血以便区分
+            DamageNumberManager.Instance.ShowHeal(transform.position, amount); 
         }
     }
     void UpdateIntentUI()
