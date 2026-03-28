@@ -12,6 +12,11 @@ public class PlayerManager : MonoBehaviour
     public int currentHp;
     public int currentArmor;
 
+    public bool hasBlockNextDamageShield = false; // 无敌护盾
+    public int nextBattleArmorBonus = 0;          // 下场战斗额外护甲
+    public int nextBattleDamageBonus = 0;         // 下场战斗额外伤害
+    public int nextBattleFixedDiceValue = 0;      // 下场战斗必定掷出的点数
+    
     public TMP_Text hpText; 
     public TMP_Text armorText;
 
@@ -29,6 +34,17 @@ public class PlayerManager : MonoBehaviour
     // 受伤逻辑：先扣护甲，再扣血
     public void TakeDamage(int dmg)
     {
+        if (dmg <= 0) return; // 防止 0 伤害消耗护盾
+
+        // 【新增】无敌护盾拦截
+        if (hasBlockNextDamageShield)
+        {
+            Debug.Log("<color=cyan>【无敌护盾】成功抵消了本次受到的伤害！盾碎了！</color>");
+            hasBlockNextDamageShield = false;
+            UpdateUI(); // 刷新护盾消失的UI
+            return;
+        }
+
         int damageToHp = dmg;
         
         if (currentArmor > 0)
@@ -81,9 +97,10 @@ public class PlayerManager : MonoBehaviour
         UpdateUI();
     }
 
-    void UpdateUI()
+    public void UpdateUI()
     {
-        if(hpText) hpText.text = $"HP: {currentHp}/{maxHp}";
+        string shieldStr = hasBlockNextDamageShield ? " <color=#00FFFF>[圣盾保护中]</color>" : "";
+        if(hpText) hpText.text = $"HP: {currentHp}/{maxHp}{shieldStr}";
         if(armorText) armorText.text = $"Armor: {currentArmor}";
     }
 

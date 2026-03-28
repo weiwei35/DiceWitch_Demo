@@ -16,4 +16,5 @@ MonoBehaviour:
   roomType: 0
   roomIcon: {fileID: -1963661152, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   description: 
+  skipRemainingNodesOnClear: 1
   enemyWave: {fileID: 11400000, guid: d26f5a733c452d74c955608f24d8be93, type: 2}

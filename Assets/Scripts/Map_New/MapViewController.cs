@@ -3,15 +3,18 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 
 public class MapViewController : MonoBehaviour
-{
-    [Header("References")]
+{[Header("References")]
     public Transform contentParent; 
-    // 【已删除】不再需要 nodePrefab，因为 MapNodeAnchor 本身就是格子UI
 
     // 缓存所有格子的 UI 坐标，供角色移动使用
     public Dictionary<int, RectTransform> nodeUIRects = new Dictionary<int, RectTransform>();
-    // 【新增】缓存所有的 Anchor 引用，用来刷新状态颜色
     public Dictionary<int, MapNodeAnchor> nodeAnchors = new Dictionary<int, MapNodeAnchor>();
+
+    [Header("Route Lines (Temporary)")]
+    public bool showRouteLines = true;       
+    public GameObject linePrefab;            
+    public float lineWidth = 8f;             
+    public Color routeLineColor = new Color(1f, 1f, 1f, 0.5f); 
 
     void Start()
     {
@@ -35,8 +38,6 @@ public class MapViewController : MonoBehaviour
     {
         // 1. 清理旧内容
         foreach (Transform child in contentParent) Destroy(child.gameObject);
-        
-        // 【关键】每次重画必须清空旧的坐标记录！
         nodeUIRects.Clear(); 
         nodeAnchors.Clear(); 
 
@@ -44,23 +45,57 @@ public class MapViewController : MonoBehaviour
         if (nodes == null || nodes.Count == 0) return;
 
         int globalNodeIndex = 0;
-        float totalHeight = 0;
+        float totalWidth = 0;
+        float maxHeight = 0;
+
+        // 【新增】用来做“三明治层级”的临时列表
+        List<Transform> bgLayers = new List<Transform>();
+        List<Transform> nodeLayers = new List<Transform>();
 
         // 2. 绘制区域与节点
         foreach (var region in MapManager.Instance.boardConfig.regions)
         {
             if (region.regionPrefab == null) continue;
 
-            // 实例化整个 Region 预制体 (连同里面的所有 Room 和 Anchor 一起生成了)
-            GameObject regionObj = Instantiate(region.regionPrefab, contentParent);
-            RectTransform regionRect = regionObj.GetComponent<RectTransform>();
-            regionRect.localScale = Vector3.one;
-            regionRect.localRotation = Quaternion.identity;
+            // ==========================================
+            // 分身 A：纯背景层 (剥离所有房间节点)
+            // ==========================================
+            GameObject bgObj = Instantiate(region.regionPrefab, contentParent);
+            RectTransform bgRect = bgObj.GetComponent<RectTransform>();
+            bgRect.localScale = Vector3.one;
+            bgRect.localRotation = Quaternion.identity;
             
-            totalHeight += regionRect.sizeDelta.y;
+            // 删除脚本和子节点，只留一张背景图
+            Destroy(bgObj.GetComponent<MapRegionLayout>());
+            foreach (Transform child in bgObj.transform) Destroy(child.gameObject);
 
-            // 获取克隆体身上的 Layout，这样我们拿到的节点都是 Scene 里真正实例化的对象
-            MapRegionLayout layout = regionObj.GetComponent<MapRegionLayout>();
+            // ==========================================
+            // 分身 B：纯节点层 (隐藏背景图)
+            // ==========================================
+            GameObject nodesObj = Instantiate(region.regionPrefab, contentParent);
+            RectTransform nodesRect = nodesObj.GetComponent<RectTransform>();
+            nodesRect.localScale = Vector3.one;
+            nodesRect.localRotation = Quaternion.identity;
+
+            // 把这层本身的 Image 关掉，变成一个透明容器
+            Image nodesBgImg = nodesObj.GetComponent<Image>();
+            if (nodesBgImg != null) nodesBgImg.enabled = false;
+
+            // 统一计算位置
+            float pivotOffsetX = bgRect.pivot.x * bgRect.sizeDelta.x;
+            Vector2 pos = new Vector2(totalWidth + pivotOffsetX, 0);
+            bgRect.anchoredPosition = pos;
+            nodesRect.anchoredPosition = pos;
+
+            totalWidth += bgRect.sizeDelta.x;
+            if (bgRect.sizeDelta.y > maxHeight) maxHeight = bgRect.sizeDelta.y;
+
+            // 记录到层级列表
+            bgLayers.Add(bgRect);
+            nodeLayers.Add(nodesRect);
+
+            // 只从分身 B (节点层) 读取房间数据
+            MapRegionLayout layout = nodesObj.GetComponent<MapRegionLayout>();
             if (layout == null) continue;
 
             for (int i = 0; i < layout.orderedRooms.Count; i++)
@@ -72,15 +107,10 @@ public class MapViewController : MonoBehaviour
                 {
                     if (globalNodeIndex >= nodes.Count) break;
 
-                    // 直接拿到场景里刚刚实例化出来的 Anchor 脚本
                     MapNodeAnchor anchor = room.roomNodes[j];
                     RectTransform anchorRect = anchor.GetComponent<RectTransform>();
 
                     int nodeIndex = nodes[globalNodeIndex].index;
-                    
-                    // ==========================================
-                    // 【核心修改】直接记录 Anchor 自身的位置和脚本
-                    // ==========================================
                     nodeUIRects[nodeIndex] = anchorRect;
                     nodeAnchors[nodeIndex] = anchor;
 
@@ -89,41 +119,90 @@ public class MapViewController : MonoBehaviour
             }
         }
 
-        // 3. 调整高度
+        // 3. 调整 Content 的最终宽高
         RectTransform contentRect = contentParent.GetComponent<RectTransform>();
-        contentRect.sizeDelta = new Vector2(contentRect.sizeDelta.x, totalHeight);
+        contentRect.sizeDelta = new Vector2(totalWidth, maxHeight);
 
         Canvas.ForceUpdateCanvases();
-        ScrollRect scrollRect = contentParent.parent.parent.GetComponent<ScrollRect>();
-        if (scrollRect != null) scrollRect.verticalNormalizedPosition = 0f; 
+        
+        // 4. 画节点之间的连线 (夹心层)
+        GameObject linesContainer = null;
+        if (showRouteLines && linePrefab != null)
+        {
+            linesContainer = new GameObject("RouteLinesContainer");
+            linesContainer.transform.SetParent(contentParent, false);
 
-        // 4. 画完地图后，初始化所有格子的进度颜色
+            for (int i = 0; i < nodes.Count - 1; i++)
+            {
+                if (nodeUIRects.TryGetValue(nodes[i].index, out RectTransform rectA) &&
+                    nodeUIRects.TryGetValue(nodes[i + 1].index, out RectTransform rectB))
+                {
+                    DrawLineBetweenNodes(rectA, rectB, linesContainer.transform);
+                }
+            }
+        }
+
+        // =========================================================
+        // 【魔法时刻】强制重排渲染层级，制作三明治！
+        // =========================================================
+        // 第一层：把所有纯背景图垫在最底下
+        foreach (var bg in bgLayers) bg.SetAsLastSibling();
+        
+        // 第二层：把连线层放在背景图上面
+        if (linesContainer != null) linesContainer.transform.SetAsLastSibling();
+        
+        // 第三层：把所有的房间和节点放在最顶上！
+        foreach (var nodeLayer in nodeLayers) nodeLayer.SetAsLastSibling();
+        // =========================================================
+
+        // 5. 滚动条复位
+        ScrollRect scrollRect = contentParent.GetComponentInParent<ScrollRect>();
+        if (scrollRect != null) 
+        {
+            scrollRect.horizontalNormalizedPosition = 0f; 
+            scrollRect.verticalNormalizedPosition = 0.5f; 
+        }
+
+        // 6. 刷新状态
         UpdateNodeStates(MapManager.Instance.currentPlayerNodeIndex);
 
-        // 5. 确保地图画完、字典存满后，再主动召唤棋子！
+        // 7. 初始化棋子 (棋子也会调用 SetAsLastSibling，所以它在第四层，最最顶上)
         MapInteractionManager interactionMgr = FindObjectOfType<MapInteractionManager>();
-        if (interactionMgr != null)
-        {
-            interactionMgr.InitPawnPosition();
-        }
+        if (interactionMgr != null) interactionMgr.InitPawnPosition();
     }
 
-    /// <summary>
-    /// 【新增】根据当前玩家索引，刷新所有格子的进度颜色
-    /// </summary>
+    private void DrawLineBetweenNodes(RectTransform rectA, RectTransform rectB, Transform parent)
+    {
+        GameObject lineObj = Instantiate(linePrefab, parent);
+        RectTransform lineRect = lineObj.GetComponent<RectTransform>();
+
+        Vector3 localPosA = parent.InverseTransformPoint(rectA.position);
+        Vector3 localPosB = parent.InverseTransformPoint(rectB.position);
+
+        Vector3 dir = localPosB - localPosA;
+        float distance = dir.magnitude;
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+
+        lineRect.localPosition = localPosA;
+        lineRect.sizeDelta = new Vector2(distance, lineWidth);
+        lineRect.localRotation = Quaternion.Euler(0, 0, angle);
+
+        Image img = lineObj.GetComponent<Image>();
+        if (img != null) img.color = routeLineColor;
+    }
+
     public void UpdateNodeStates(int currentIndex)
     {
         foreach (var kvp in nodeAnchors)
         {
             int nodeIndex = kvp.Key;
             MapNodeAnchor anchor = kvp.Value;
-            
-            if (nodeIndex < currentIndex) 
-                anchor.SetState(MapNodeAnchor.NodeState.Passed);
-            else if (nodeIndex == currentIndex) 
-                anchor.SetState(MapNodeAnchor.NodeState.Current);
-            else 
-                anchor.SetState(MapNodeAnchor.NodeState.Future);
+            BoardNode dataNode = MapManager.Instance.boardNodes[nodeIndex];
+
+            if (dataNode.isInvalidated) anchor.SetState(MapNodeAnchor.NodeState.Disabled);
+            else if (nodeIndex < currentIndex) anchor.SetState(MapNodeAnchor.NodeState.Passed);
+            else if (nodeIndex == currentIndex) anchor.SetState(MapNodeAnchor.NodeState.Current);
+            else anchor.SetState(MapNodeAnchor.NodeState.Future);
         }
     }
 }

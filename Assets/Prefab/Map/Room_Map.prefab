@@ -65,7 +65,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 2
+  m_text: +2
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 38b3c3d7556fe7647a6e0835e6f1645e, type: 2}
   m_sharedMaterial: {fileID: -8181614594398190423, guid: 38b3c3d7556fe7647a6e0835e6f1645e, type: 2}
@@ -363,11 +363,17 @@ MonoBehaviour:
   baseIconImage: {fileID: 6433530915488934559}
   effectIconImage: {fileID: 101313990376115857}
   valueText: {fileID: 3576696863257032524}
-  healIcon: {fileID: 1996696192, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
-  trapIcon: {fileID: -407907518, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
-  treasureIcon: {fileID: -755801143, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
-  roomEventIcon: {fileID: -984354836, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  hpHealIcon: {fileID: 1996696192, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  hpDamageIcon: {fileID: 1996696192, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  resourceIcon: {fileID: -1026956783, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  roomEventIcon: {fileID: 2036611115, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  nextBattleArmorIcon: {fileID: 54053314, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  nextBattleFixedDiceIcon: {fileID: -684498857, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  blockNextDamageIcon: {fileID: 1277343917, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  nextBattleDamageUpIcon: {fileID: 1626623615, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  relicIcon: {fileID: 1576282049, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   passedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   currentColor: {r: 0.5, g: 1, b: 1, a: 1}
   futureColor: {r: 1, g: 1, b: 1, a: 1}
+  disabledColor: {r: 0.3, g: 0.3, b: 0.3, a: 0.6}
   currentState: 0

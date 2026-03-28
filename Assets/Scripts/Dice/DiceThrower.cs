@@ -28,12 +28,23 @@ public class DiceThrower : MonoBehaviour
     public void SpawnAndThrow(List<BattleDiceEntry> diceEntries)
     {
         ClearOldDice();
-
         if (_container == null) _container = new GameObject("--- Dice Container ---").transform;
 
-        // 遍历包裹
-        foreach (var entry in diceEntries)
+        // =========================================================
+        // 【新增】提取作弊点数，并随机决定对哪一颗骰子下手
+        // =========================================================
+        int fixedDiceValue = PlayerManager.Instance.nextBattleFixedDiceValue;
+        PlayerManager.Instance.nextBattleFixedDiceValue = 0; // 提取后清空
+
+        int cheatIndex = -1;
+        if (fixedDiceValue > 0 && diceEntries.Count > 0)
         {
+            cheatIndex = Random.Range(0, diceEntries.Count); // 随机选一颗
+        }
+
+        for (int i = 0; i < diceEntries.Count; i++)
+        {
+            var entry = diceEntries[i];
             Vector3 randomOffset = new Vector3(Random.Range(-0.2f, 0.2f), 0, Random.Range(-0.2f, 0.2f));
             Vector3 spawnPos = spawnPoint.position + randomOffset;
 
@@ -43,11 +54,20 @@ public class DiceThrower : MonoBehaviour
             PhysicsDice pDice = newDiceObj.GetComponent<PhysicsDice>();
             if (pDice != null)
             {
-                // 【修改】传入 data 和 source
                 pDice.Initialize(entry.combatData, entry.sourceRef); 
-            
                 activeDiceList.Add(pDice);
             
+                // =========================================================
+                // 【新增】如果这是被选中的作弊骰子，调用作弊逻辑
+                // =========================================================
+                if (i == cheatIndex)
+                {
+                    Debug.Log($"<color=magenta>【命运羁绊】这颗骰子 ({pDice.name}) 必定会掷出 {fixedDiceValue}！</color>");
+                    
+                    // 【任务】：你需要在你的 PhysicsDice.cs 脚本中，实现并调用一个类似 SetCheatFace() 的方法。
+                    // pDice.SetCheatFace(fixedDiceValue); 
+                }
+
                 Vector3 force = Vector3.down * 2f + new Vector3(Random.Range(-1f,1f), 0, Random.Range(-1f,1f)) * throwForce;
                 Vector3 torque = Random.insideUnitSphere * torqueForce;
                 pDice.Roll(force, torque);

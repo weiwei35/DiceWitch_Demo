@@ -25,13 +25,6 @@ public static class Enum
         Unknown,     // 用于初始化
         Event
     }
-    public enum NodeStatus
-    {
-        Locked,     // 不可达
-        Available,  // 可点击
-        Visited,    // 已访问（未完成）
-        Completed   // 已通过
-    }
     //角色对象类型
     public enum TargetTeam { Player, Enemy }
     
@@ -47,10 +40,14 @@ public static class Enum
     // 棋盘节点效果类型
     public enum BoardNodeType
     {
-        Empty,      // 空地（无事发生）
-        Heal,       // 恢复泉水 (加血)
-        Trap,       // 陷阱 (扣血)
-        Treasure,   // 小金币 (加钱)
-        RoomEvent   // 房间主事件 (进入战斗、大宝箱、商店等)
+        Empty,              // 空地（无事发生）
+        HpChange,           // ±生命值 (合并了原 Heal 和 Trap)
+        ResourceChange,     // ±资源 (替代了原 Treasure)
+        RoomEvent,          // 房间主事件
+        NextBattleArmor,    // 下次战斗给护甲
+        NextBattleFixedDice,// 下次战斗有一枚固定骰子点数
+        BlockNextDamage,    // 抵消下一次伤害 (全图+战斗通用)
+        NextBattleDamageUp, // 下次战斗伤害增加
+        Relic               // 获得遗物
     }
 }

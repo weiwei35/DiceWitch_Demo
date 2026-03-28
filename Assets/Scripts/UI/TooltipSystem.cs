@@ -72,6 +72,6 @@ public class TooltipSystem : MonoBehaviour
 
     public void Hide()
     {
-        tooltipPanel.SetActive(false);
+        if (tooltipPanel != null) tooltipPanel.SetActive(false);
     }
 }

@@ -131,4 +131,26 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             // transform.localScale = Vector3.one;
         }
     }
+    private void OnDisable()
+    {
+        // 1. 强制干掉幽灵提示框
+        if (TooltipSystem.Instance != null)
+        {
+            TooltipSystem.Instance.Hide();
+        }
+
+        // 2. 强制干掉幽灵 3D 高亮
+        DiceThrower thrower = FindObjectOfType<DiceThrower>();
+        if (thrower != null)
+        {
+            thrower.StopHighlight();
+        }
+
+        // 3. 杀掉可能正在播放的呼吸/闪烁动画，防止切回界面时动画错乱报错
+        if (slotBorder != null)
+        {
+            slotBorder.DOKill();
+            slotBorder.color = Color.white; // 恢复默认颜色
+        }
+    }
 }

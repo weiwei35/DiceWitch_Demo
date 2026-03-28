@@ -30,6 +30,8 @@ public class BattleManager : MonoBehaviour
 
     private bool _isLevelingUp = false;    // 是否正在处理升级界面
     private bool _isVictoryPending = false; // 是否有一场胜利正在排队等待结算
+    
+    public int currentBattleDamageBonus = 0;
     void Awake() { Instance = this; }
 
     void Start()
@@ -46,8 +48,11 @@ public class BattleManager : MonoBehaviour
         // 1. 清理战场 (这是单场景最重要的一步！)
         CleanUpBattlefield();
 
-        // 2. 重置玩家状态 (可选，比如重置护甲)
-        // PlayerManager.Instance.ResetStatus();
+        // =========================================================
+        // 【新增】继承全局伤害 Buff 到本场战斗 (持续一整场)
+        // =========================================================
+        currentBattleDamageBonus = PlayerManager.Instance.nextBattleDamageBonus;
+        PlayerManager.Instance.nextBattleDamageBonus = 0; // 提取后清空
         
         // 3. 开始战斗逻辑
         if (roomData != null && roomData.enemyWave != null)
@@ -206,7 +211,15 @@ public class BattleManager : MonoBehaviour
         endTurnButton.interactable = true;
 
         PlayerManager.Instance.ResetArmor();
-
+        // =========================================================
+        // 【新增】跨场次护甲 Buff 结算 (因为执行完就归0了，所以只在第一回合生效！)
+        // =========================================================
+        if (PlayerManager.Instance.nextBattleArmorBonus > 0)
+        {
+            PlayerManager.Instance.AddArmor(PlayerManager.Instance.nextBattleArmorBonus);
+            Debug.Log($"<color=green>【节点Buff生效】开局获得 {PlayerManager.Instance.nextBattleArmorBonus} 点额外护甲！</color>");
+            PlayerManager.Instance.nextBattleArmorBonus = 0; // 消耗掉
+        }
         // 敌人预告意图
         foreach (var enemy in enemies)
         {

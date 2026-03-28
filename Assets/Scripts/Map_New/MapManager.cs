@@ -109,56 +109,136 @@ public class MapManager : MonoBehaviour
     // =================================================================
     // 【核心机制】当玩家的棋子停在一个节点上时调用
     // =================================================================
-    public void OnPlayerLanded(BoardNode landedNode)
+    public void OnPlayerLanded(BoardNode landedNode, Vector3 pawnPos)
     {
         Debug.Log($"玩家落在第 {landedNode.index} 格，类型：{landedNode.type}");
         
-        // 1. 先生效格子自身的效果
-        ProcessNodeEffect(landedNode);
+        // 1. 先生效格子自身的效果，并在棋子头上飘字
+        ProcessNodeEffect(landedNode, pawnPos);
 
-        // 2. 判断这个格子的房间有没有被打过
+        // 2. 开启协程，延迟进入房间！(给玩家看字的时间)
+        StartCoroutine(DelayEnterRoom(landedNode));
+    }
+
+    // 【新增】延迟进入房间的协程
+    private System.Collections.IEnumerator DelayEnterRoom(BoardNode landedNode)
+    {
+        // 如果有实际效果，多等一会 (1秒)；如果是空地或者直接进事件的格子，少等一会 (0.3秒缓冲)
+        float delayTime = (landedNode.type == Enum.BoardNodeType.Empty || landedNode.type == Enum.BoardNodeType.RoomEvent) ? 0.3f : 2.0f;
+        
+        yield return new WaitForSeconds(delayTime);
+
+        // --- 以下是你原来的进入房间逻辑 ---
         if (landedNode.roomDataRef != null && !clearedRoomIds.Contains(landedNode.roomId))
         {
-            Debug.Log($"<color=orange>遭遇房间事件！准备进入：{landedNode.roomDataRef.roomName}</color>");
-            
-            // 标记为已通关 (这样即使这回合打赢了，下回合往前走还在这个房间，也不会再触发了)
             clearedRoomIds.Add(landedNode.roomId);
+
+            if (landedNode.roomDataRef.skipRemainingNodesOnClear)
+            {
+                for (int i = landedNode.index + 1; i < boardNodes.Count; i++)
+                {
+                    if (boardNodes[i].roomId == landedNode.roomId) boardNodes[i].isInvalidated = true; 
+                    else break; 
+                }
+                FindObjectOfType<MapViewController>()?.UpdateNodeStates(landedNode.index);
+            }
             
-            // 路由：切入战斗/商店
             if (GameFlowController.Instance != null)
             {
                 GameFlowController.Instance.EnterRoom(landedNode.roomDataRef);
             }
         }
-        else
-        {
-            Debug.Log("该房间已被清理，或者没有事件，安全停留！");
-            // 这里可以通知 UI，允许玩家掷下一次骰子
-            // MapDiceThrower.Instance.EnableThrow(); 
-        }
     }
 
-    // 处理局部格子效果
-    private void ProcessNodeEffect(BoardNode node)
+    // 【修改】处理效果并呼叫飘字
+    private void ProcessNodeEffect(BoardNode node, Vector3 pawnPos)
     {
+        string floatText = "";
+        Color floatColor = Color.white;
+
         switch (node.type)
         {
-            case Enum.BoardNodeType.Heal:
-                if (PlayerManager.Instance != null) PlayerManager.Instance.Heal(node.effectValue);
-                Debug.Log($"踩到回血格，恢复 {node.effectValue} HP");
+            case Enum.BoardNodeType.HpChange:
+                if (node.effectValue > 0) 
+                {
+                    PlayerManager.Instance.Heal(node.effectValue);
+                    floatText = $"+{node.effectValue} HP";
+                    floatColor = Color.green;
+                }
+                else if (node.effectValue < 0) 
+                {
+                    PlayerManager.Instance.TakeDamage(Mathf.Abs(node.effectValue));
+                    floatText = $"{node.effectValue} HP"; // 负数自带减号
+                    floatColor = Color.red;
+                }
                 break;
-            case Enum.BoardNodeType.Trap:
-                if (PlayerManager.Instance != null) PlayerManager.Instance.TakeDamage(node.effectValue);
-                Debug.Log($"踩到陷阱，受到 {node.effectValue} 伤害");
+                
+            case Enum.BoardNodeType.ResourceChange:
+                if (node.effectValue > 0) 
+                {
+                    PlayerProgressionManager.Instance.AddManaDust(node.effectValue);
+                    floatText = $"+{node.effectValue} 粉尘";
+                    floatColor = new Color(1f, 0.8f, 0f); // 黄色
+                }
+                else if (node.effectValue < 0) 
+                {
+                    PlayerProgressionManager.Instance.TrySpendManaDust(Mathf.Abs(node.effectValue));
+                    floatText = $"{node.effectValue} 粉尘";
+                    floatColor = Color.red;
+                }
                 break;
-            case Enum.BoardNodeType.Treasure:
-                if (PlayerProgressionManager.Instance != null) PlayerProgressionManager.Instance.AddManaDust(node.effectValue);
-                Debug.Log($"捡到宝箱，获得 {node.effectValue} 资源");
+                
+            case Enum.BoardNodeType.NextBattleArmor:
+                PlayerManager.Instance.nextBattleArmorBonus += node.effectValue;
+                floatText = $"开局护甲 +{node.effectValue}";
+                floatColor = new Color(0.2f, 0.6f, 1f); // 蓝色
                 break;
-            case Enum.BoardNodeType.Empty:
-            case Enum.BoardNodeType.RoomEvent:
-                // 无事发生
+                
+            case Enum.BoardNodeType.NextBattleFixedDice:
+                PlayerManager.Instance.nextBattleFixedDiceValue = node.effectValue;
+                floatText = $"必定掷出 {node.effectValue}";
+                floatColor = new Color(0.8f, 0.2f, 1f); // 紫色
+                break;
+                
+            case Enum.BoardNodeType.BlockNextDamage:
+                PlayerManager.Instance.hasBlockNextDamageShield = true;
+                PlayerManager.Instance.UpdateUI();
+                floatText = "获得圣盾";
+                floatColor = Color.cyan;
+                break;
+                
+            case Enum.BoardNodeType.NextBattleDamageUp:
+                PlayerManager.Instance.nextBattleDamageBonus += node.effectValue;
+                floatText = $"伤害 +{node.effectValue}";
+                floatColor = new Color(1f, 0.5f, 0f); // 橙色
+                break;
+                
+            case Enum.BoardNodeType.Relic:
+                floatText = "获得遗物";
+                floatColor = Color.yellow;
                 break;
         }
+
+        // 呼叫飘字管理器
+        if (!string.IsNullOrEmpty(floatText) && FloatingTextManager.Instance != null)
+        {
+            FloatingTextManager.Instance.ShowText(pawnPos, floatText, floatColor);
+        }
+    }
+    //找下一个房间的起点
+    public int GetNextRoomStartIndex(int currentRoomId)
+    {
+        // 遍历整个地图节点列表
+        for (int i = 0; i < boardNodes.Count; i++)
+        {
+            // 找到第一个归属于不同/更大 Room ID 的节点
+            if (boardNodes[i].roomId > currentRoomId)
+            {
+                return i; // 返回这个节点的绝对索引
+            }
+        }
+        
+        // 如果返回 -1，说明这已经是整个大地图的最后一个房间了，没地方可跳了
+        return -1; 
     }
 }
