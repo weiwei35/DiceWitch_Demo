@@ -49,4 +49,13 @@ public abstract class StatusEffectSO : ScriptableObject
             return description;
         }
     }
+    // 只有当该状态存在于存活的敌人身上时，才会对玩家的每一次出招生效
+    public virtual int OnGlobalCalculateDamage(EnemyTarget target, int incomingDamage, int usedOrder, int remainingAtThrow) 
+    {
+        return incomingDamage; // 默认不修改
+    }
+    public virtual void OnPlayerGainArmor(EnemyTarget target, int armorAmount, int stacks) 
+    {
+        // 默认不做事
+    }
 }

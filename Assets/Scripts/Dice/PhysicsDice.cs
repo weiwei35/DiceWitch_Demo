@@ -184,7 +184,7 @@ public class PhysicsDice : MonoBehaviour
             foreach (var ability in myAbilities)
             {
                 sb.AppendLine($"<color=yellow>★ {ability.abilityName}</color>");
-                sb.AppendLine($"{ability.description}");
+                sb.AppendLine($"{ability.GetDynamicDescription(this)}");
                 sb.AppendLine(); // 空一行
             }
         }

@@ -104,14 +104,6 @@ public class PlayerProgressionManager : MonoBehaviour
 
     [Header("Magic Circle")]
     public List<MagicCircleSlot> magicSlots = new List<MagicCircleSlot>();
-    [Header("Level System")]
-    public int currentXP = 0;
-    public int maxXP = 10; // 初始升级所需经验
-    public int playerLevel = 1;
-
-    // 定义事件：当经验变化（刷新UI）、当升级时（触发抽卡）
-    public event System.Action<float> OnXPChanged; // float 是百分比 (0~1)
-    public event System.Action OnLevelUp;
     
     [Header("Resources")]
     public int manaDust = 0; // 核心货币
@@ -257,52 +249,7 @@ public class PlayerProgressionManager : MonoBehaviour
         // 4. (可选) 可以在这里添加保存存档的逻辑
         // SaveGame();
     }
-    // --- 核心：加经验逻辑 ---
-    public void AddExperience(int amount)
-    {
-        currentXP += amount;
-        
-        // 检查是否升级
-        if (currentXP >= maxXP)
-        {
-            LevelUp();
-        }
-        else
-        {
-            // 没升级，只刷新 UI
-            NotifyUI();
-        }
-    }
 
-    private void LevelUp()
-    {
-        currentXP -= maxXP; // 溢出的经验保留
-        playerLevel++;
-        
-        // 增加下一级的难度 (比如每级 +5 或 x1.2)
-        maxXP = Mathf.RoundToInt(maxXP * 1.2f); 
-
-        Debug.Log($"<color=yellow>升级了！当前等级: {playerLevel}</color>");
-
-        // 1. 通知 UI 更新 (设为 0 或者溢出的比例)
-        NotifyUI();
-
-        // 2. 触发升级事件 (BattleManager 会监听这个来暂停游戏弹窗)
-        OnLevelUp?.Invoke();
-        
-        // 如果溢出的经验很多，可能连升两级（递归检查）
-        if (currentXP >= maxXP)
-        {
-            LevelUp();
-        }
-    }
-
-    private void NotifyUI()
-    {
-        float ratio = (float)currentXP / maxXP;
-        OnXPChanged?.Invoke(ratio);
-    }
-    
     // --- 资源操作 ---
     public void AddManaDust(int amount)
     {

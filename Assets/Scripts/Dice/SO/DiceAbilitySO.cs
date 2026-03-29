@@ -36,4 +36,8 @@ public abstract class DiceAbilitySO : ScriptableObject
     {
         
     }
+    public virtual string GetDynamicDescription(PhysicsDice sourceDice = null)
+    {
+        return description; // 默认返回写死的文案
+    }
 }

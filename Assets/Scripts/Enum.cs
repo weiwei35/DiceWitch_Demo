@@ -50,4 +50,10 @@ public static class Enum
         NextBattleDamageUp, // 下次战斗伤害增加
         Relic               // 获得遗物
     }
+    public enum EnemyTier
+    {
+        Normal,     // 普通怪物
+        Elite,      // 精英怪物
+        Boss        // 首领
+    }
 }

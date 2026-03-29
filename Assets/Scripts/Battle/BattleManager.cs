@@ -27,29 +27,20 @@ public class BattleManager : MonoBehaviour
     public event Action OnEnemyKilledEvent;
     public event Action OnPlayerTurnEnd;
     public event Action<int> OnPlayerUseDice;
-
-    private bool _isLevelingUp = false;    // 是否正在处理升级界面
-    private bool _isVictoryPending = false; // 是否有一场胜利正在排队等待结算
-    
+    private BattleRoomSO _currentRoomData;
+    public BattleRoomSO CurrentRoomData => _currentRoomData; // 【新增】对外暴露属性
     public int currentBattleDamageBonus = 0;
+    public int diceUsedThisTurn = 0; // 记录本回合使用了几颗骰子
     void Awake() { Instance = this; }
 
-    void Start()
-    {
-        // 之前让你删空了，现在把监听逻辑加回来
-        if (PlayerProgressionManager.Instance != null)
-        {
-            PlayerProgressionManager.Instance.OnLevelUp += HandleLevelUp;
-        }
-    }
     // --- 新入口：由 GameFlowController 调用 ---
     public void StartNewBattle(BattleRoomSO roomData)
     {
         // 1. 清理战场 (这是单场景最重要的一步！)
         CleanUpBattlefield();
-
+        _currentRoomData = roomData; 
         // =========================================================
-        // 【新增】继承全局伤害 Buff 到本场战斗 (持续一整场)
+        // 继承全局伤害 Buff 到本场战斗 (持续一整场)
         // =========================================================
         currentBattleDamageBonus = PlayerManager.Instance.nextBattleDamageBonus;
         PlayerManager.Instance.nextBattleDamageBonus = 0; // 提取后清空
@@ -87,14 +78,7 @@ public class BattleManager : MonoBehaviour
         }
         // 4. 重置 UI 状态
         _isBattleActive = true;
-        _isVictoryPending = false;
         // endTurnButton.interactable = true;
-    }
-
-    void OnDestroy()
-    {
-        if (PlayerProgressionManager.Instance != null)
-            PlayerProgressionManager.Instance.OnLevelUp -= HandleLevelUp;
     }
 
     // =========================================================
@@ -127,17 +111,25 @@ public class BattleManager : MonoBehaviour
         {
             GhostDiceUIManager.Instance.ClearAllGhosts();
         }
-
-        // 1. 通知地图：这个房间搞定了
-        if (MapManager.Instance != null)
+        if (_currentRoomData != null && _currentRoomData.rewardAbilityDraft)
         {
-            // MapManager.Instance.CompleteCurrentRoom();
+            Debug.Log("<color=yellow>触发房间通关奖励：骰子附魔抽卡三选一！</color>");
+            // 呼叫 GameFlowController 弹出抽卡，传入回调：抽完后回大地图
+            GameFlowController.Instance.StartDraftProcess(ReturnToMapState);
         }
-
-        // 2. 叫 GameFlow 切回地图界面
+        else
+        {
+            Debug.Log("该房间没有附魔奖励，直接返回大地图。");
+            ReturnToMapState();
+        }
+    }
+    private void ReturnToMapState()
+    {
+        // 可以在这里加一个清理本场战斗临时数据的逻辑
+        currentBattleDamageBonus = 0; 
+        
         GameFlowController.Instance.EnterMapState();
     }
-
     // =========================================================
     // 战斗逻辑 (Battle Logic)
     // =========================================================
@@ -178,7 +170,6 @@ public class BattleManager : MonoBehaviour
         if (enemies.Contains(enemy))
         {
             // 1. 结算奖励
-            PlayerProgressionManager.Instance.AddExperience(enemy.xpReward);
             PlayerProgressionManager.Instance.AddManaDust(enemy.manaDustReward);
 
             // 2. 移除列表
@@ -189,17 +180,7 @@ public class BattleManager : MonoBehaviour
         // 3. 检查战斗是否结束
         if (enemies.Count == 0)
         {
-            // 如果是正在升级，就不要立刻结算胜利
-            if (_isLevelingUp)
-            {
-                Debug.Log("战斗结束，但正在升级中... 胜利结算挂起。");
-                _isVictoryPending = true; // 挂起
-            }
-            else
-            {
-                // 正常结算
-                EndBattleVictory();
-            }
+            EndBattleVictory();
         }
     }
 
@@ -209,6 +190,7 @@ public class BattleManager : MonoBehaviour
         if (!_isBattleActive) return; 
         isPlayerTurn = true;
         endTurnButton.interactable = true;
+        diceUsedThisTurn = 0; // 【新增】每回合重置计数
 
         PlayerManager.Instance.ResetArmor();
         // =========================================================
@@ -260,22 +242,9 @@ public class BattleManager : MonoBehaviour
         Debug.Log("--- 敌人回合开始 ---");
         
         // 1. 结算状态 (如燃烧)
-        // 如果这里有怪被烧死了，触发了升级，_isLevelingUp 会变成 true
         for (int i = enemies.Count - 1; i >= 0; i--)
         {
             if (enemies[i] != null) enemies[i].OnTurnStart();
-        }
-        
-        // =========================================================
-        // 🚦【核心修复】红绿灯检查
-        // =========================================================
-        
-        // 如果正在升级，协程暂停在这里，直到 _isLevelingUp 变为 false
-        if (_isLevelingUp)
-        {
-            Debug.Log("检测到升级事件，暂停敌人回合...");
-            yield return new WaitUntil(() => _isLevelingUp == false);
-            Debug.Log("升级完成，恢复敌人回合。");
         }
 
         // 再次检查战斗锁 (防止在暂停期间战斗已经通过燃烧结束了)
@@ -290,8 +259,6 @@ public class BattleManager : MonoBehaviour
 
         foreach (var enemy in livingEnemies)
         {
-            // 每次行动前，最好也检查一下（防止多重触发，虽然概率低）
-            if (_isLevelingUp) yield return new WaitUntil(() => !_isLevelingUp);
             if (!_isBattleActive) yield break;
             if (PlayerManager.Instance.currentHp <= 0) break;
 
@@ -305,7 +272,7 @@ public class BattleManager : MonoBehaviour
         if (PlayerManager.Instance.currentHp <= 0)
         {
             Debug.Log("游戏结束！");
-            // ShowGameOverUI(); // 可以在这里调用游戏失败界面
+            GameFlowController.Instance.ShowRunSummary(false); // 呼出结算界面
         }
         else
         {
@@ -316,34 +283,6 @@ public class BattleManager : MonoBehaviour
             }
         }
     }
-
-    // 升级事件回调
-    void HandleLevelUp()
-    {
-        Debug.Log("战斗中触发升级！开启抽卡...");
-        // 1. 标记状态
-        _isLevelingUp = true;
-
-        // 2. 启动抽卡，并传入【回调函数】
-        GameFlowController.Instance.StartDraftProcess(OnLevelUpDraftFinished);
-    }
-    // 当升级抽卡结束时调用
-    void OnLevelUpDraftFinished()
-    {
-        Debug.Log("升级抽卡完成。");
-        _isLevelingUp = false;
-
-        // 3. 检查是否有挂起的胜利
-        if (_isVictoryPending)
-        {
-            Debug.Log("检测到挂起的胜利，现在结算！");
-            _isVictoryPending = false;
-            EndBattleVictory(); // 补发胜利结算
-        }
-    }
-    // =========================================================
-    // 辅助方法 (Targeting Helpers)
-    // =========================================================
 
     public BattleTarget GetRandomTargetOfTeam(Enum.TargetTeam team, BattleTarget exclusion)
     {
@@ -374,6 +313,33 @@ public class BattleManager : MonoBehaviour
     }
     public void TriggerPlayerUseDice()
     {
+        diceUsedThisTurn++; // 记录使用次数
         OnPlayerUseDice?.Invoke(1);
+    }
+    // 汇总场上所有敌人的光环，对玩家的伤害进行最终修饰
+    public int ProcessGlobalDamageModifiers(int rawDamage, int usedOrder, int remainingAtThrow)
+    {
+        int finalDamage = rawDamage;
+        foreach (var enemy in enemies)
+        {
+            if (enemy != null && enemy.currentHp > 0)
+            {
+                finalDamage = enemy.ProcessGlobalDamageModifiers(finalDamage, usedOrder, remainingAtThrow);
+            }
+        }
+        return finalDamage;
+    }
+    // 广播玩家获得护甲的事件给所有怪物
+    public void TriggerPlayerGainArmor(int amount)
+    {
+        if (!_isBattleActive) return;
+
+        foreach (var enemy in enemies)
+        {
+            if (enemy != null && enemy.currentHp > 0)
+            {
+                enemy.HandlePlayerGainArmor(amount);
+            }
+        }
     }
 }

@@ -73,7 +73,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 1748528778, guid: 577f6d5b6e8c5234e9876bf0a88f4aec, type: 3}
+  m_Sprite: {fileID: 1828398798, guid: 577f6d5b6e8c5234e9876bf0a88f4aec, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -96,7 +96,7 @@ GameObject:
   - component: {fileID: 1077997682446175049}
   - component: {fileID: 3533126524503290208}
   m_Layer: 6
-  m_Name: Monster_004
+  m_Name: Monster_005
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -135,19 +135,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   team: 1
-  maxHp: 20
-  currentHp: 20
+  tier: 1
+  maxHp: 35
+  currentHp: 35
   hpText: {fileID: 4489467330734253488}
-  nextDamageValue: 5
+  nextDamageValue: 0
   intentText: {fileID: 4607735741030965775}
   initialStatusConfigs:
-  - status: {fileID: 11400000, guid: 48704cf2a33ce81438c1b95c9ecca01d, type: 2}
+  - status: {fileID: 11400000, guid: 5f0edfc2bcd5f464490c0fb2d21a817f, type: 2}
     initialStacks: 1
     resetPerTurn: 1
   statusPanel: {fileID: 6572216700980490057}
   statusIconPrefab: {fileID: 7129629971497389732, guid: 803eb6469bc27b847a5b8ab3591bb450, type: 3}
   soulLinkPartner: {fileID: 0}
-  xpReward: 5
   manaDustReward: 10
 --- !u!65 &3533126524503290208
 BoxCollider:

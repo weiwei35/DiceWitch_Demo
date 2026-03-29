@@ -134,7 +134,9 @@ public class DiceSquadGroup : MonoBehaviour
                 // 启动抛物线攻击 (复用你现有的逻辑)
                 // 注意：这里我们不需要等待 StartCoroutine 返回，因为我们希望稍微重叠一点节奏
                 // 但如果你想要严格的一个接一个，就加 yield return
-                yield return attacker.StartCoroutine(attacker.FlyAndHit(target, data));
+                int usedOrder = BattleManager.Instance != null ? BattleManager.Instance.diceUsedThisTurn : 1;
+                int remaining = FindObjectOfType<DiceThrower>().GetValidDiceCount();
+                yield return attacker.StartCoroutine(attacker.FlyAndHit(target, data, usedOrder, remaining));
                 
                 // 节奏间隔：哒..哒..哒..
                 yield return new WaitForSeconds(0.15f);

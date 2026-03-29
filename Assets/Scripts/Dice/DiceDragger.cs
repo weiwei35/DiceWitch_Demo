@@ -138,9 +138,10 @@ public class DiceDragger : MonoBehaviour
             }
             
             DiceFaceData data = physicsDice.GetCurrentData();
-            
+            int usedOrder = BattleManager.Instance != null ? BattleManager.Instance.diceUsedThisTurn : 1;
+            int remaining = FindObjectOfType<DiceThrower>().GetValidDiceCount();
             // 视觉效果：让骰子飞过去撞击
-            StartCoroutine(FlyAndHit(target, data));
+            StartCoroutine(FlyAndHit(target, data, usedOrder, remaining));
         }
         else
         {
@@ -210,7 +211,7 @@ public class DiceDragger : MonoBehaviour
 
     // --- 攻击与飞行 ---
 
-    public IEnumerator FlyAndHit(BattleTarget target, DiceFaceData damageData)
+    public IEnumerator FlyAndHit(BattleTarget target, DiceFaceData damageData, int usedOrder, int remainingAtThrow)
     {
         // 1. 准备阶段：冻结物理
         isDragging = false;
@@ -301,7 +302,10 @@ public class DiceDragger : MonoBehaviour
                     calculatedData.value = ability.OnCalculateDamage(calculatedData.value, target);
                 }
             }
-
+            if (BattleManager.Instance != null)
+            {
+                calculatedData.value = BattleManager.Instance.ProcessGlobalDamageModifiers(calculatedData.value, usedOrder, remainingAtThrow);
+            }
             // 3. 造成伤害
             target.OnHit(calculatedData); 
 

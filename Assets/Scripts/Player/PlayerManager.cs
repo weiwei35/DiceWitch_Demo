@@ -87,8 +87,15 @@ public class PlayerManager : MonoBehaviour
 
     public void AddArmor(int amount)
     {
+        if (amount <= 0) return; // 防呆
+
         currentArmor += amount;
         UpdateUI();
+
+        if (BattleManager.Instance != null)
+        {
+            BattleManager.Instance.TriggerPlayerGainArmor(amount);
+        }
     }
 
     public void ResetArmor()

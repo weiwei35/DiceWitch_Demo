@@ -1,12 +1,11 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using UnityEngine.EventSystems; // 【新增】事件系统命名空间
 
 public class MapViewController : MonoBehaviour
 {[Header("References")]
     public Transform contentParent; 
-
-    // 缓存所有格子的 UI 坐标，供角色移动使用
     public Dictionary<int, RectTransform> nodeUIRects = new Dictionary<int, RectTransform>();
     public Dictionary<int, MapNodeAnchor> nodeAnchors = new Dictionary<int, MapNodeAnchor>();
 
@@ -15,6 +14,18 @@ public class MapViewController : MonoBehaviour
     public GameObject linePrefab;            
     public float lineWidth = 8f;             
     public Color routeLineColor = new Color(1f, 1f, 1f, 0.5f); 
+
+    [Header("Camera Follow")]
+    public Transform targetPawn;           
+    public float followSmoothTime = 0.2f;  
+    
+    // ==========================================
+    // 【新增】自动跟随的状态开关
+    // ==========================================
+    public bool isAutoFollowing = true;    
+
+    private float _scrollVelocity = 0f;    
+    private ScrollRect _scrollRect;        
 
     void Start()
     {
@@ -36,7 +47,6 @@ public class MapViewController : MonoBehaviour
 
     public void DrawMap()
     {
-        // 1. 清理旧内容
         foreach (Transform child in contentParent) Destroy(child.gameObject);
         nodeUIRects.Clear(); 
         nodeAnchors.Clear(); 
@@ -48,40 +58,31 @@ public class MapViewController : MonoBehaviour
         float totalWidth = 0;
         float maxHeight = 0;
 
-        // 【新增】用来做“三明治层级”的临时列表
         List<Transform> bgLayers = new List<Transform>();
         List<Transform> nodeLayers = new List<Transform>();
 
-        // 2. 绘制区域与节点
         foreach (var region in MapManager.Instance.boardConfig.regions)
         {
             if (region.regionPrefab == null) continue;
 
-            // ==========================================
-            // 分身 A：纯背景层 (剥离所有房间节点)
-            // ==========================================
+            // 分身 A：纯背景层 
             GameObject bgObj = Instantiate(region.regionPrefab, contentParent);
             RectTransform bgRect = bgObj.GetComponent<RectTransform>();
             bgRect.localScale = Vector3.one;
             bgRect.localRotation = Quaternion.identity;
             
-            // 删除脚本和子节点，只留一张背景图
             Destroy(bgObj.GetComponent<MapRegionLayout>());
             foreach (Transform child in bgObj.transform) Destroy(child.gameObject);
 
-            // ==========================================
-            // 分身 B：纯节点层 (隐藏背景图)
-            // ==========================================
+            // 分身 B：纯节点层 
             GameObject nodesObj = Instantiate(region.regionPrefab, contentParent);
             RectTransform nodesRect = nodesObj.GetComponent<RectTransform>();
             nodesRect.localScale = Vector3.one;
             nodesRect.localRotation = Quaternion.identity;
 
-            // 把这层本身的 Image 关掉，变成一个透明容器
             Image nodesBgImg = nodesObj.GetComponent<Image>();
             if (nodesBgImg != null) nodesBgImg.enabled = false;
 
-            // 统一计算位置
             float pivotOffsetX = bgRect.pivot.x * bgRect.sizeDelta.x;
             Vector2 pos = new Vector2(totalWidth + pivotOffsetX, 0);
             bgRect.anchoredPosition = pos;
@@ -90,11 +91,9 @@ public class MapViewController : MonoBehaviour
             totalWidth += bgRect.sizeDelta.x;
             if (bgRect.sizeDelta.y > maxHeight) maxHeight = bgRect.sizeDelta.y;
 
-            // 记录到层级列表
             bgLayers.Add(bgRect);
             nodeLayers.Add(nodesRect);
 
-            // 只从分身 B (节点层) 读取房间数据
             MapRegionLayout layout = nodesObj.GetComponent<MapRegionLayout>();
             if (layout == null) continue;
 
@@ -119,13 +118,11 @@ public class MapViewController : MonoBehaviour
             }
         }
 
-        // 3. 调整 Content 的最终宽高
         RectTransform contentRect = contentParent.GetComponent<RectTransform>();
         contentRect.sizeDelta = new Vector2(totalWidth, maxHeight);
 
         Canvas.ForceUpdateCanvases();
         
-        // 4. 画节点之间的连线 (夹心层)
         GameObject linesContainer = null;
         if (showRouteLines && linePrefab != null)
         {
@@ -142,33 +139,63 @@ public class MapViewController : MonoBehaviour
             }
         }
 
-        // =========================================================
-        // 【魔法时刻】强制重排渲染层级，制作三明治！
-        // =========================================================
-        // 第一层：把所有纯背景图垫在最底下
+        // 强制重排三明治层级
         foreach (var bg in bgLayers) bg.SetAsLastSibling();
-        
-        // 第二层：把连线层放在背景图上面
         if (linesContainer != null) linesContainer.transform.SetAsLastSibling();
-        
-        // 第三层：把所有的房间和节点放在最顶上！
         foreach (var nodeLayer in nodeLayers) nodeLayer.SetAsLastSibling();
-        // =========================================================
 
-        // 5. 滚动条复位
-        ScrollRect scrollRect = contentParent.GetComponentInParent<ScrollRect>();
-        if (scrollRect != null) 
+        _scrollRect = contentParent.GetComponentInParent<ScrollRect>();
+        if (_scrollRect != null) 
         {
-            scrollRect.horizontalNormalizedPosition = 0f; 
-            scrollRect.verticalNormalizedPosition = 0.5f; 
+            _scrollRect.horizontalNormalizedPosition = 0f; 
+            _scrollRect.verticalNormalizedPosition = 0.5f; 
+
+            // =========================================================
+            // 【新增】动态给 ScrollRect 挂载一个拖拽监听器，用来打断自动跟随
+            // =========================================================
+            MapDragListener dragListener = _scrollRect.gameObject.GetComponent<MapDragListener>();
+            if (dragListener == null) dragListener = _scrollRect.gameObject.AddComponent<MapDragListener>();
+            dragListener.mapUI = this;
         }
 
-        // 6. 刷新状态
         UpdateNodeStates(MapManager.Instance.currentPlayerNodeIndex);
 
-        // 7. 初始化棋子 (棋子也会调用 SetAsLastSibling，所以它在第四层，最最顶上)
         MapInteractionManager interactionMgr = FindObjectOfType<MapInteractionManager>();
         if (interactionMgr != null) interactionMgr.InitPawnPosition();
+    }
+
+    // =========================================================
+    // 【新增】供外部调用的接口：重新启动自动跟随
+    // =========================================================
+    public void ResumeAutoFollow()
+    {
+        isAutoFollowing = true;
+    }
+
+    void LateUpdate()
+    {
+        // 如果被玩家手动拖拽打断了，就不再执行跟随算法
+        if (!isAutoFollowing || targetPawn == null || _scrollRect == null || _scrollRect.viewport == null) return;
+
+        float viewportWidth = _scrollRect.viewport.rect.width;
+        float contentWidth = contentParent.GetComponent<RectTransform>().rect.width;
+        float maxScroll = contentWidth - viewportWidth;
+
+        if (maxScroll <= 0) return; 
+
+        Vector3 pawnLocalPos = contentParent.InverseTransformPoint(targetPawn.position);
+        float distanceFromLeft = pawnLocalPos.x - contentParent.GetComponent<RectTransform>().rect.xMin;
+        float targetLeftEdge = distanceFromLeft - (viewportWidth / 2f);
+        
+        float targetNormalized = targetLeftEdge / maxScroll;
+        targetNormalized = Mathf.Clamp01(targetNormalized);
+
+        _scrollRect.horizontalNormalizedPosition = Mathf.SmoothDamp(
+            _scrollRect.horizontalNormalizedPosition, 
+            targetNormalized, 
+            ref _scrollVelocity, 
+            followSmoothTime
+        );
     }
 
     private void DrawLineBetweenNodes(RectTransform rectA, RectTransform rectB, Transform parent)

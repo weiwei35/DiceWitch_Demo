@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0c49a4af8bf5cbc4f97e6baf5f2cf99f, type: 3}
-  m_Name: Battle 2
+  m_Name: Battle 3
   m_EditorClassIdentifier: 
-  roomName: "\u57FA\u7840\u602A\u7269\u623F"
+  roomName: "\u7CBE\u82F1\u602A\u7269\u623F"
   roomType: 0
   roomIcon: {fileID: -1963661152, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   description: 
   skipRemainingNodesOnClear: 0
-  enemyWave: {fileID: 11400000, guid: d26f5a733c452d74c955608f24d8be93, type: 2}
+  enemyWave: {fileID: 11400000, guid: 84b6c62d0c3d6984e8151759dbe3959e, type: 2}
   rewardAbilityDraft: 1

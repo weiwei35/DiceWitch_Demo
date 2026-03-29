@@ -11,6 +11,7 @@ public class GameFlowController : MonoBehaviour
     [SerializeField] private AttributeDraftPanel _attrDraftPanel;
     [SerializeField] private MiniActionMenu _miniMenu;
     [SerializeField] private EventUIManager _eventUIManager; // 事件 UI 管理器
+    [SerializeField] private RunSummaryUIManager _runSummaryUI; // 结算界面 UI
     [Header("Map UI")]
     [SerializeField] private GameObject _mapPanel; // 整个地图界面的根节点
     [SerializeField] private GameObject _roomUIRoot; // 战斗界面的根节点
@@ -73,8 +74,8 @@ public class GameFlowController : MonoBehaviour
             Debug.LogError("试图进入的房间数据为空！");
             return;
         }
-
         Debug.Log($"<color=cyan>GameFlow: 准备处理房间事件 -> {roomData.roomName} ({roomData.roomType})</color>");
+        if (RunTracker.Instance != null) RunTracker.Instance.roomsVisited++;
 
         // 根据房间类型，切换到不同的状态和UI
         switch (roomData.roomType)
@@ -310,4 +311,11 @@ public class GameFlowController : MonoBehaviour
         _pendingSlotForUpgrade = null;
         EnterIdleState(); 
     }
+    // 【新增】呼叫结算面板
+    public void ShowRunSummary(bool isVictory)
+    {
+        if (RunTracker.Instance != null) RunTracker.Instance.isVictory = isVictory;
+        if (_runSummaryUI != null) _runSummaryUI.ShowSummary();
+    }
+
 }

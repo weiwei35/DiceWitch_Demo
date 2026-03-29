@@ -8,6 +8,10 @@ public class BattleRoomSO : RoomDataSO
     // 这里可以直接引用我们之前做好的 WaveDataSO
     public WaveDataSO enemyWave; 
     
+    [Header("奖励配置")]
+    [Tooltip("如果勾选，打通此房间后会弹出骰子附魔三选一奖励")]
+    public bool rewardAbilityDraft = false; 
+    
     // 以后可以加：背景图 prefab、特殊环境效果等
     // public GameObject environmentPrefab; 
 

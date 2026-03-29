@@ -160,4 +160,13 @@ public class DiceThrower : MonoBehaviour
             _highlightedDiceList.Clear();
         }
     }
+    public int GetValidDiceCount()
+    {
+        int count = 0;
+        foreach (var dice in activeDiceList)
+        {
+            if (dice != null && dice.gameObject != null) count++;
+        }
+        return count;
+    }
 }

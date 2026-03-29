@@ -15,6 +15,8 @@ public class EnemyTarget : BattleTarget
 {
     // 1. 定义一个事件：当收到伤害时触发 (参数：收到的伤害值)
     public event System.Action<int> OnDamageTaken;
+    [Header("Run Info")]
+    public Enum.EnemyTier tier = Enum.EnemyTier.Normal; // 默认普通怪
     [Header("Stats")]
     public int maxHp = 50;
     public int currentHp;
@@ -33,7 +35,6 @@ public class EnemyTarget : BattleTarget
     // 【新增】当前绑定的灵魂链接伙伴
     public EnemyTarget soulLinkPartner;
     [Header("Rewards")]
-    public int xpReward = 5;
     public int manaDustReward = 10;
     private Vector3 originalPosition;
     private Vector3 originalScale;
@@ -124,7 +125,15 @@ public class EnemyTarget : BattleTarget
         // 造成伤害
         PlayerManager.Instance.TakeDamage(damageDeal);
         Debug.Log($"{name} 攻击玩家，造成 {damageDeal} 点伤害 (基础{nextDamageValue} + 成长{_permanentGrowthValue})");
-
+        // =========================================================
+        // 如果这一击杀死了玩家，记录凶手和作案现场！
+        // =========================================================
+        if (PlayerManager.Instance.currentHp <= 0 && RunTracker.Instance != null)
+        {
+            string roomName = BattleManager.Instance.CurrentRoomData != null ? BattleManager.Instance.CurrentRoomData.roomName : "未知房间";
+            string cleanKillerName = this.gameObject.name.Replace("(Clone)", ""); // 去掉克隆后缀
+            RunTracker.Instance.RecordDeath(roomName, cleanKillerName);
+        }
         // 攻击后摇
         yield return new WaitForSeconds(0.2f);
     }
@@ -134,6 +143,8 @@ public class EnemyTarget : BattleTarget
     }
     void Die()
     {
+        // 给统计器加分！
+        if (RunTracker.Instance != null) RunTracker.Instance.AddKill(tier);
         if (BattleManager.Instance != null)
             BattleManager.Instance.OnPlayerUseDice -= HandlePlayerDiceUsed;// 如果我有伙伴，告诉伙伴我挂了，断开链接
         if (soulLinkPartner != null)
@@ -400,6 +411,27 @@ public class EnemyTarget : BattleTarget
         foreach (var status in keys)
         {
             status.OnPostTakeDamage(this, damage, currentStatuses[status], isChainReaction);
+        }
+    }
+    // 处理全局光环影响
+    public int ProcessGlobalDamageModifiers(int rawDamage, int usedOrder, int remainingAtThrow)
+    {
+        int finalDamage = rawDamage;
+        var keys = new List<StatusEffectSO>(currentStatuses.Keys);
+        foreach (var status in keys)
+        {
+            finalDamage = status.OnGlobalCalculateDamage(this, finalDamage, usedOrder, remainingAtThrow);
+        }
+        return finalDamage;
+    }
+    public void HandlePlayerGainArmor(int amount)
+    {
+        if (currentHp <= 0 || currentStatuses.Count == 0) return;
+
+        var keys = new List<StatusEffectSO>(currentStatuses.Keys);
+        foreach (var status in keys)
+        {
+            status.OnPlayerGainArmor(this, amount, currentStatuses[status]);
         }
     }
     public void AddGrowth(int amount)

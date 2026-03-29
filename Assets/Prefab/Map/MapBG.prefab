@@ -91,7 +91,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f77eb00cda610854a9e27e1c936fddb8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  roomData: {fileID: 11400000, guid: b4e7176daff4d3643ab1af9e2953d523, type: 2}
+  roomData: {fileID: 11400000, guid: 75f6b794106c34b45931ba1c4b829f6f, type: 2}
   roomNodes:
   - {fileID: 6417291257913406090}
   - {fileID: 1563462954033055399}
@@ -188,7 +188,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f77eb00cda610854a9e27e1c936fddb8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  roomData: {fileID: 11400000, guid: 75f6b794106c34b45931ba1c4b829f6f, type: 2}
+  roomData: {fileID: 11400000, guid: 7e48fb98d61f4dc49a987b67f491d51d, type: 2}
   roomNodes:
   - {fileID: 9043240721372299201}
   - {fileID: 2844356860034434003}
@@ -1064,7 +1064,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f77eb00cda610854a9e27e1c936fddb8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  roomData: {fileID: 11400000, guid: 75f6b794106c34b45931ba1c4b829f6f, type: 2}
+  roomData: {fileID: 11400000, guid: 2627888f95cda2d4985c3597de4d3966, type: 2}
   roomNodes:
   - {fileID: 8772327115272364913}
   - {fileID: 7012672475683426873}
@@ -1160,7 +1160,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f77eb00cda610854a9e27e1c936fddb8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  roomData: {fileID: 11400000, guid: b4e7176daff4d3643ab1af9e2953d523, type: 2}
+  roomData: {fileID: 11400000, guid: 75f6b794106c34b45931ba1c4b829f6f, type: 2}
   roomNodes:
   - {fileID: 5020403607548533603}
   - {fileID: 5998878354223437152}

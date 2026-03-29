@@ -16,7 +16,7 @@ public class MapPlayerPawn : MonoBehaviour
         {
             // 播放弹跳动画，等待跳完再进行下一次循环
             // 参数: 目标位置, 弧度高度, 跳跃次数, 持续时间
-            yield return transform.DOJump(targetPos, jumpHeight, 1, jumpDuration).WaitForCompletion();
+            yield return transform.DOLocalJump(targetPos, jumpHeight, 1, jumpDuration).WaitForCompletion();
             
             // 可以加个小小的挤压动画增强 Q弹 的感觉
             transform.DOPunchScale(new Vector3(0.2f, -0.2f, 0), 0.15f);
