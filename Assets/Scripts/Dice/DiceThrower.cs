@@ -1,54 +1,66 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 
 public class DiceThrower : MonoBehaviour
-{
-    [Header("Settings")]
-    public GameObject dicePrefab; // 拖入你的骰子预制体
-    public Transform spawnPoint;  // 蓝色托盘上方的生成点
-    public float throwForce = 5f;
-    public float torqueForce = 10f;
-    
-    private Transform _container; // 父物体容器
-    
+{[Header("Spawn & Fly Settings (入场设定)")]
+    public GameObject dicePrefab; 
+    public Transform spawnPoint;             // 骰子飞出的起点（比如屏幕外、或者角色的手/袋子）
+    public float flyInDuration = 0.3f;       // 飞入排列位置的时长
+    public float flyInDelay = 0.05f;         // 每个骰子飞出的间隔 (像发牌一样)[Header("Pop & Roll Settings (原地弹跳设定)")]
+    public float upwardForce = 8f;           // 向上弹跳的力度 (给大一点，让它们飞高点)
+    public float horizontalScatter = 1.5f;   // 给一点微小的横向随机力，防止它们在空中完美重叠
+    public float torqueForce = 80f;          // 疯狂旋转的扭矩
+    public float popDelay = 0.05f;           // 弹跳起飞的连发间隔，制造“波浪”起飞感[Header("Layout Settings (整理排版)")]
+    public Transform layoutCenter;           // 最终整齐排列的中心点
+    public float diceSpacing = 1.2f;         
+    public float layoutTweenDuration = 0.4f; 
+
+    private Transform _container; 
     private List<PhysicsDice> _highlightedDiceList = new List<PhysicsDice>();
     private Vector3 _originalScale;
-    // 这是一个动态列表，用来记录当前场上活着的所有骰子
     private List<PhysicsDice> activeDiceList = new List<PhysicsDice>();
     
+    private int _settledDiceCount = 0;
+    private int _totalDiceExpected = 0; 
+    private Coroutine _throwCoroutine;  
+
     public void RegisterDice(PhysicsDice dice)
     {
-        if (!activeDiceList.Contains(dice))
-        {
-            activeDiceList.Add(dice);
-        }
+        if (!activeDiceList.Contains(dice)) activeDiceList.Add(dice);
     }
-    // 修改方法：传入要生成几个骰子
+
     public void SpawnAndThrow(List<BattleDiceEntry> diceEntries)
     {
         ClearOldDice();
+
+        _totalDiceExpected = diceEntries.Count; 
         if (_container == null) _container = new GameObject("--- Dice Container ---").transform;
 
-        // =========================================================
-        // 【新增】提取作弊点数，并随机决定对哪一颗骰子下手
-        // =========================================================
-        int fixedDiceValue = PlayerManager.Instance.nextBattleFixedDiceValue;
-        PlayerManager.Instance.nextBattleFixedDiceValue = 0; // 提取后清空
+        if (_throwCoroutine != null) StopCoroutine(_throwCoroutine);
+        _throwCoroutine = StartCoroutine(CinematicThrowSequence(diceEntries));
+    }
 
-        int cheatIndex = -1;
-        if (fixedDiceValue > 0 && diceEntries.Count > 0)
-        {
-            cheatIndex = Random.Range(0, diceEntries.Count); // 随机选一颗
-        }
+    // =========================================================
+    // 【核心演出】飞入排列 -> 停顿 -> 原地起飞翻滚
+    // =========================================================
+    private IEnumerator CinematicThrowSequence(List<BattleDiceEntry> diceEntries)
+    {
+        int count = diceEntries.Count;
+        float totalWidth = (count - 1) * diceSpacing;
+        float startX = -totalWidth / 2f;
+        Vector3 centerPos = layoutCenter != null ? layoutCenter.position : spawnPoint.position;
 
-        for (int i = 0; i < diceEntries.Count; i++)
+        // ---------------------------------------------------------
+        // 阶段 1：从生成点飞入，在半空中或地上排成一排
+        // ---------------------------------------------------------
+        for (int i = 0; i < count; i++)
         {
             var entry = diceEntries[i];
-            Vector3 randomOffset = new Vector3(Random.Range(-0.2f, 0.2f), 0, Random.Range(-0.2f, 0.2f));
-            Vector3 spawnPos = spawnPoint.position + randomOffset;
-
-            GameObject newDiceObj = Instantiate(dicePrefab, spawnPos, Random.rotation);
+            Vector3 targetPos = centerPos + Vector3.right * (startX + i * diceSpacing);
+            
+            GameObject newDiceObj = Instantiate(dicePrefab, spawnPoint.position, Quaternion.identity);
             newDiceObj.transform.SetParent(_container);
         
             PhysicsDice pDice = newDiceObj.GetComponent<PhysicsDice>();
@@ -56,36 +68,52 @@ public class DiceThrower : MonoBehaviour
             {
                 pDice.Initialize(entry.combatData, entry.sourceRef); 
                 activeDiceList.Add(pDice);
-            
-                // =========================================================
-                // 【新增】如果这是被选中的作弊骰子，调用作弊逻辑
-                // =========================================================
-                if (i == cheatIndex)
-                {
-                    Debug.Log($"<color=magenta>【命运羁绊】这颗骰子 ({pDice.name}) 必定会掷出 {fixedDiceValue}！</color>");
-                    
-                    // 【任务】：你需要在你的 PhysicsDice.cs 脚本中，实现并调用一个类似 SetCheatFace() 的方法。
-                    // pDice.SetCheatFace(fixedDiceValue); 
-                }
+                pDice.OnDiceSettled += HandleSingleDiceSettled;
+                
+                Rigidbody rb = pDice.GetComponent<Rigidbody>();
+                if (rb != null) rb.isKinematic = true; 
 
-                Vector3 force = Vector3.down * 2f + new Vector3(Random.Range(-1f,1f), 0, Random.Range(-1f,1f)) * throwForce;
-                Vector3 torque = Random.insideUnitSphere * torqueForce;
-                pDice.Roll(force, torque);
+                // 飞入动画 (改用 OutQuad 会让减速更平滑，接下来的起飞更自然)
+                newDiceObj.transform.DOMove(targetPos, flyInDuration).SetEase(Ease.OutQuad);
             }
+
+            // 发牌间隔
+            yield return new WaitForSeconds(flyInDelay);
+        }
+
+        // ---------------------------------------------------------
+        // 【关键修复】精确计算最后一次发牌的剩余飞行时间，去掉死板的停顿！
+        // ---------------------------------------------------------
+        float remainingTime = flyInDuration - flyInDelay;
+        if (remainingTime > 0)
+        {
+            yield return new WaitForSeconds(remainingTime);
+        }
+
+        // ---------------------------------------------------------
+        // 阶段 2：无缝衔接，原地“砰”地爆开起飞翻滚！
+        // ---------------------------------------------------------
+        for (int i = 0; i < activeDiceList.Count; i++)
+        {
+            PhysicsDice pDice = activeDiceList[i];
+            if (pDice == null) continue;
+
+            Vector3 randomScatter = new Vector3(Random.Range(-1f, 1f), 0, Random.Range(-1f, 1f)) * horizontalScatter;
+            Vector3 force = Vector3.up * upwardForce + randomScatter;
+            Vector3 torque = Random.insideUnitSphere * torqueForce;
+            
+            pDice.Roll(force, torque);
+            
+            // 极短的连发起飞间隔，形成波浪感
+            yield return new WaitForSeconds(popDelay);
         }
     }
-    // 【新增】为了方便 UI 管理器调用，提取一个生成单个骰子的方法
-    // isGhostSpawn: 仅仅是为了逻辑区分，目前逻辑一样
+
     public PhysicsDice SpawnSingleDice(DiceDataSO data, PlayerDice sourceRef = null)
     {
-        Vector3 randomOffset = new Vector3(Random.Range(-0.2f, 0.2f), 0, Random.Range(-0.2f, 0.2f));
-        Vector3 spawnPos = spawnPoint.position + randomOffset;
-
-        // 如果是幽灵复活，建议生成点抬高一点，或者加点随机偏移，避免和还没销毁的骰子撞在一起
-        if (sourceRef == null) spawnPos += Vector3.up * 2.0f; 
-
-        GameObject newDiceObj = Instantiate(dicePrefab, spawnPos, Random.rotation);
-        
+        // 幽灵骰子/单体生成也可以复用原地弹起逻辑
+        Vector3 targetPos = layoutCenter != null ? layoutCenter.position : spawnPoint.position;
+        GameObject newDiceObj = Instantiate(dicePrefab, targetPos,Quaternion.identity);
         if (_container != null) newDiceObj.transform.SetParent(_container);
     
         PhysicsDice pDice = newDiceObj.GetComponent<PhysicsDice>();
@@ -93,60 +121,106 @@ public class DiceThrower : MonoBehaviour
         {
             pDice.Initialize(data, sourceRef); 
             activeDiceList.Add(pDice);
-            
-            Vector3 force = Vector3.down * 2f + new Vector3(Random.Range(-1f,1f), 0, Random.Range(-1f,1f)) * throwForce;
+            pDice.OnDiceSettled += HandleSingleDiceSettled;
+
+            Vector3 force = Vector3.up * upwardForce + new Vector3(Random.Range(-1f,1f), 0, Random.Range(-1f,1f)) * horizontalScatter;
             Vector3 torque = Random.insideUnitSphere * torqueForce;
             pDice.Roll(force, torque);
 
-            return pDice; // 【新增】返回它
+            return pDice; 
         }
         return null;
     }
-    // 清理逻辑
-    public void ClearOldDice()
+
+    // ---------------------------------------------------------
+    // 阶段 3：落地静止后，重新吸附排队
+    // ---------------------------------------------------------
+    private void HandleSingleDiceSettled(int value)
     {
-        StopHighlight();
-        // 倒序遍历删除，比较安全
-        for (int i = activeDiceList.Count - 1; i >= 0; i--)
+        _settledDiceCount++;
+        
+        if (_settledDiceCount >= _totalDiceExpected && _totalDiceExpected > 0)
         {
-            if (activeDiceList[i] != null)
-            {
-                Destroy(activeDiceList[i].gameObject);
-            }
-        }
-        activeDiceList.Clear();
-        var allSquads = FindObjectsOfType<DiceSquadGroup>();
-        foreach (var squad in allSquads)
-        {
-            Destroy(squad.gameObject);
+            OrganizeDiceLayout();
         }
     }
+
+    private void OrganizeDiceLayout()
+    {
+        int count = activeDiceList.Count;
+        if (count == 0) return;
+
+        float totalWidth = (count - 1) * diceSpacing;
+        float startX = -totalWidth / 2f;
+        Vector3 centerPos = layoutCenter != null ? layoutCenter.position : spawnPoint.position - Vector3.up * 2f;
+
+        for (int i = 0; i < count; i++)
+        {
+            PhysicsDice dice = activeDiceList[i];
+            if (dice == null) continue;
+
+            // 再次冻结物理，让动画接管整理
+            Rigidbody rb = dice.GetComponent<Rigidbody>();
+            if (rb != null) rb.isKinematic = true;
+
+            Vector3 targetPos = centerPos + Vector3.right * (startX + i * diceSpacing);
+
+            // 小幅度跳跃回到完美阵型
+            dice.transform.DOJump(targetPos, 0.1f, 1, layoutTweenDuration).SetEase(Ease.OutQuad);
+
+            // 角度取整放平 (将倾斜的骰子“咔哒”一声拉正)
+            Vector3 euler = dice.transform.eulerAngles;
+            euler.x = Mathf.Round(euler.x / 90f) * 90f;
+            euler.y = Mathf.Round(euler.y / 90f) * 90f;
+            euler.z = Mathf.Round(euler.z / 90f) * 90f;
+            dice.transform.DORotate(euler, layoutTweenDuration).SetEase(Ease.OutQuad);
+        }
+    }
+
+    public void ClearOldDice()
+    {
+        if (_throwCoroutine != null) StopCoroutine(_throwCoroutine);
+
+        StopHighlight();
+        _settledDiceCount = 0; 
+        _totalDiceExpected = 0;
+
+        for (int i = activeDiceList.Count - 1; i >= 0; i--)
+        {
+            if (activeDiceList[i] != null) Destroy(activeDiceList[i].gameObject);
+        }
+        activeDiceList.Clear();
+
+        var allSquads = FindObjectsOfType<DiceSquadGroup>();
+        foreach (var squad in allSquads) Destroy(squad.gameObject);
+    }
+
+    public int GetValidDiceCount()
+    {
+        int count = 0;
+        foreach (var dice in activeDiceList)
+            if (dice != null && dice.gameObject != null) count++;
+        return count;
+    }
+
     public void HighlightDice(PlayerDice targetData)
     {
-        StopHighlight(); // 先清除旧的高亮
-
-        // 【修改】遍历所有骰子，找到所有匹配的儿子
+        StopHighlight();
         foreach (var dice in activeDiceList)
         {
             if (dice == null) continue;
-            // 只要引用相同，就加入高亮名单
             if (dice.sourceDataRef == targetData)
             {
                 _highlightedDiceList.Add(dice);
-                
-                // 执行视觉效果 (变大/发光)
                 dice.transform.DOKill();
                 _originalScale = dice.transform.localScale;
-                dice.transform.DOScale(dice.transform.localScale * 1.3f, 0.2f)
-                    .SetLoops(-1, LoopType.Yoyo)
-                    .SetLink(dice.gameObject);
+                dice.transform.DOScale(dice.transform.localScale * 1.3f, 0.2f).SetLoops(-1, LoopType.Yoyo).SetLink(dice.gameObject);
             }
         }
     }
 
     public void StopHighlight()
     {
-        // 【修改】批量复原
         if (_highlightedDiceList.Count > 0)
         {
             foreach (var dice in _highlightedDiceList)
@@ -159,14 +233,5 @@ public class DiceThrower : MonoBehaviour
             }
             _highlightedDiceList.Clear();
         }
-    }
-    public int GetValidDiceCount()
-    {
-        int count = 0;
-        foreach (var dice in activeDiceList)
-        {
-            if (dice != null && dice.gameObject != null) count++;
-        }
-        return count;
     }
 }

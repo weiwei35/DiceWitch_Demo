@@ -48,6 +48,7 @@ public class PhysicsDice : MonoBehaviour
     {
         isRolling = true;
         rb.isKinematic = false; // 开启物理
+        rb.maxAngularVelocity = 50f; 
         rb.AddForce(throwForce, ForceMode.Impulse); // 施加推力
         rb.AddTorque(rotationTorque, ForceMode.Impulse); // 施加旋转力
         
