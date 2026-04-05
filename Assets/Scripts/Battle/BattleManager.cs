@@ -26,6 +26,9 @@ public class BattleManager : MonoBehaviour
     
     public event Action OnEnemyKilledEvent;
     public event Action OnPlayerTurnEnd;
+    // 定义战斗结果事件，供外部（GameFlowController）监听
+    public event Action OnBattleVictoryEvent;
+    public event Action OnBattleDefeatEvent;
     public event Action<int> OnPlayerUseDice;
     private BattleRoomSO _currentRoomData;
     public BattleRoomSO CurrentRoomData => _currentRoomData; // 【新增】对外暴露属性
@@ -115,21 +118,22 @@ public class BattleManager : MonoBehaviour
         {
             Debug.Log("<color=yellow>触发房间通关奖励：骰子附魔抽卡三选一！</color>");
             // 呼叫 GameFlowController 弹出抽卡，传入回调：抽完后回大地图
-            GameFlowController.Instance.StartDraftProcess(ReturnToMapState);
+            // GameFlowController.Instance.StartDraftProcess(ReturnToMapState);
+            OnBattleVictoryEvent?.Invoke();
         }
         else
         {
             Debug.Log("该房间没有附魔奖励，直接返回大地图。");
-            ReturnToMapState();
+            // ReturnToMapState();
         }
     }
-    private void ReturnToMapState()
-    {
-        // 可以在这里加一个清理本场战斗临时数据的逻辑
-        currentBattleDamageBonus = 0; 
-        
-        GameFlowController.Instance.EnterMapState();
-    }
+    // private void ReturnToMapState()
+    // {
+    //     // 可以在这里加一个清理本场战斗临时数据的逻辑
+    //     currentBattleDamageBonus = 0; 
+    //     
+    //     GameFlowController.Instance.EnterMapState();
+    // }
     // =========================================================
     // 战斗逻辑 (Battle Logic)
     // =========================================================
@@ -272,7 +276,8 @@ public class BattleManager : MonoBehaviour
         if (PlayerManager.Instance.currentHp <= 0)
         {
             Debug.Log("游戏结束！");
-            GameFlowController.Instance.ShowRunSummary(false); // 呼出结算界面
+            // GameFlowController.Instance.ShowRunSummary(false); // 呼出结算界面
+            OnBattleDefeatEvent?.Invoke();
         }
         else
         {

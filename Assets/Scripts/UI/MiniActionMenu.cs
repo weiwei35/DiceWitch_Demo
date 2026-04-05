@@ -1,99 +1,65 @@
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
+using System.Text;
 
 public class MiniActionMenu : MonoBehaviour
 {
-    public float verticalOffset = 150f; // 建议设大一点，比如100-200像素
-    public Button upgradeButton;
-    public TextMeshProUGUI upgradeCostText;
-    
-    public Button enchantButton;
-    public TextMeshProUGUI enchantCostText;
+    [Header("UI References")]
+    // 【注意】请在 Unity 面板中，把原来的按钮删掉，新建一个 TextMeshPro 文本框并拖拽到这里
+    public TextMeshProUGUI tooltipText; 
+    public float verticalOffset = 100f; 
 
-    private MagicCircleSlot _currentSlot;
-
-    void Start()
+    // --- 改为纯粹的展示方法 ---
+    public void ShowTooltip(MagicCircleSlot slot, Vector3 anchorPos)
     {
-        // 绑定按钮事件
-        upgradeButton.onClick.AddListener(() => {
-            if (_currentSlot != null) // 加个安全检查
-            {
-                GameFlowController.Instance.UpgradeSlotAttribute(_currentSlot);
-                Close();
-            }
-        });
+        if (slot == null) return;
 
-        enchantButton.onClick.AddListener(() => {
-            if (_currentSlot != null)
-            {
-                GameFlowController.Instance.StartAttributeEnchantProcess(_currentSlot);
-                Close();
-            }
-        });
-        
-        // 假设这个脚本挂在一个铺满全屏的透明 Button 上用来点击关闭
-        Button bgButton = GetComponent<Button>();
-        if (bgButton != null)
-        {
-            bgButton.onClick.AddListener(Close);
-        }
-    }
-
-    public void Show(MagicCircleSlot slot, Vector3 anchorPos)
-    {
-        // --- 【关键修复】 ---
-        _currentSlot = slot; 
-        // ------------------
-
-        // 1. 世界坐标对齐
+        // 1. 设置位置与偏移
         transform.position = anchorPos;
-
-        // 2. 锚点坐标偏移 (像素单位)
         RectTransform rect = GetComponent<RectTransform>();
         if (rect != null)
         {
             Vector2 currentAnchored = rect.anchoredPosition;
-            // 确保只修改 Y 轴偏移，保持 X 轴相对位置
             rect.anchoredPosition = new Vector2(currentAnchored.x, currentAnchored.y + verticalOffset);
         }
-        
         transform.SetAsLastSibling();
-        
-        // 更新 UI
-        upgradeCostText.text = "5"; 
-        enchantCostText.text = "10";
 
-        // 逻辑：如果有属性显示升级，没属性显示附魔？
-        // 或者两者都显示，看你设计。通常有了属性也可以重新附魔(替换)
-        // 这里假设：有属性才能升级，附魔按钮一直都在(用于注入或替换)
-        bool hasAttribute = (slot.currentAttribute != null && slot.currentAttribute.data != null);
+        // 2. 组装你要展示的 Tips 内容
+        StringBuilder sb = new StringBuilder();
         
-        upgradeButton.gameObject.SetActive(hasAttribute);
-        enchantButton.gameObject.SetActive(true); 
-
-        gameObject.SetActive(true);
-        
-        // 获取当前资源
-        int currentDust = PlayerProgressionManager.Instance.manaDust;
-        int upgradeCost = 5; // 建议设为常量
-        int enchantCost = 10;
-
-        // 控制按钮是否可点
-        if (hasAttribute)
+        // 检查是否有骰子
+        if (slot.currentDice != null)
         {
-            upgradeButton.interactable = (currentDust >= upgradeCost);
-            // 如果钱不够，可以把文字变红
-            upgradeCostText.color = (currentDust >= upgradeCost) ? Color.green : Color.red;
+            sb.AppendLine($"<b>{slot.currentDice.diceName}</b>");
+            // 检查骰子是否有附魔法术
+            if (slot.currentDice.boundAbility != null)
+            {
+                sb.AppendLine($"<color=yellow>★ 附魔: {slot.currentDice.boundAbility.abilityName}</color>");
+            }
+        }
+        else
+        {
+            sb.AppendLine("<b><color=#AAAAAA>空槽位</color></b>");
         }
 
-        enchantButton.interactable = (currentDust >= enchantCost);
-        enchantCostText.color = (currentDust >= enchantCost) ? Color.green : Color.red;
+        // 检查魔法阵是否有属性升级
+        if (slot.currentAttribute != null && slot.currentAttribute.data != null)
+        {
+            sb.AppendLine($"<color=#00FF00>阵法加持: Lv.{slot.currentAttribute.level} {slot.currentAttribute.data.attributeName}</color>");
+        }
+
+        // 赋值给文本框
+        if (tooltipText != null)
+        {
+            tooltipText.text = sb.ToString();
+        }
+
+        gameObject.SetActive(true);
     }
 
-    public void Close()
+    // --- 鼠标移出时隐藏 ---
+    public void HideTooltip()
     {
         gameObject.SetActive(false);
-        _currentSlot = null; // 关闭时清理引用
     }
 }
