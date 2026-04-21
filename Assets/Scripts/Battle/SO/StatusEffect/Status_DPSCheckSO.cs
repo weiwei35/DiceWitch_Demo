@@ -6,24 +6,28 @@ public class Status_DPSCheckSO : StatusEffectSO
     [Header("DPS Check Config")]
     public int damageThreshold = 10; // 需要达到的伤害阈值
 
-    public override void OnTurnStart(EnemyTarget target, int stacks)
+    public override void OnTurnStart(BattleTarget target, int stacks)
     {
-        // 1. 如果满血，无需回血，直接跳过
-        if (target.currentHp >= target.maxHp) return;
+        if (target is EnemyTarget enemy)
+        {
+            // 1. 如果满血，无需回血，直接跳过
+            if (enemy.currentHp >= enemy.maxHp) return;
 
-        // 2. 检查本回合受到的总伤害是否达标
-        if (target.damageTakenThisRound < damageThreshold)
-        {
-            int healAmount = target.maxHp - target.currentHp;
-            
-            Debug.Log($"<color=green>【DPS检测失败】{target.name} 本回合仅受到 {target.damageTakenThisRound} 伤害 (需>={damageThreshold})，恢复全部生命值！</color>");
-            
-            // 触发回血
-            target.Heal(healAmount);
-        }
-        else
-        {
-            Debug.Log($"【DPS检测通过】{target.name} 本回合受到 {target.damageTakenThisRound} 伤害，压制了它的再生！");
+            // 2. 检查本回合受到的总伤害是否达标
+            if (enemy.damageTakenThisRound < damageThreshold)
+            {
+                int healAmount = enemy.maxHp - enemy.currentHp;
+
+                Debug.Log(
+                    $"<color=green>【DPS检测失败】{enemy.name} 本回合仅受到 {enemy.damageTakenThisRound} 伤害 (需>={damageThreshold})，恢复全部生命值！</color>");
+
+                // 触发回血
+                enemy.Heal(healAmount);
+            }
+            else
+            {
+                Debug.Log($"【DPS检测通过】{enemy.name} 本回合受到 {enemy.damageTakenThisRound} 伤害，压制了它的再生！");
+            }
         }
     }
 

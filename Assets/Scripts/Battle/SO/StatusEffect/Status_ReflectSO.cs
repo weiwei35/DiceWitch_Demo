@@ -1,36 +1,46 @@
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Status/Reflect (Thorns)")]
+[CreateAssetMenu(menuName = "DiceWitch/Status/Reflect")]
 public class Status_ReflectSO : StatusEffectSO
 {
-    [Header("Reflect Config")]
-    public GameObject reflectVFX; // 反弹特效
+    public GameObject reflectVFX; 
 
-    public override int OnTakeDamage(EnemyTarget target, int incomingDamage, int stacks)
+    // 在伤害真正造成之前拦截它。
+    public override void OnBeforeDefend(BattleTarget target, DamageInfo info, int stacks)
     {
-        // 如果伤害无效，或者没有层数，直接返回
-        if (incomingDamage <= 0 || stacks <= 0) return incomingDamage;
+        // 1. 防死循环：如果这伤害本身就是别人反弹过来的，或者是毒伤，绝不触发反伤！
+        if (info.DmgType == DamageType.Reflect || info.DmgType == DamageType.StatusDOT || info.FinalDamage <= 0) 
+            return;
 
-        // 1. 执行反伤：对玩家造成等量伤害
-        Debug.Log($"<color=red>触发反伤！玩家受到 {incomingDamage} 点反噬伤害。</color>");
-        
-        // 假设 PlayerManager 单例有 TakeDamage 方法
-        PlayerManager.Instance.TakeDamage(incomingDamage);
-
-        // 播放特效
-        if (reflectVFX != null)
+        // 2. 尝试获取攻击者。如果骰子没传 attacker，我们就默认反弹给玩家
+        BattleTarget realAttacker = info.Attacker;
+        if (realAttacker == null)
         {
-            Instantiate(reflectVFX, target.transform.position, Quaternion.identity);
+            realAttacker = FindObjectOfType<PlayerUITarget>();
         }
+
+        // 3. 获取 100% 的面值伤害准备反弹
+        int reflectDamage = info.FinalDamage;
+
+        Debug.Log($"<color=orange>【反伤触发】免疫了 {reflectDamage} 点伤害，并向 {realAttacker?.name} 反弹 100% 伤害！</color>");
         
-        // 飘字提示 "Reflect!"
-        // DamageNumberManager.Instance.ShowText(target.transform.position, "反伤!"); 
+        // 4. 打包反弹伤害，塞入管线发给攻击者
+        if (realAttacker != null)
+        {
+            DamageInfo reflectInfo = new DamageInfo(target, realAttacker, reflectDamage, DamageType.Reflect);
+            BattleManager.Instance.ProcessDamage(reflectInfo);
+        }
 
-        // 2. 消耗层数 (前 1 次攻击无效 -> 消耗 1 层)
-        target.ApplyStatus(this, -1);
+        if (reflectVFX != null) 
+            Instantiate(reflectVFX, target.transform.position, Quaternion.identity);
 
-        // 3. 【关键】返回 0
-        // 这意味着敌人受到的最终伤害为 0 (无效化)
-        return 0;
+        // 5. 【关键修改2】实现“攻击无效”：将本次要打在自己身上的伤害强制清零！
+        info.FinalDamage = 0;
+
+        // 6. 消耗 1 层反伤Buff
+        if (target is EnemyTarget enemy) 
+        {
+            enemy.ApplyStatus(this, -1);
+        }
     }
 }

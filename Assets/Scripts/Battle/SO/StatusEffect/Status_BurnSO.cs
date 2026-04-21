@@ -1,17 +1,20 @@
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Status/Burn")]
+[CreateAssetMenu(menuName = "DiceWitch/Status/Burn")]
 public class Status_BurnSO : StatusEffectSO
 {
-    public override void OnTurnStart(EnemyTarget target, int stacks)
+    public override void OnTurnStart(BattleTarget target, int stacks)
     {
-        // 1. 造成伤害
         Debug.Log($"<color=orange>燃烧生效！造成 {stacks} 点伤害</color>");
         
-        // 注意：这里我们调用 ApplyDamage 而不是 TakeDamage，防止无限递归触发状态
-        target.ApplyDirectDamage(stacks); 
+        // 【重构】打包一个异常状态伤害，推入管线。这样算作正规伤害，但不会触发反伤。
+        DamageInfo dotInfo = new DamageInfo(target, target, stacks, DamageType.StatusDOT);
+        BattleManager.Instance.ProcessDamage(dotInfo);
 
-        // 2. 减少层数 (比如每次回合开始层数 -1)
-        target.ApplyStatus(this, -1);
+        // 减少层数
+        if (target is EnemyTarget enemy)
+        {
+            enemy.ApplyStatus(this, -1);
+        }
     }
 }

@@ -4442,6 +4442,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   team: 0
+  targetName: 
 --- !u!1 &1051203316
 GameObject:
   m_ObjectHideFlags: 0

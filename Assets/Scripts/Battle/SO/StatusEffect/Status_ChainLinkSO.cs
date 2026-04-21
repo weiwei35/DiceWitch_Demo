@@ -1,35 +1,31 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-[CreateAssetMenu(menuName = "Status/Chain Link")]
+[CreateAssetMenu(menuName = "DiceWitch/Status/Chain Link")]
 public class Status_ChainLinkSO : StatusEffectSO
 {
     [Header("Chain Config")]
-    public float transferRatio = 0.5f; // 传递 50%
-    public GameObject damageVFX;       // 传递伤害时的特效
+    public float transferRatio = 0.5f; 
+    public GameObject damageVFX;       
 
-    // 逻辑：当宿主受伤时，分摊给别人
-    public override void OnPostTakeDamage(EnemyTarget target, int incomingDamage, int stacks, bool isChainReaction)
+    public override void OnAfterTakeDamage(BattleTarget target, DamageInfo info, int stacks)
     {
-        // 1. 只有非连锁伤害才触发传播 (防止 A炸B，B炸A 的死循环)
-        if (isChainReaction || incomingDamage <= 0) return;
+        // 【重构】利用管线的标签：如果这个伤害本身就是反弹的，或者持续掉血，绝不二次传播！
+        if (info.DmgType == DamageType.Reflect || info.DmgType == DamageType.StatusDOT || info.FinalDamage <= 0) return;
 
-        // 2. 计算传递伤害
-        int spreadDamage = Mathf.FloorToInt(incomingDamage * transferRatio);
+        int spreadDamage = Mathf.FloorToInt(info.FinalDamage * transferRatio);
         if (spreadDamage < 1) return;
 
-        // 3. 获取其他敌人
         List<EnemyTarget> enemies = BattleManager.Instance.enemies;
         
         foreach (var enemy in enemies)
         {
-            // 跳过自己，跳过死人
             if (enemy == target || enemy == null || enemy.currentHp <= 0) continue;
 
-            // 4. 施加伤害 (关键：标记 isChainReaction = true)
-            enemy.ApplyDirectValue(spreadDamage, true);
+            // 【重构】打包新的连锁伤害，类型标记为 Reflect (防止连锁循环)
+            DamageInfo chainDmg = new DamageInfo(target, enemy, spreadDamage, DamageType.Reflect);
+            BattleManager.Instance.ProcessDamage(chainDmg);
             
-            // 播放特效
             if (damageVFX != null) 
                 Instantiate(damageVFX, enemy.transform.position, Quaternion.identity);
         }
@@ -37,10 +33,8 @@ public class Status_ChainLinkSO : StatusEffectSO
         Debug.Log($"{target.name} 触发链枷，全场分摊 {spreadDamage} 伤害");
     }
 
-    // 逻辑：回合开始时自动移除 (通常 Debuff 持续 1 回合)
-    public override void OnTurnStart(EnemyTarget target, int stacks)
+    public override void OnTurnStart(BattleTarget target, int stacks)
     {
-        // 移除所有层数 (或者 -1)
-        target.ApplyStatus(this, -stacks); 
+        if (target is EnemyTarget enemy) enemy.ApplyStatus(this, -stacks); 
     }
 }

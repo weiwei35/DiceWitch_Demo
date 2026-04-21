@@ -9,37 +9,48 @@ public abstract class StatusEffectSO : ScriptableObject
     public Color color = Color.white; // 图标颜色
     public bool isDebuff = true; // 是增益还是减益
     
-    [TextArea] public string description = "回合开始时造成 {0} 点伤害。";
+    [TextArea] public string description = "描述文本";
 
-    // --- 状态的钩子函数 (Hooks) ---
+    // =========================================================================
+    // 【新增】标准战斗管线生命周期 (Damage Pipeline Hooks)
+    // =========================================================================
+
+    // 1. 回合开始时触发
+    public virtual void OnTurnStart(BattleTarget target, int stacks) {}
+
+    // 2. 回合结束时触发
+    public virtual void OnTurnEnd(BattleTarget target, int stacks) {}
+
+    // 3. 【攻击前】拦截并修饰发出的伤害
+    public virtual void OnBeforeAttack(BattleTarget target, DamageInfo info, int stacks) {}
+
+    // 4. 【受击前】拦截并修饰受到的伤害（在这里做格挡、免疫、减伤、反伤判定）
+    public virtual void OnBeforeDefend(BattleTarget target, DamageInfo info, int stacks) {}
+
+    // 5. 【受击后】真正扣血后触发（在这里做吸血、受伤回怒、链枷分摊等）
+    public virtual void OnAfterTakeDamage(BattleTarget target, DamageInfo info, int stacks) {}
+
+    // =========================================================================
+    // 【保留】你原有的特定游戏机制钩子 (Custom Mechanics Hooks)
+    // =========================================================================
     
-    // 1. 回合开始时触发 (比如：燃烧扣血)
-    public virtual void OnTurnStart(EnemyTarget target, int stacks) {}
-
-    // 2. 回合结束时触发 (比如：自动减少层数)
-    public virtual void OnTurnEnd(EnemyTarget target, int stacks) {}
-
-    // 3. 当受到伤害时触发 (比如：易伤增加伤害)
-    // incomingDamage: 实际受到的伤害值
-    // isChainReaction: 标记这次伤害是否由连锁反应引起 (防止死循环)
-    public virtual void OnPostTakeDamage(EnemyTarget target, int incomingDamage, int stacks, bool isChainReaction) 
-    {
-        // 默认不做任何事
-    }
+    // 当玩家使用骰子时触发 (如：成长机制)
+    public virtual void OnPlayerUseDice(BattleTarget target, int stacks) {}
     
-    public virtual int OnTakeDamage(EnemyTarget target, int incomingDamage, int stacks) 
+    // 当玩家获得护甲时触发 (如：互斥机制)
+    public virtual void OnPlayerGainArmor(BattleTarget target, int armorAmount, int stacks) {}
+
+    // 全局物理骰子计算时的干预 (如：错位机制，干预特定顺序的骰子)
+    public virtual int OnGlobalCalculateDamage(BattleTarget target, int incomingDamage, int usedOrder, int remainingAtThrow) 
     {
         return incomingDamage; // 默认不修改
     }
-    // 4. 【新增】当玩家使用骰子时触发
-    public virtual void OnPlayerUseDice(EnemyTarget target, int stacks) 
-    {
-        // 默认不做事
-    }
+
+    // =========================================================================
+    // 动态描述
+    // =========================================================================
     public virtual string GetDescription(int stacks)
     {
-        // 简单处理：如果有 {0} 就替换为层数，没有就直接返回文本
-        // 你可以根据具体逻辑重写这个方法
         try
         {
             return string.Format(description, stacks);
@@ -48,14 +59,5 @@ public abstract class StatusEffectSO : ScriptableObject
         {
             return description;
         }
-    }
-    // 只有当该状态存在于存活的敌人身上时，才会对玩家的每一次出招生效
-    public virtual int OnGlobalCalculateDamage(EnemyTarget target, int incomingDamage, int usedOrder, int remainingAtThrow) 
-    {
-        return incomingDamage; // 默认不修改
-    }
-    public virtual void OnPlayerGainArmor(EnemyTarget target, int armorAmount, int stacks) 
-    {
-        // 默认不做事
     }
 }

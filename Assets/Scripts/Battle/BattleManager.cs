@@ -347,4 +347,70 @@ public class BattleManager : MonoBehaviour
             }
         }
     }
+    // =========================================================
+    // 【新增】核心战斗管线引擎 (Damage Pipeline Engine)
+    // =========================================================
+    
+    // 伤害事件队列（极其重要：防止连环反伤导致栈溢出死循环！）
+    private Queue<DamageInfo> _damageQueue = new Queue<DamageInfo>();
+    private bool _isProcessingDamage = false;
+
+    // 管线入口：所有攻击、反伤、毒伤，全部把包裹扔进这里！
+    public void ProcessDamage(DamageInfo info)
+    {
+        _damageQueue.Enqueue(info);
+        
+        // 如果当前流水线闲着，就启动它；如果正在处理别的伤害，就乖乖排队
+        if (!_isProcessingDamage)
+        {
+            ProcessDamageQueue();
+        }
+    }
+
+    // 管线处理车间
+    private void ProcessDamageQueue()
+    {
+        _isProcessingDamage = true;
+
+        while (_damageQueue.Count > 0)
+        {
+            // 1. 从队列拿出一个伤害包裹
+            DamageInfo currentInfo = _damageQueue.Dequeue();
+
+            // 2. 【攻击前钩子】触发攻击者身上的 Buff（如：力量、虚弱）
+            if (currentInfo.Attacker != null)
+            {
+                currentInfo.Attacker.TriggerBeforeAttack(currentInfo);
+            }
+
+            // 3. 【受击前钩子】触发防御者身上的 Buff（如：护甲、反伤、锁血）
+            if (currentInfo.Defender != null)
+            {
+                currentInfo.Defender.TriggerBeforeDefend(currentInfo);
+            }
+
+            // 4. 【结算与执行】经过双方 Buff 的神仙打架后，确认最终伤害
+            if (currentInfo.Defender != null && currentInfo.FinalDamage > 0)
+            {
+                // 真正执行硬扣血
+                currentInfo.Defender.ExecuteDamage(currentInfo.FinalDamage);
+                
+                // 触发数字飘字体验 (如果你有的话)
+                if (DamageNumberManager.Instance != null)
+                {
+                    // DamageNumberManager.Instance.Show(currentInfo.Defender.transform.position, currentInfo.FinalDamage);
+                }
+
+                // 5. 【受击后钩子】触发次生效应（如：受伤回怒、链枷灵魂分摊）
+                currentInfo.Defender.TriggerAfterTakeDamage(currentInfo);
+            }
+            else if (currentInfo.FinalDamage <= 0)
+            {
+                Debug.Log($"<color=gray>包裹结算完毕，{currentInfo.Defender?.name} 的护甲或机制将伤害完全归零！</color>");
+            }
+        }
+
+        // 队列清空，流水线停机休息
+        _isProcessingDamage = false;
+    }
 }

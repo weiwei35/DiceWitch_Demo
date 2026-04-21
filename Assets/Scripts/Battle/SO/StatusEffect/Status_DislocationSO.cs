@@ -3,7 +3,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Status/Status_DislocationSO (错位)")]
 public class Status_DislocationSO : StatusEffectSO
 {
-    public override int OnGlobalCalculateDamage(EnemyTarget target, int incomingDamage, int usedOrder, int remainingAtThrow)
+    public override int OnGlobalCalculateDamage(BattleTarget target, int incomingDamage, int usedOrder, int remainingAtThrow)
     {
         // 如果这颗骰子是用来回血等非攻击操作，避开干预
         if (incomingDamage <= 0) return incomingDamage;
