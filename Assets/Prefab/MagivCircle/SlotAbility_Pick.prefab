@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 2044254432497837574}
   - component: {fileID: 5397106004966363347}
   - component: {fileID: 7540860151620514398}
-  - component: {fileID: -4650149312321594164}
   m_Layer: 5
   m_Name: SlotAbility_Pick
   m_TagString: Untagged
@@ -124,21 +123,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &-4650149312321594164
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1387703179920599837}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 302b40a4569f5624aaa76ac7e7c924da, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  nameText: {fileID: 4194115856200315527}
-  descText: {fileID: 2609093173155722675}
-  selectButton: {fileID: 7540860151620514398}
 --- !u!1 &2039461427283454241
 GameObject:
   m_ObjectHideFlags: 0

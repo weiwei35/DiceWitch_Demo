@@ -71,7 +71,7 @@ public class GameFlowController : MonoBehaviour
     public void OnSlotClicked(MagicCircleSlot slotData, Vector3 uiPos)
     {
         // 直接把点击事件丢给当前状态去处理，控制器本身不管具体逻辑
-        // _currentState?.OnSlotClicked(slotData, uiPos);
+        _currentState?.OnSlotClicked(slotData, uiPos);
     }
 
     // =========================================================
