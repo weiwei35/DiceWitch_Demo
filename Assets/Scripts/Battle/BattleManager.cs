@@ -174,7 +174,7 @@ public class BattleManager : MonoBehaviour
         if (enemies.Contains(enemy))
         {
             // 1. 结算奖励
-            PlayerProgressionManager.Instance.AddManaDust(enemy.manaDustReward);
+            ResourceManager.Instance.AddManaDust(enemy.manaDustReward);
 
             // 2. 移除列表
             enemies.Remove(enemy);
@@ -213,7 +213,7 @@ public class BattleManager : MonoBehaviour
         }
 
         // 从养成系统获取骰子数据
-        var newDeck = PlayerProgressionManager.Instance.GetBattleDeck();
+        var newDeck = MagicCircleManager.Instance.GetBattleDeck();
         diceThrower.SpawnAndThrow(newDeck);
     
         Debug.Log("--- 玩家回合开始 ---");
@@ -289,19 +289,19 @@ public class BattleManager : MonoBehaviour
         }
     }
 
-    public BattleTarget GetRandomTargetOfTeam(Enum.TargetTeam team, BattleTarget exclusion)
+    public BattleTarget GetRandomTargetOfTeam(GameEnums.TargetTeam team, BattleTarget exclusion)
     {
         List<BattleTarget> candidates = new List<BattleTarget>();
 
-        if (team == Enum.TargetTeam.Enemy)
+        if (team == GameEnums.TargetTeam.Enemy)
         {
             foreach (var e in enemies) {
                 if (e != null && e.currentHp > 0 && e != exclusion) candidates.Add(e);
             }
         }
-        else if (team == Enum.TargetTeam.Player)
+        else if (team == GameEnums.TargetTeam.Player)
         {
-            var playerTarget = FindObjectOfType<PlayerUITarget>();
+            var playerTarget = PlayerUITarget.Instance;
             if (playerTarget != null) candidates.Add(playerTarget);
         }
 
@@ -314,7 +314,7 @@ public class BattleManager : MonoBehaviour
     public BattleTarget GetRandomTarget(BattleTarget exclusion)
     {
         // 默认找敌人
-        return GetRandomTargetOfTeam(Enum.TargetTeam.Enemy, exclusion);
+        return GetRandomTargetOfTeam(GameEnums.TargetTeam.Enemy, exclusion);
     }
     public void TriggerPlayerUseDice()
     {

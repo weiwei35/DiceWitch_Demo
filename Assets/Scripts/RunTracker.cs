@@ -21,13 +21,13 @@ public class RunTracker : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    public void AddKill(Enum.EnemyTier tier)
+    public void AddKill(GameEnums.EnemyTier tier)
     {
         switch (tier)
         {
-            case Enum.EnemyTier.Normal: normalKills++; break;
-            case Enum.EnemyTier.Elite: eliteKills++; break;
-            case Enum.EnemyTier.Boss: bossKills++; break;
+            case GameEnums.EnemyTier.Normal: normalKills++; break;
+            case GameEnums.EnemyTier.Elite: eliteKills++; break;
+            case GameEnums.EnemyTier.Boss: bossKills++; break;
         }
     }
 

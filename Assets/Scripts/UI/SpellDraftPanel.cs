@@ -3,13 +3,17 @@ using System.Collections.Generic;
 
 public class SpellDraftPanel : MonoBehaviour
 {
+    public static SpellDraftPanel Instance;
+
     public GameObject panelRoot;
     public Transform cardsContainer; // 用 Horizontal Layout Group 排列
     public GameObject cardPrefab;    // 拖入 UI_SpellCard
 
     // 这是一个回调函数，用来告诉外部“玩家选好了，请进行下一步(选槽位)”
     // 外部管理器会监听这个事件
-    public System.Action<DiceAbilitySO> OnSpellSelected; 
+    public System.Action<DiceAbilitySO> OnSpellSelected;
+
+    void Awake() { Instance = this; }
 
     public void ShowDraft()
     {
@@ -28,7 +32,7 @@ public class SpellDraftPanel : MonoBehaviour
         foreach (Transform child in cardsContainer) Destroy(child.gameObject);
 
         // 2. 从管理器获取 3 个随机法术
-        var randomSpells = PlayerProgressionManager.Instance.GetRandomAbilities(3);
+        var randomSpells = MagicCircleManager.Instance.GetRandomAbilities(3);
 
         // 3. 生成卡牌
         foreach (var spell in randomSpells)

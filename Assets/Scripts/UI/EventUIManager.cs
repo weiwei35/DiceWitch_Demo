@@ -5,6 +5,8 @@ using System;
 
 public class EventUIManager : MonoBehaviour
 {
+    public static EventUIManager Instance;
+
     [Header("UI 引用")]
     public GameObject eventPanelRoot;       // 整个事件UI界面的根节点
     public Image backgroundImage;           // 事件背景图
@@ -14,6 +16,8 @@ public class EventUIManager : MonoBehaviour
 
     private RandomEventSO _currentEvent;
     private Action _onEventComplete;
+
+    void Awake() { Instance = this; }
 
     /// <summary>
     /// 打开事件面板并加载第一页
@@ -66,7 +70,7 @@ public class EventUIManager : MonoBehaviour
             btnText.text = choice.choiceText;
 
             // 【细节打磨】如果选项需要扣钱，但玩家钱不够，则置灰按钮
-            if (choice.goldChange < 0 && PlayerProgressionManager.Instance.manaDust < Mathf.Abs(choice.goldChange))
+            if (choice.goldChange < 0 && ResourceManager.Instance.manaDust < Mathf.Abs(choice.goldChange))
             {
                 btn.interactable = false;
                 btnText.text += " <color=red>(粉尘不足)</color>";
@@ -90,9 +94,9 @@ public class EventUIManager : MonoBehaviour
 
         // 2. 结算粉尘/金币变化
         if (choice.goldChange > 0) 
-            PlayerProgressionManager.Instance.AddManaDust(choice.goldChange);
+            ResourceManager.Instance.AddManaDust(choice.goldChange);
         else if (choice.goldChange < 0) 
-            PlayerProgressionManager.Instance.TrySpendManaDust(Mathf.Abs(choice.goldChange));
+            ResourceManager.Instance.TrySpendManaDust(Mathf.Abs(choice.goldChange));
 
         // 3. 检查是否直接触发战斗 (比如选项是“抢夺宝箱并触发战斗”)
         if (choice.battleToTrigger != null)

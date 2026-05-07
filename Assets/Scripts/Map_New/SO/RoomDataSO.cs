@@ -4,7 +4,7 @@ using UnityEngine;
 public abstract class RoomDataSO : ScriptableObject
 {
     public string roomName;
-    public Enum.RoomType roomType;
+    public GameEnums.RoomType roomType;
     public Sprite roomIcon; // 地图上显示的图标
     [TextArea] public string description; // 鼠标悬停时的描述
 

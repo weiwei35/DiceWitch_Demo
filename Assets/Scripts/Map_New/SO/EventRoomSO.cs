@@ -12,6 +12,6 @@ public class EventRoomSO : RoomDataSO
     public void OnEnable() 
     {
         // 确保在 Inspector 创建时，类型自动归为 Event
-        roomType = Enum.RoomType.Event; 
+        roomType = GameEnums.RoomType.Event; 
     }
 }

@@ -17,6 +17,6 @@ public class BattleRoomSO : RoomDataSO
 
     public void OnEnable()
     {
-        roomType = Enum.RoomType.Battle;
+        roomType = GameEnums.RoomType.Battle;
     }
 }

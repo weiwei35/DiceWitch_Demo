@@ -25,7 +25,7 @@ public class Ability_Ghost : DiceAbilitySO
             }
 
             // 2. 传给 UI 管理器
-            GhostDiceUIManager.Instance.AddGhost(overrideGhostData, bonusToPass);
+            GhostDiceUIManager.Instance.AddGhost(RuntimeDiceData.FromSO(overrideGhostData), bonusToPass);
         }
         else
         {

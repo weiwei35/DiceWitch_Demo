@@ -2,7 +2,7 @@ using UnityEngine;
 
 public abstract class BattleTarget : MonoBehaviour
 {
-    public Enum.TargetTeam team; // 属于哪一队
+    public GameEnums.TargetTeam team; // 属于哪一队
     public string targetName;    // 方便 Debug 打印名字
 
     // =========================================================
@@ -12,17 +12,17 @@ public abstract class BattleTarget : MonoBehaviour
     {
         switch (data.type)
         {
-            case Enum.DiceActionType.Attack:
+            case GameEnums.DiceActionType.Attack:
                 // 【核心改动】不再直接扣血，而是打包丢给 BattleManager 的流水线！
                 DamageInfo info = new DamageInfo(attacker, this, data.value, DamageType.Normal);
                 BattleManager.Instance.ProcessDamage(info);
                 break;
                 
-            case Enum.DiceActionType.Defend: 
+            case GameEnums.DiceActionType.Defend: 
                 GainArmor(data.value);
                 break;
                 
-            case Enum.DiceActionType.Magic:
+            case GameEnums.DiceActionType.Magic:
                 break;
         }
     }

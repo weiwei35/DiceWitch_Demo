@@ -83,7 +83,7 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (_targetSlot.currentDice != null)
         {
             // 通知 DiceThrower 高亮这颗骰子
-            FindObjectOfType<DiceThrower>().HighlightDice(_targetSlot.currentDice);
+            DiceThrower.Instance.HighlightDice(_targetSlot.currentDice);
         }
     }
 
@@ -93,7 +93,7 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         TooltipSystem.Instance.Hide();
         
         // 取消高亮
-        FindObjectOfType<DiceThrower>().StopHighlight();
+        DiceThrower.Instance.StopHighlight();
     }
 
     public void OnPointerClick(PointerEventData eventData)
@@ -140,7 +140,7 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         }
 
         // 2. 强制干掉幽灵 3D 高亮
-        DiceThrower thrower = FindObjectOfType<DiceThrower>();
+        DiceThrower thrower = DiceThrower.Instance;
         if (thrower != null)
         {
             thrower.StopHighlight();

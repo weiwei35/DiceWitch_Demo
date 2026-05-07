@@ -109,7 +109,7 @@ public class DiceSquadGroup : MonoBehaviour
             // --- 关键检查：目标死了没？ ---
             bool isTargetDead = false;
             if (target == null) isTargetDead = true;
-            else if (target.team == Enum.TargetTeam.Enemy)
+            else if (target.team == GameEnums.TargetTeam.Enemy)
             {
                 EnemyTarget enemy = (EnemyTarget)target;
                 if(enemy.currentHp <= 0)
@@ -135,7 +135,7 @@ public class DiceSquadGroup : MonoBehaviour
                 // 注意：这里我们不需要等待 StartCoroutine 返回，因为我们希望稍微重叠一点节奏
                 // 但如果你想要严格的一个接一个，就加 yield return
                 int usedOrder = BattleManager.Instance != null ? BattleManager.Instance.diceUsedThisTurn : 1;
-                int remaining = FindObjectOfType<DiceThrower>().GetValidDiceCount();
+                int remaining = DiceThrower.Instance.GetValidDiceCount();
                 yield return attacker.StartCoroutine(attacker.FlyAndHit(target, data, usedOrder, remaining));
                 
                 // 节奏间隔：哒..哒..哒..

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 public struct GhostRequest
 {
-    public DiceDataSO data; // 幽灵的基础模板
+    public RuntimeDiceData data; // 幽灵的基础模板
     public int bonusValue;          // 要继承的额外点数 (来自槽位属性)
 }
 public class GhostDiceUIManager : MonoBehaviour
@@ -36,7 +36,7 @@ public class GhostDiceUIManager : MonoBehaviour
             BattleManager.Instance.OnEnemyKilledEvent -= OnEnemyKilled;
     }
 
-    public void AddGhost(DiceDataSO template, int bonus)
+    public void AddGhost(RuntimeDiceData template, int bonus)
     {
         if (template == null) return;
 

@@ -82,7 +82,7 @@ public class DiceVisualManager : MonoBehaviour
 public class DiceFaceData
 {
     public int value;        // 数值：1, 2, 6...
-    public Enum.DiceActionType type; // 类型：物理、魔法、治疗
+    public GameEnums.DiceActionType type; // 类型：物理、魔法、治疗
     public Sprite icon;      // 图标
     public Color color;      // 颜色：红、蓝...
     public string effectDescription; // "造成流血"

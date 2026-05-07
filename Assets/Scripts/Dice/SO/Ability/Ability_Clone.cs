@@ -12,7 +12,7 @@ public class Ability_Clone : DiceAbilitySO
     // 请去 DiceAbilitySO.cs 加这个虚方法
     public override void OnRollFinished(PhysicsDice sourceDice)
     {
-        DiceThrower thrower = FindObjectOfType<DiceThrower>();
+        DiceThrower thrower = DiceThrower.Instance;
         // 只有点数 > 1 才分裂，不然没意义
         int count = sourceDice.currentResultData.TotalValue;
         if (count <= 1) return;
@@ -37,7 +37,7 @@ public class Ability_Clone : DiceAbilitySO
             
             // 初始化小骰子
             PhysicsDice pDice = minion.GetComponent<PhysicsDice>();
-            pDice.Initialize(minionDiceData, parentSource);
+            pDice.Initialize(RuntimeDiceData.FromSO(minionDiceData), parentSource);
             // 强制设为1点（虽然Data里已经是1，但为了保险）
             pDice.ForceSetValue(0); 
             if (thrower != null)

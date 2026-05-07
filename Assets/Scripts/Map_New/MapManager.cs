@@ -124,7 +124,7 @@ public class MapManager : MonoBehaviour
     private System.Collections.IEnumerator DelayEnterRoom(BoardNode landedNode)
     {
         // 如果有实际效果，多等一会 (1秒)；如果是空地或者直接进事件的格子，少等一会 (0.3秒缓冲)
-        float delayTime = (landedNode.type == Enum.BoardNodeType.Empty || landedNode.type == Enum.BoardNodeType.RoomEvent) ? 0.3f : 2.0f;
+        float delayTime = (landedNode.type == GameEnums.BoardNodeType.Empty || landedNode.type == GameEnums.BoardNodeType.RoomEvent) ? 0.3f : 2.0f;
         
         yield return new WaitForSeconds(delayTime);
 
@@ -140,7 +140,7 @@ public class MapManager : MonoBehaviour
                     if (boardNodes[i].roomId == landedNode.roomId) boardNodes[i].isInvalidated = true; 
                     else break; 
                 }
-                FindObjectOfType<MapViewController>()?.UpdateNodeStates(landedNode.index);
+                MapViewController.Instance?.UpdateNodeStates(landedNode.index);
             }
             
             if (GameFlowController.Instance != null)
@@ -158,7 +158,7 @@ public class MapManager : MonoBehaviour
 
         switch (node.type)
         {
-            case Enum.BoardNodeType.HpChange:
+            case GameEnums.BoardNodeType.HpChange:
                 if (node.effectValue > 0) 
                 {
                     PlayerManager.Instance.Heal(node.effectValue);
@@ -173,47 +173,47 @@ public class MapManager : MonoBehaviour
                 }
                 break;
                 
-            case Enum.BoardNodeType.ResourceChange:
+            case GameEnums.BoardNodeType.ResourceChange:
                 if (node.effectValue > 0) 
                 {
-                    PlayerProgressionManager.Instance.AddManaDust(node.effectValue);
+                    ResourceManager.Instance.AddManaDust(node.effectValue);
                     floatText = $"+{node.effectValue} 粉尘";
                     floatColor = new Color(1f, 0.8f, 0f); // 黄色
                 }
                 else if (node.effectValue < 0) 
                 {
-                    PlayerProgressionManager.Instance.TrySpendManaDust(Mathf.Abs(node.effectValue));
+                    ResourceManager.Instance.TrySpendManaDust(Mathf.Abs(node.effectValue));
                     floatText = $"{node.effectValue} 粉尘";
                     floatColor = Color.red;
                 }
                 break;
                 
-            case Enum.BoardNodeType.NextBattleArmor:
+            case GameEnums.BoardNodeType.NextBattleArmor:
                 PlayerManager.Instance.nextBattleArmorBonus += node.effectValue;
                 floatText = $"开局护甲 +{node.effectValue}";
                 floatColor = new Color(0.2f, 0.6f, 1f); // 蓝色
                 break;
                 
-            case Enum.BoardNodeType.NextBattleFixedDice:
+            case GameEnums.BoardNodeType.NextBattleFixedDice:
                 PlayerManager.Instance.nextBattleFixedDiceValue = node.effectValue;
                 floatText = $"必定掷出 {node.effectValue}";
                 floatColor = new Color(0.8f, 0.2f, 1f); // 紫色
                 break;
                 
-            case Enum.BoardNodeType.BlockNextDamage:
+            case GameEnums.BoardNodeType.BlockNextDamage:
                 PlayerManager.Instance.hasBlockNextDamageShield = true;
                 PlayerManager.Instance.UpdateUI();
                 floatText = "获得圣盾";
                 floatColor = Color.cyan;
                 break;
                 
-            case Enum.BoardNodeType.NextBattleDamageUp:
+            case GameEnums.BoardNodeType.NextBattleDamageUp:
                 PlayerManager.Instance.nextBattleDamageBonus += node.effectValue;
                 floatText = $"伤害 +{node.effectValue}";
                 floatColor = new Color(1f, 0.5f, 0f); // 橙色
                 break;
                 
-            case Enum.BoardNodeType.Relic:
+            case GameEnums.BoardNodeType.Relic:
                 floatText = "获得遗物";
                 floatColor = Color.yellow;
                 break;

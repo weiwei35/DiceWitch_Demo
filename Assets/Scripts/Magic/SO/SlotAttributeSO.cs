@@ -5,7 +5,7 @@ public class SlotAttributeSO : ScriptableObject
 {
     public string attributeName; 
     public string description; 
-    public Enum.SlotAttributeType type;
+    public GameEnums.SlotAttributeType type;
     
     public int baseValue = 1;      // Lv1 的数值
     public int upgradeValue = 1;   // 每升一级增加的数值

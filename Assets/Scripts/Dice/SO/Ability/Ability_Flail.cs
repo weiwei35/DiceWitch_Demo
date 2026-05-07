@@ -11,7 +11,7 @@ public class Ability_Flail : DiceAbilitySO
     public override void OnPostHit(BattleTarget target, int finalDamage, PhysicsDice sourceDice)
     {
         // 只能连敌人
-        if (target.team != Enum.TargetTeam.Enemy) return;
+        if (target.team != GameEnums.TargetTeam.Enemy) return;
         EnemyTarget primary = (EnemyTarget)target;
 
         // 1. 寻找一个随机的、活着的、且不是自己的敌人

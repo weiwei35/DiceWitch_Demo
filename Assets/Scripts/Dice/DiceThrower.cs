@@ -4,7 +4,10 @@ using System.Collections.Generic;
 using DG.Tweening;
 
 public class DiceThrower : MonoBehaviour
-{[Header("Spawn & Fly Settings (入场设定)")]
+{
+    public static DiceThrower Instance;
+
+[Header("Spawn & Fly Settings (入场设定)")]
     public GameObject dicePrefab; 
     public Transform spawnPoint;             // 骰子飞出的起点（比如屏幕外、或者角色的手/袋子）
     public float flyInDuration = 0.3f;       // 飞入排列位置的时长
@@ -17,7 +20,9 @@ public class DiceThrower : MonoBehaviour
     public float diceSpacing = 1.2f;         
     public float layoutTweenDuration = 0.4f; 
 
-    private Transform _container; 
+    void Awake() { Instance = this; }
+
+    private Transform _container;
     private List<PhysicsDice> _highlightedDiceList = new List<PhysicsDice>();
     private Vector3 _originalScale;
     private List<PhysicsDice> activeDiceList = new List<PhysicsDice>();
@@ -109,7 +114,7 @@ public class DiceThrower : MonoBehaviour
         }
     }
 
-    public PhysicsDice SpawnSingleDice(DiceDataSO data, PlayerDice sourceRef = null)
+    public PhysicsDice SpawnSingleDice(RuntimeDiceData data, PlayerDice sourceRef = null)
     {
         // 幽灵骰子/单体生成也可以复用原地弹起逻辑
         Vector3 targetPos = layoutCenter != null ? layoutCenter.position : spawnPoint.position;

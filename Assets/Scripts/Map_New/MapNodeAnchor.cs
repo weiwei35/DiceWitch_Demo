@@ -7,7 +7,7 @@ using UnityEngine.EventSystems; // 【新增】引入事件系统
 public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("节点配置")]
-    public Enum.BoardNodeType nodeType = Enum.BoardNodeType.Empty;
+    public GameEnums.BoardNodeType nodeType = GameEnums.BoardNodeType.Empty;
     public int effectValue = 0; 
     public Sprite baseIconSprite;
 
@@ -85,7 +85,7 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         // 2. 更新底部的【加成状态小图标】
         if (effectIconImage != null)
         {
-            if (!isNodeActive || nodeType == Enum.BoardNodeType.Empty)
+            if (!isNodeActive || nodeType == GameEnums.BoardNodeType.Empty)
             {
                 effectIconImage.sprite = null;
                 effectIconImage.gameObject.SetActive(false);
@@ -95,16 +95,16 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 effectIconImage.gameObject.SetActive(true);
                 switch (nodeType)
                 {
-                    case Enum.BoardNodeType.HpChange: 
+                    case GameEnums.BoardNodeType.HpChange: 
                         effectIconImage.sprite = effectValue > 0 ? hpHealIcon : hpDamageIcon; 
                         break;
-                    case Enum.BoardNodeType.ResourceChange: effectIconImage.sprite = resourceIcon; break;
-                    case Enum.BoardNodeType.RoomEvent: effectIconImage.sprite = roomEventIcon; break;
-                    case Enum.BoardNodeType.NextBattleArmor: effectIconImage.sprite = nextBattleArmorIcon; break;
-                    case Enum.BoardNodeType.NextBattleFixedDice: effectIconImage.sprite = nextBattleFixedDiceIcon; break;
-                    case Enum.BoardNodeType.BlockNextDamage: effectIconImage.sprite = blockNextDamageIcon; break;
-                    case Enum.BoardNodeType.NextBattleDamageUp: effectIconImage.sprite = nextBattleDamageUpIcon; break;
-                    case Enum.BoardNodeType.Relic: effectIconImage.sprite = relicIcon; break;
+                    case GameEnums.BoardNodeType.ResourceChange: effectIconImage.sprite = resourceIcon; break;
+                    case GameEnums.BoardNodeType.RoomEvent: effectIconImage.sprite = roomEventIcon; break;
+                    case GameEnums.BoardNodeType.NextBattleArmor: effectIconImage.sprite = nextBattleArmorIcon; break;
+                    case GameEnums.BoardNodeType.NextBattleFixedDice: effectIconImage.sprite = nextBattleFixedDiceIcon; break;
+                    case GameEnums.BoardNodeType.BlockNextDamage: effectIconImage.sprite = blockNextDamageIcon; break;
+                    case GameEnums.BoardNodeType.NextBattleDamageUp: effectIconImage.sprite = nextBattleDamageUpIcon; break;
+                    case GameEnums.BoardNodeType.Relic: effectIconImage.sprite = relicIcon; break;
                     default: effectIconImage.gameObject.SetActive(false); break;
                 }
             }
@@ -148,7 +148,7 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
         switch (nodeType)
         {
-            case Enum.BoardNodeType.HpChange:
+            case GameEnums.BoardNodeType.HpChange:
                 if (effectValue > 0)
                 {
                     header = "恢复泉水";
@@ -161,7 +161,7 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 }
                 break;
             
-            case Enum.BoardNodeType.ResourceChange:
+            case GameEnums.BoardNodeType.ResourceChange:
                 if (effectValue > 0)
                 {
                     header = "宝藏";
@@ -174,37 +174,37 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
                 }
                 break;
             
-            case Enum.BoardNodeType.NextBattleArmor:
+            case GameEnums.BoardNodeType.NextBattleArmor:
                 header = "坚固防线";
                 content = $"<color=#3333FF>下场战斗开局获得 {effectValue} 点护甲</color>";
                 break;
             
-            case Enum.BoardNodeType.NextBattleFixedDice:
+            case GameEnums.BoardNodeType.NextBattleFixedDice:
                 header = "命运干预";
                 content = $"<color=#AA00AA>下场战斗第一回合必定有一枚骰子掷出 {effectValue} 点</color>";
                 break;
             
-            case Enum.BoardNodeType.BlockNextDamage:
+            case GameEnums.BoardNodeType.BlockNextDamage:
                 header = "神圣护盾";
                 content = "<color=#0088FF>抵消下一次受到的任何伤害\n(地图陷阱或战斗通用)</color>";
                 break;
             
-            case Enum.BoardNodeType.NextBattleDamageUp:
+            case GameEnums.BoardNodeType.NextBattleDamageUp:
                 header = "磨刀石";
                 content = $"<color=#FF8800>下场战斗期间，所有伤害增加 {effectValue} 点</color>";
                 break;
             
-            case Enum.BoardNodeType.Relic:
+            case GameEnums.BoardNodeType.Relic:
                 header = "远古遗物";
                 content = "<color=#FFD700>获得一件随机遗物</color>";
                 break;
                 
-            case Enum.BoardNodeType.RoomEvent:
+            case GameEnums.BoardNodeType.RoomEvent:
                 header = "未知的挑战";
                 content = "触发该房间的主事件或战斗";
                 break;
                 
-            case Enum.BoardNodeType.Empty:
+            case GameEnums.BoardNodeType.Empty:
             default:
                 header = "安全空地";
                 content = "这里很安全，无事发生";

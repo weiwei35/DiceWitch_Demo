@@ -16,7 +16,7 @@ public class Status_ReflectSO : StatusEffectSO
         BattleTarget realAttacker = info.Attacker;
         if (realAttacker == null)
         {
-            realAttacker = FindObjectOfType<PlayerUITarget>();
+            realAttacker = PlayerUITarget.Instance;
         }
 
         // 3. 获取 100% 的面值伤害准备反弹

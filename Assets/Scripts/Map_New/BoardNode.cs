@@ -4,7 +4,7 @@ using UnityEngine;
 public class BoardNode
 {
     public int index;               
-    public Enum.BoardNodeType type; 
+    public GameEnums.BoardNodeType type; 
     public int effectValue;         
     public int roomId;
     public RoomDataSO roomDataRef;  
@@ -19,7 +19,7 @@ public class BoardNode
     {
         this.index = index;
         this.regionIndex = regionIndex;
-        this.type = Enum.BoardNodeType.Empty;
+        this.type = GameEnums.BoardNodeType.Empty;
         this.isInvalidated = false; // 默认不失效
     }
 }

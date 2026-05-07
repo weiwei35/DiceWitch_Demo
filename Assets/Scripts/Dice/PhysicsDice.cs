@@ -14,7 +14,7 @@ public class PhysicsDice : MonoBehaviour
     public int finalValue = 0;
 
     // 存储计算出来的结果数据
-    private DiceDataSO _sourceData;
+    private RuntimeDiceData _sourceData;
     public DiceFaceData currentResultData; 
     private List<DiceAbilitySO> myAbilities = new List<DiceAbilitySO>(); // 运行时缓存能力
     
@@ -27,7 +27,7 @@ public class PhysicsDice : MonoBehaviour
         rb = GetComponent<Rigidbody>();
     }
 
-    public void Initialize(DiceDataSO data, PlayerDice sourceRef = null)
+    public void Initialize(RuntimeDiceData data, PlayerDice sourceRef = null)
     {
         // 1. (可选) 修改骰子本体颜色，方便区分
         diceRenderer.material.color = data.bodyColor;

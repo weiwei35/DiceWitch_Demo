@@ -19,7 +19,7 @@ public class EnemyTarget : BattleTarget
     public event System.Action<int> OnDamageTaken;
     
     [Header("Run Info")]
-    public Enum.EnemyTier tier = Enum.EnemyTier.Normal; // 默认普通怪
+    public GameEnums.EnemyTier tier = GameEnums.EnemyTier.Normal; // 默认普通怪
     
     [Header("Stats")]
     public int maxHp = 50;
@@ -56,7 +56,7 @@ public class EnemyTarget : BattleTarget
 
     void Start()
     {
-        team = Enum.TargetTeam.Enemy;
+        team = GameEnums.TargetTeam.Enemy;
         originalScale = transform.localScale;
         transform.localScale = Vector3.zero;
         

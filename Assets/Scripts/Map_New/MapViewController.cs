@@ -4,7 +4,10 @@ using System.Collections.Generic;
 using UnityEngine.EventSystems; // 【新增】事件系统命名空间
 
 public class MapViewController : MonoBehaviour
-{[Header("References")]
+{
+    public static MapViewController Instance;
+
+[Header("References")]
     public Transform contentParent; 
     public Dictionary<int, RectTransform> nodeUIRects = new Dictionary<int, RectTransform>();
     public Dictionary<int, MapNodeAnchor> nodeAnchors = new Dictionary<int, MapNodeAnchor>();
@@ -24,8 +27,10 @@ public class MapViewController : MonoBehaviour
     // ==========================================
     public bool isAutoFollowing = true;    
 
-    private float _scrollVelocity = 0f;    
-    private ScrollRect _scrollRect;        
+    private float _scrollVelocity = 0f;
+    private ScrollRect _scrollRect;
+
+    void Awake() { Instance = this; }
 
     void Start()
     {
@@ -160,7 +165,7 @@ public class MapViewController : MonoBehaviour
 
         UpdateNodeStates(MapManager.Instance.currentPlayerNodeIndex);
 
-        MapInteractionManager interactionMgr = FindObjectOfType<MapInteractionManager>();
+        MapInteractionManager interactionMgr = MapInteractionManager.Instance;
         if (interactionMgr != null) interactionMgr.InitPawnPosition();
     }
 

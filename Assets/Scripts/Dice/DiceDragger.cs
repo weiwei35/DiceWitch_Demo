@@ -139,7 +139,7 @@ public class DiceDragger : MonoBehaviour
             
             DiceFaceData data = physicsDice.GetCurrentData();
             int usedOrder = BattleManager.Instance != null ? BattleManager.Instance.diceUsedThisTurn : 1;
-            int remaining = FindObjectOfType<DiceThrower>().GetValidDiceCount();
+            int remaining = DiceThrower.Instance.GetValidDiceCount();
             // 视觉效果：让骰子飞过去撞击
             StartCoroutine(FlyAndHit(target, data, usedOrder, remaining));
         }

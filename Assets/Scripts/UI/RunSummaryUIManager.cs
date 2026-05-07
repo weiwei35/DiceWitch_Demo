@@ -4,10 +4,14 @@ using System.Text;
 
 public class RunSummaryUIManager : MonoBehaviour
 {
+    public static RunSummaryUIManager Instance;
+
     public GameObject summaryPanelRoot;
     public TextMeshProUGUI titleText; // "探险胜利" 或 "探险失败"
     public TextMeshProUGUI statsText; // 统计文本
     public TextMeshProUGUI diceText;  // 骰子阵容总览
+
+    void Awake() { Instance = this; }
 
     public void ShowSummary()
     {
@@ -32,7 +36,7 @@ public class RunSummaryUIManager : MonoBehaviour
 
         // 3. 骰子阵容盘点
         StringBuilder diceInfo = new StringBuilder();
-        foreach (var slot in PlayerProgressionManager.Instance.magicSlots)
+        foreach (var slot in MagicCircleManager.Instance.magicSlots)
         {
             if (slot.isUnlocked && slot.currentDice != null)
             {

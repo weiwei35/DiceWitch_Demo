@@ -8,17 +8,17 @@ public class ResourceUI : MonoBehaviour
     void Start()
     {
         UpdateUI();
-        PlayerProgressionManager.Instance.OnResourceChanged += UpdateUI;
+        ResourceManager.Instance.OnResourceChanged += UpdateUI;
     }
 
     void OnDestroy()
     {
-        if (PlayerProgressionManager.Instance != null)
-            PlayerProgressionManager.Instance.OnResourceChanged -= UpdateUI;
+        if (ResourceManager.Instance != null)
+            ResourceManager.Instance.OnResourceChanged -= UpdateUI;
     }
 
     void UpdateUI()
     {
-        amountText.text = PlayerProgressionManager.Instance.manaDust.ToString();
+        amountText.text = ResourceManager.Instance.manaDust.ToString();
     }
 }

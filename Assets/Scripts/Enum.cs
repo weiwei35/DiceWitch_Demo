@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public static class Enum
+public static class GameEnums
 {
     //游戏状态类型
     public enum GameState

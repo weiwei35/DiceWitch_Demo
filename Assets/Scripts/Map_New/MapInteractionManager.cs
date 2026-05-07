@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 public class MapInteractionManager : MonoBehaviour
 {
+    public static MapInteractionManager Instance;
+
     [Header("References")]
     public Button rollDiceButton;        
     public DiceDataSO mapDiceData;       
@@ -12,8 +14,10 @@ public class MapInteractionManager : MonoBehaviour
     [Header("Pawn Settings")]
     public GameObject playerPawnPrefab;  
     
-    private MapPlayerPawn _spawnedPawn;  
-    private bool _isProcessing = false;  
+    private MapPlayerPawn _spawnedPawn;
+    private bool _isProcessing = false;
+
+    void Awake() { Instance = this; }
 
     void Start()
     {
@@ -59,8 +63,8 @@ public class MapInteractionManager : MonoBehaviour
         _isProcessing = true;
         rollDiceButton.interactable = false;
 
-        DiceThrower thrower = FindObjectOfType<DiceThrower>();
-        PhysicsDice dice = thrower.SpawnSingleDice(mapDiceData);
+        DiceThrower thrower = DiceThrower.Instance;
+        PhysicsDice dice = thrower.SpawnSingleDice(RuntimeDiceData.FromSO(mapDiceData));
 
         DiceDragger dragger = dice.GetComponent<DiceDragger>();
         if (dragger != null) dragger.enabled = false;
@@ -71,7 +75,7 @@ public class MapInteractionManager : MonoBehaviour
     private void HandleDiceResult(int steps)
     {
         Debug.Log($"大地图骰子掷出了：{steps} 点！");
-        FindObjectOfType<DiceThrower>().ClearOldDice();
+        DiceThrower.Instance.ClearOldDice();
 
         // =========================================================
         // 【新增】掷出骰子了，立刻恢复摄像机的自动跟随模式！
