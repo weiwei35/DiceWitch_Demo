@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4540005c8c2b43b7b6468683e54679b, type: 3}
+  m_Name: MapIconConfigSO
+  m_EditorClassIdentifier: 
+  hpHealIcon: {fileID: 1294339962, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  hpDamageIcon: {fileID: -1364239894, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  resourceIcon: {fileID: -1026956783, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  roomEventIcon: {fileID: -1554494502, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  nextBattleArmorIcon: {fileID: 1060229909, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  nextBattleFixedDiceIcon: {fileID: -1771638094, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  blockNextDamageIcon: {fileID: -1601012436, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  nextBattleDamageUpIcon: {fileID: 539443673, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  relicIcon: {fileID: 1576282049, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  forgeIcon: {fileID: 658204653, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+  passedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  currentColor: {r: 0.5, g: 1, b: 1, a: 1}
+  futureColor: {r: 1, g: 1, b: 1, a: 1}
+  disabledColor: {r: 0.3, g: 0.3, b: 0.3, a: 0.6}

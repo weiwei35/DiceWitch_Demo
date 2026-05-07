@@ -396,10 +396,10 @@ public class BattleManager : MonoBehaviour
                 currentInfo.Defender.ExecuteDamage(currentInfo.FinalDamage);
                 
                 // 触发数字飘字体验 (如果你有的话)
-                if (DamageNumberManager.Instance != null)
-                {
-                    // DamageNumberManager.Instance.Show(currentInfo.Defender.transform.position, currentInfo.FinalDamage);
-                }
+                // if (DamageNumberManager.Instance != null)
+                // {
+                //     DamageNumberManager.Instance.ShowDamage(currentInfo.Defender.transform.position, currentInfo.FinalDamage);
+                // }
 
                 // 5. 【受击后钩子】触发次生效应（如：受伤回怒、链枷灵魂分摊）
                 currentInfo.Defender.TriggerAfterTakeDamage(currentInfo);

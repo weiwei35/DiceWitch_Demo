@@ -90,6 +90,7 @@ public class MapManager : MonoBehaviour
                     
                     node.type = anchor.nodeType;
                     node.effectValue = anchor.effectValue;
+                    node.forgeBonusType = anchor.forgeBonusType;
                     
                     // 记录房间归属
                     node.roomDataRef = roomLayout.roomData;
@@ -112,12 +113,22 @@ public class MapManager : MonoBehaviour
     public void OnPlayerLanded(BoardNode landedNode, Vector3 pawnPos)
     {
         Debug.Log($"玩家落在第 {landedNode.index} 格，类型：{landedNode.type}");
-        
+
         // 1. 先生效格子自身的效果，并在棋子头上飘字
         ProcessNodeEffect(landedNode, pawnPos);
 
-        // 2. 开启协程，延迟进入房间！(给玩家看字的时间)
-        StartCoroutine(DelayEnterRoom(landedNode));
+        // 2. 如果是锻造节点，先进入锻造流程，锻造结束后再进房间
+        if (landedNode.type == GameEnums.BoardNodeType.Forge)
+        {
+            GameFlowController.Instance.StartForgeProcess(() =>
+            {
+                StartCoroutine(DelayEnterRoom(landedNode));
+            });
+        }
+        else
+        {
+            StartCoroutine(DelayEnterRoom(landedNode));
+        }
     }
 
     // 【新增】延迟进入房间的协程
@@ -216,6 +227,62 @@ public class MapManager : MonoBehaviour
             case GameEnums.BoardNodeType.Relic:
                 floatText = "获得遗物";
                 floatColor = Color.yellow;
+                break;
+
+            case GameEnums.BoardNodeType.Forge:
+                // 锻造节点的额外加成：根据 forgeBonusType 判定
+                switch (node.forgeBonusType)
+                {
+                    case GameEnums.BoardNodeType.HpChange:
+                        if (node.effectValue > 0)
+                        {
+                            PlayerManager.Instance.Heal(node.effectValue);
+                            floatText = $"+{node.effectValue} HP";
+                            floatColor = Color.green;
+                        }
+                        else if (node.effectValue < 0)
+                        {
+                            PlayerManager.Instance.TakeDamage(Mathf.Abs(node.effectValue));
+                            floatText = $"{node.effectValue} HP";
+                            floatColor = Color.red;
+                        }
+                        break;
+                    case GameEnums.BoardNodeType.ResourceChange:
+                        if (node.effectValue > 0)
+                        {
+                            ResourceManager.Instance.AddManaDust(node.effectValue);
+                            floatText = $"+{node.effectValue} 粉尘";
+                            floatColor = new Color(1f, 0.8f, 0f);
+                        }
+                        else if (node.effectValue < 0)
+                        {
+                            ResourceManager.Instance.TrySpendManaDust(Mathf.Abs(node.effectValue));
+                            floatText = $"{node.effectValue} 粉尘";
+                            floatColor = Color.red;
+                        }
+                        break;
+                    case GameEnums.BoardNodeType.NextBattleArmor:
+                        PlayerManager.Instance.nextBattleArmorBonus += node.effectValue;
+                        floatText = $"开局护甲 +{node.effectValue}";
+                        floatColor = new Color(0.2f, 0.6f, 1f);
+                        break;
+                    case GameEnums.BoardNodeType.NextBattleFixedDice:
+                        PlayerManager.Instance.nextBattleFixedDiceValue = node.effectValue;
+                        floatText = $"必定掷出 {node.effectValue}";
+                        floatColor = new Color(0.8f, 0.2f, 1f);
+                        break;
+                    case GameEnums.BoardNodeType.BlockNextDamage:
+                        PlayerManager.Instance.hasBlockNextDamageShield = true;
+                        PlayerManager.Instance.UpdateUI();
+                        floatText = "获得圣盾";
+                        floatColor = Color.cyan;
+                        break;
+                    case GameEnums.BoardNodeType.NextBattleDamageUp:
+                        PlayerManager.Instance.nextBattleDamageBonus += node.effectValue;
+                        floatText = $"伤害 +{node.effectValue}";
+                        floatColor = new Color(1f, 0.5f, 0f);
+                        break;
+                }
                 break;
         }
 

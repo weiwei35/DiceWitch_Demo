@@ -302,12 +302,27 @@ public class DiceDragger : MonoBehaviour
                     calculatedData.value = ability.OnCalculateDamage(calculatedData.value, target);
                 }
             }
+            var forgeSlots = physicsDice.GetActiveForgeSlots();
+            if (forgeSlots != null && forgeSlots.Count > 0)
+            {
+                Debug.Log($"<color=#FF8800>【锻造结算】找到 {forgeSlots.Count} 个生效词条, 基础伤害: {calculatedData.value}</color>");
+                foreach (var slot in forgeSlots)
+                {
+                    int before = calculatedData.value;
+                    calculatedData.value = slot.affix.OnCalculateDamage(calculatedData.value, target, physicsDice);
+                    Debug.Log($"<color=#FF8800>  词条 [{slot.affix.affixName}] OnCalculateDamage: {before} → {calculatedData.value}</color>");
+                }
+            }
+            else
+            {
+                Debug.Log($"<color=#888888>【锻造结算】无生效词条 (sourceDataRef={physicsDice.sourceDataRef != null}, forgeSlots count={physicsDice.sourceDataRef?.forgeSlots?.Count})</color>");
+            }
             if (BattleManager.Instance != null)
             {
                 calculatedData.value = BattleManager.Instance.ProcessGlobalDamageModifiers(calculatedData.value, usedOrder, remainingAtThrow);
             }
             // 3. 造成伤害
-            target.OnHit(calculatedData); 
+            target.OnHit(calculatedData);
 
             // 4. 击后效果
             if (abilities != null)
@@ -315,6 +330,13 @@ public class DiceDragger : MonoBehaviour
                 foreach (var ability in abilities)
                 {
                     ability.OnPostHit(target, calculatedData.value, physicsDice);
+                }
+            }
+            if (forgeSlots != null)
+            {
+                foreach (var slot in forgeSlots)
+                {
+                    slot.affix.OnPostHit(target, calculatedData.value, physicsDice);
                 }
             }
         }

@@ -8,6 +8,7 @@ public class PlayerDice
     public string diceName = "普通骰子";
     public DiceAbilitySO boundAbility;
     public RuntimeSlotAttribute currentAttribute;
+    public List<ForgeSlot> forgeSlots = new List<ForgeSlot>();
 
     public PlayerDice() { uid = System.Guid.NewGuid().ToString(); }
 }

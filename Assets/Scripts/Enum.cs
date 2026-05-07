@@ -48,7 +48,8 @@ public static class GameEnums
         NextBattleFixedDice,// 下次战斗有一枚固定骰子点数
         BlockNextDamage,    // 抵消下一次伤害 (全图+战斗通用)
         NextBattleDamageUp, // 下次战斗伤害增加
-        Relic               // 获得遗物
+        Relic,              // 获得遗物
+        Forge               // 骰子锻造
     }
     public enum EnemyTier
     {

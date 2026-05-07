@@ -121,4 +121,9 @@ public class GameFlowController : MonoBehaviour
     {
         ChangeState(new SpellDraftState(onComplete));
     }
+
+    public void StartForgeProcess(Action onComplete = null)
+    {
+        ChangeState(new ForgeState(onComplete));
+    }
 }

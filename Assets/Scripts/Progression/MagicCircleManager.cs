@@ -40,6 +40,12 @@ public class MagicCircleManager : MonoBehaviour
         for (int i = 0; i < 3; i++)
         {
             PlayerDice startDice = new PlayerDice();
+            startDice.forgeSlots = new List<ForgeSlot>
+            {
+                new ForgeSlot { tier = 1 },
+                new ForgeSlot { tier = 2 },
+                new ForgeSlot { tier = 3 }
+            };
             allOwnedDice.Add(startDice);
             magicSlots[i].currentDice = startDice;
         }

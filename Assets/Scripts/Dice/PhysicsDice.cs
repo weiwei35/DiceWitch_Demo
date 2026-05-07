@@ -108,9 +108,19 @@ public class PhysicsDice : MonoBehaviour
             // 让所有能力有机会修改最终点数
             foreach (var ability in myAbilities)
             {
-                finalValue = ability.OnRollEnd(finalValue, this); 
+                finalValue = ability.OnRollEnd(finalValue, this);
             }
-            currentResultData= resultData;
+            foreach (var slot in GetActiveForgeSlots())
+            {
+                int before = finalValue;
+                finalValue = slot.affix.OnRollEnd(finalValue, this);
+                Debug.Log($"<color=#FF8800>【骰子结算】词条 [{slot.affix.affixName}] OnRollEnd: {before} → {finalValue} (bonus={slot.affix.bonus})</color>");
+            }
+            // 把 OnRollEnd 钩子的修改同步回 currentResultData
+            int hookDelta = finalValue - resultData.TotalValue;
+            currentResultData = resultData;
+            if (hookDelta != 0)
+                currentResultData.bonusValue += hookDelta;
         
             Debug.Log($"检测结束 -> 朝上的面索引: {resultIndex}, 对应名称: {faces[resultIndex].name}, 结果数值: {finalValue}");
             
@@ -130,6 +140,18 @@ public class PhysicsDice : MonoBehaviour
     public List<DiceAbilitySO> GetAbilities()
     {
         return myAbilities;
+    }
+
+    public List<ForgeSlot> GetActiveForgeSlots()
+    {
+        var result = new List<ForgeSlot>();
+        if (sourceDataRef?.forgeSlots != null)
+        {
+            foreach (var slot in sourceDataRef.forgeSlots)
+                if (slot.isForged && slot.affix != null)
+                    result.Add(slot);
+        }
+        return result;
     }
     // 【新增】供外部调用，给所有面增加临时属性加成
     public void ApplyTemporaryBonus(int bonusAmount)
@@ -180,8 +202,10 @@ public class PhysicsDice : MonoBehaviour
             }
         }
         // 1. 遍历所有能力
+        bool hasProperty = false;
         if (myAbilities != null && myAbilities.Count > 0)
         {
+            hasProperty = true;
             foreach (var ability in myAbilities)
             {
                 sb.AppendLine($"<color=yellow>★ {ability.abilityName}</color>");
@@ -189,7 +213,20 @@ public class PhysicsDice : MonoBehaviour
                 sb.AppendLine(); // 空一行
             }
         }
-        else
+        // 2. 遍历所有锻造词条
+        var forgeSlots = GetActiveForgeSlots();
+        if (forgeSlots != null && forgeSlots.Count > 0)
+        {
+            hasProperty = true;
+            foreach (var slot in forgeSlots)
+            {
+                sb.AppendLine($"<color=#FF8800>◆ {slot.affix.affixName}</color>");
+                if (!string.IsNullOrEmpty(slot.affix.description))
+                    sb.AppendLine($"{slot.affix.description}");
+                sb.AppendLine();
+            }
+        }
+        if (!hasProperty)
         {
             sb.Append("<i>没有任何特殊属性</i>");
         }
