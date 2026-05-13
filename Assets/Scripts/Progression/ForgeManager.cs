@@ -11,6 +11,9 @@ public class ForgeManager : MonoBehaviour
 
     [Header("Resource Library")]
     public List<ForgeResourceSO> allResources = new List<ForgeResourceSO>();
+    public List<ResourceInventoryEntry> initialInventory = new List<ResourceInventoryEntry>();
+
+    private Dictionary<ForgeResourceSO, int> _inventory = new Dictionary<ForgeResourceSO, int>();
 
     public ForgeSession CurrentSession { get; private set; }
     public bool CanForgeMore => CurrentSession != null && CurrentSession.CanForgeMore;
@@ -21,11 +24,42 @@ public class ForgeManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            foreach (var entry in initialInventory)
+                if (entry.resource != null && entry.count > 0)
+                    _inventory[entry.resource] = entry.count;
         }
         else
         {
             Destroy(gameObject);
         }
+    }
+
+    // =========================================================
+    // 库存接口
+    // =========================================================
+
+    /// <summary>获得材料（外部奖励入口）</summary>
+    public void GainResource(ForgeResourceSO res, int amount)
+    {
+        if (res == null || amount <= 0) return;
+        if (!_inventory.ContainsKey(res)) _inventory[res] = 0;
+        _inventory[res] += amount;
+        Debug.Log($"<color=#88FF88>获得材料: {res.resourceName} x{amount} (当前: {_inventory[res]})</color>");
+    }
+
+    /// <summary>查询材料数量</summary>
+    public int GetResourceCount(ForgeResourceSO res)
+    {
+        if (res == null) return 0;
+        return _inventory.TryGetValue(res, out int count) ? count : 0;
+    }
+
+    private bool ConsumeResource(ForgeResourceSO res)
+    {
+        if (res == null) return false;
+        if (!_inventory.TryGetValue(res, out int count) || count <= 0) return false;
+        _inventory[res] = count - 1;
+        return true;
     }
 
     // =========================================================
@@ -65,18 +99,25 @@ public class ForgeManager : MonoBehaviour
         Debug.Log($"<color=cyan>开始锻造: {dice.diceName} — 第 {tierIndex + 1} 槽位 (T{tierIndex + 1})</color>");
     }
 
-    public void AddResource(ForgeResourceSO resource)
+    public bool AddResource(ForgeResourceSO resource)
     {
-        if (CurrentSession == null || resource == null) return;
+        if (CurrentSession == null || resource == null) return false;
+
+        if (!ConsumeResource(resource))
+        {
+            Debug.LogWarning($"材料 [{resource.resourceName}] 库存不足！");
+            return false;
+        }
 
         CurrentSession.investedResources.Add(resource);
-        CurrentSession.diceLocked = true; // 首次锻造后锁定骰子
+        CurrentSession.diceLocked = true;
 
         int tier = CurrentSession.currentTier + 1;
         ForgeAffixSO newOption = GenerateAffix(tier, CurrentSession.investedResources);
         CurrentSession.generatedOptions.Add(newOption);
 
         Debug.Log($"<color=yellow>投入 [{resource.resourceName}]，生成选项: {newOption.affixName} (T{newOption.tier})  已锻造次数: {CurrentSession.ForgeCount}</color>");
+        return true;
     }
 
     public void CommitAffix(ForgeAffixSO affix)

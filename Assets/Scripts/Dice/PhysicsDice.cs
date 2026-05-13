@@ -57,16 +57,17 @@ public class PhysicsDice : MonoBehaviour
 
     IEnumerator WaitForStop()
     {
-        // 延迟一点时间，防止刚扔出去速度还没起来就被判断停了
         yield return new WaitForSeconds(0.5f);
 
-        // 检测速度是否接近0
+        float elapsed = 0f;
+        const float maxWait = 5f;
         while (rb.velocity.sqrMagnitude > 0.01f || rb.angularVelocity.sqrMagnitude > 0.01f)
         {
+            elapsed += Time.deltaTime;
+            if (elapsed >= maxWait) break;
             yield return null;
         }
 
-        // 停下了
         isRolling = false;
         CalculateValue();
     }

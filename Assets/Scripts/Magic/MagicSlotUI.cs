@@ -37,10 +37,10 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             }
             else
             {
-                // 白板状态
+                // 白板骰子：使用统一默认图标
                 abilityIcon.gameObject.SetActive(true);
-                // abilityIcon.sprite = null; // 或者默认图
-                // abilityIcon.color = new Color(1, 1, 1, 0.2f);
+                abilityIcon.sprite = MagicCircleManager.Instance != null ? MagicCircleManager.Instance.defaultDiceIcon : null;
+                abilityIcon.color = Color.white;
             }
 
             // 2. 【新增】设置属性等级角标

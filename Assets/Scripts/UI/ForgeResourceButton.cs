@@ -5,15 +5,23 @@ using UnityEngine.EventSystems;
 public class ForgeResourceButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     public Image iconImage;
+    public TMPro.TextMeshProUGUI countText;
     private ForgeResourceSO _resource;
 
     public ForgeResourceSO Resource => _resource;
 
-    public void Setup(ForgeResourceSO res)
+    public void Setup(ForgeResourceSO res, int count)
     {
         _resource = res;
         if (iconImage != null && res.icon != null)
             iconImage.sprite = res.icon;
+        RefreshCount(count);
+    }
+
+    public void RefreshCount(int count)
+    {
+        if (countText != null)
+            countText.text = count > 0 ? $"x{count}" : "";
     }
 
     public void OnPointerEnter(PointerEventData eventData)

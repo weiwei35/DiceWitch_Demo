@@ -6,6 +6,7 @@ public class PlayerDice
 {
     public string uid;
     public string diceName = "普通骰子";
+    public Sprite icon;
     public DiceAbilitySO boundAbility;
     public RuntimeSlotAttribute currentAttribute;
     public List<ForgeSlot> forgeSlots = new List<ForgeSlot>();

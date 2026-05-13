@@ -7,11 +7,11 @@ public class ForgeDiceSelector : MonoBehaviour, IPointerEnterHandler, IPointerEx
     public Image iconImage;
     private PlayerDice _dice;
 
-    public void Setup(PlayerDice dice)
+    public void Setup(PlayerDice dice, Sprite fallbackIcon = null)
     {
         _dice = dice;
-        if (iconImage != null && dice.boundAbility != null)
-            iconImage.sprite = dice.boundAbility.icon;
+        if (iconImage != null)
+            iconImage.sprite = dice.icon != null ? dice.icon : dice.boundAbility?.icon ?? fallbackIcon;
     }
 
     public void OnPointerEnter(PointerEventData eventData)

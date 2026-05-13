@@ -33,7 +33,19 @@ public class DiceThrower : MonoBehaviour
 
     public void RegisterDice(PhysicsDice dice)
     {
-        if (!activeDiceList.Contains(dice)) activeDiceList.Add(dice);
+        if (!activeDiceList.Contains(dice))
+        {
+            activeDiceList.Add(dice);
+            dice.OnDiceSettled += HandleSingleDiceSettled;
+            _totalDiceExpected++;
+        }
+    }
+
+    public bool IsAnyDiceRolling()
+    {
+        foreach (var dice in activeDiceList)
+            if (dice != null && dice.isRolling) return true;
+        return false;
     }
 
     public void SpawnAndThrow(List<BattleDiceEntry> diceEntries)
@@ -120,19 +132,20 @@ public class DiceThrower : MonoBehaviour
         Vector3 targetPos = layoutCenter != null ? layoutCenter.position : spawnPoint.position;
         GameObject newDiceObj = Instantiate(dicePrefab, targetPos,Quaternion.identity);
         if (_container != null) newDiceObj.transform.SetParent(_container);
-    
+
         PhysicsDice pDice = newDiceObj.GetComponent<PhysicsDice>();
         if (pDice != null)
         {
-            pDice.Initialize(data, sourceRef); 
+            pDice.Initialize(data, sourceRef);
             activeDiceList.Add(pDice);
             pDice.OnDiceSettled += HandleSingleDiceSettled;
+            _totalDiceExpected++;
 
             Vector3 force = Vector3.up * upwardForce + new Vector3(Random.Range(-1f,1f), 0, Random.Range(-1f,1f)) * horizontalScatter;
             Vector3 torque = Random.insideUnitSphere * torqueForce;
             pDice.Roll(force, torque);
 
-            return pDice; 
+            return pDice;
         }
         return null;
     }
@@ -152,12 +165,17 @@ public class DiceThrower : MonoBehaviour
 
     private void OrganizeDiceLayout()
     {
+        // 清理已被外部销毁的骰子引用
+        activeDiceList.RemoveAll(d => d == null);
+
         int count = activeDiceList.Count;
         if (count == 0) return;
 
         float totalWidth = (count - 1) * diceSpacing;
         float startX = -totalWidth / 2f;
         Vector3 centerPos = layoutCenter != null ? layoutCenter.position : spawnPoint.position - Vector3.up * 2f;
+
+        Camera cam = Camera.main;
 
         for (int i = 0; i < count; i++)
         {
@@ -173,13 +191,60 @@ public class DiceThrower : MonoBehaviour
             // 小幅度跳跃回到完美阵型
             dice.transform.DOJump(targetPos, 0.1f, 1, layoutTweenDuration).SetEase(Ease.OutQuad);
 
-            // 角度取整放平 (将倾斜的骰子“咔哒”一声拉正)
+            // 角度取整放平 (将倾斜的骰子”咔哒”一声拉正)
             Vector3 euler = dice.transform.eulerAngles;
             euler.x = Mathf.Round(euler.x / 90f) * 90f;
             euler.y = Mathf.Round(euler.y / 90f) * 90f;
             euler.z = Mathf.Round(euler.z / 90f) * 90f;
+
+            euler = OrientUpFaceToCamera(dice, euler, cam);
+
             dice.transform.DORotate(euler, layoutTweenDuration).SetEase(Ease.OutQuad);
         }
+    }
+
+    private Vector3 OrientUpFaceToCamera(PhysicsDice dice, Vector3 snappedEuler, Camera cam)
+    {
+        if (cam == null) return snappedEuler;
+
+        Transform[] faces = dice.visualManager?.faceTransforms;
+        if (faces == null || faces.Length == 0) return snappedEuler;
+
+        Quaternion snappedRot = Quaternion.Euler(snappedEuler);
+
+        float maxY = -999f;
+        int upFaceIndex = -1;
+        for (int i = 0; i < faces.Length; i++)
+        {
+            Vector3 worldPos = dice.transform.position + snappedRot * faces[i].localPosition;
+            if (worldPos.y > maxY)
+            {
+                maxY = worldPos.y;
+                upFaceIndex = i;
+            }
+        }
+
+        if (upFaceIndex < 0) return snappedEuler;
+
+        Transform upFace = faces[upFaceIndex];
+
+        Vector3 faceWorldUp = snappedRot * upFace.localRotation * Vector3.up;
+        Vector3 faceUpXZ = new Vector3(faceWorldUp.x, 0, faceWorldUp.z);
+        if (faceUpXZ.sqrMagnitude < 0.0001f) return snappedEuler;
+        faceUpXZ.Normalize();
+
+        Vector3 toCamera = cam.transform.position - dice.transform.position;
+        Vector3 toCameraXZ = new Vector3(toCamera.x, 0, toCamera.z);
+        if (toCameraXZ.sqrMagnitude < 0.0001f) return snappedEuler;
+        toCameraXZ.Normalize();
+
+        float angle = Vector3.SignedAngle(faceUpXZ, toCameraXZ, Vector3.up);
+        float yAdjust = Mathf.Round(angle / 90f) * 90f - 90f;
+
+        snappedEuler.y = (snappedEuler.y + yAdjust) % 360f;
+        if (snappedEuler.y < 0) snappedEuler.y += 360f;
+
+        return snappedEuler;
     }
 
     public void ClearOldDice()

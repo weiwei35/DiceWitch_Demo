@@ -28,3 +28,10 @@ public class ForgeSession
     public bool CanForgeMore => investedResources.Count < 3;
     public int ForgeCount => investedResources.Count;
 }
+
+[System.Serializable]
+public struct ResourceInventoryEntry
+{
+    public ForgeResourceSO resource;
+    public int count;
+}

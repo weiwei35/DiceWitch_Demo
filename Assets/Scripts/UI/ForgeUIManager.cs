@@ -93,7 +93,7 @@ public class ForgeUIManager : MonoBehaviour
 
             GameObject btnObj = Instantiate(diceSelectButtonPrefab, diceSelectContainer);
             var selector = btnObj.GetComponent<ForgeDiceSelector>();
-            if (selector != null) selector.Setup(dice);
+            if (selector != null) selector.Setup(dice, MagicCircleManager.Instance.defaultDiceIcon);
 
             var captured = dice;
             btnObj.GetComponent<Button>().onClick.AddListener(() => OnDiceClicked(captured));
@@ -129,14 +129,19 @@ public class ForgeUIManager : MonoBehaviour
 
         foreach (var res in ForgeManager.Instance.allResources)
         {
+            int count = ForgeManager.Instance.GetResourceCount(res);
+
             GameObject btnObj = Instantiate(resourceButtonPrefab, resourceContainer);
             var resBtn = btnObj.GetComponent<ForgeResourceButton>();
-            if (resBtn != null) resBtn.Setup(res);
+            if (resBtn != null) resBtn.Setup(res, count);
 
             _resourceMap[btnObj] = res;
             var capturedRes = res;
             var capturedBtn = btnObj;
             btnObj.GetComponent<Button>().onClick.AddListener(() => OnResourceClicked(capturedRes, capturedBtn));
+
+            if (count <= 0)
+                btnObj.GetComponent<Button>().interactable = false;
         }
     }
 
@@ -144,15 +149,7 @@ public class ForgeUIManager : MonoBehaviour
     {
         TooltipSystem.Instance?.Hide();
 
-        if (_selectedDice == null)
-        {
-            if (statusText != null) statusText.text = "请先选择骰子";
-            return;
-        }
-
-        // 已消耗的材料不可再选
-        var session = ForgeManager.Instance.CurrentSession;
-        if (session != null && session.investedResources.Contains(res))
+        if (ForgeManager.Instance.GetResourceCount(res) <= 0)
             return;
 
         // 已达 3 次上限
@@ -199,13 +196,13 @@ public class ForgeUIManager : MonoBehaviour
 
     private void UpdateResourceInteractable()
     {
-        var session = ForgeManager.Instance.CurrentSession;
-        if (session == null) return;
-
         foreach (var kvp in _resourceMap)
         {
-            if (session.investedResources.Contains(kvp.Value))
-                kvp.Key.GetComponent<Button>().interactable = false;
+            int count = ForgeManager.Instance.GetResourceCount(kvp.Value);
+            bool hasStock = count > 0;
+            kvp.Key.GetComponent<Button>().interactable = hasStock;
+            var resBtn = kvp.Key.GetComponent<ForgeResourceButton>();
+            if (resBtn != null) resBtn.RefreshCount(count);
         }
     }
 
@@ -239,8 +236,15 @@ public class ForgeUIManager : MonoBehaviour
     {
         TooltipSystem.Instance?.Hide();
         ForgeManager.Instance.CommitAffix(affix);
-        Hide();
-        _onComplete?.Invoke();
+
+        // 回到准备阶段，可以继续锻造其他骰子
+        _phase = Phase.Preparing;
+        _selectedDice = null;
+        _selectedResource = null;
+        ClearOptions();
+        RefreshDiceList();
+        RefreshResourceList();
+        UpdateUI();
     }
 
     // =========================================================

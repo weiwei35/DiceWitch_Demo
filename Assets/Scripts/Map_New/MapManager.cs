@@ -117,12 +117,21 @@ public class MapManager : MonoBehaviour
         // 1. 先生效格子自身的效果，并在棋子头上飘字
         ProcessNodeEffect(landedNode, pawnPos);
 
-        // 2. 如果是锻造节点，先进入锻造流程，锻造结束后再进房间
+        // 2. 如果是锻造节点，先进入锻造流程，完成后根据房间是否已通关决定去向
         if (landedNode.type == GameEnums.BoardNodeType.Forge)
         {
             GameFlowController.Instance.StartForgeProcess(() =>
             {
-                StartCoroutine(DelayEnterRoom(landedNode));
+                if (landedNode.roomDataRef != null && !clearedRoomIds.Contains(landedNode.roomId))
+                {
+                    // 房间未通关，进入房间事件
+                    StartCoroutine(DelayEnterRoom(landedNode));
+                }
+                else
+                {
+                    // 房间已通关，直接回到地图
+                    GameFlowController.Instance.ChangeState(new MapState());
+                }
             });
         }
         else

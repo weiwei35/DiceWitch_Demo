@@ -28,25 +28,50 @@ public class TooltipSystem : MonoBehaviour
 
     private void UpdatePosition()
     {
-        // 1. 获取鼠标位置
         Vector2 mousePos = Input.mousePosition;
-        
-        // 2. 转换为 Canvas 内的坐标
-        // 你的 TooltipPanel 的父物体应该是 Canvas 或者某个全屏 Panel
         RectTransform parentRect = panelRect.parent as RectTransform;
-        
-        Vector2 localPoint;
-        // 注意：这里必须传 uiCamera (MainCamera)
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, mousePos, Camera.main, out localPoint))
-        {
-            // 3. 设置偏移量 (在局部坐标系下)
-            // Camera 模式下单位比较小，偏移量也要改小
-            float pivotOffsetX = 20f; 
-            float pivotOffsetY = -20f;
 
-            // 4. 赋值局部坐标
-            panelRect.localPosition = localPoint + new Vector2(pivotOffsetX, pivotOffsetY);
-        }
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            parentRect, mousePos, Camera.main, out Vector2 localPoint))
+            return;
+
+        Vector2 size = panelRect.rect.size;
+        Vector2 pivot = panelRect.pivot;
+        float halfW = parentRect.rect.width * 0.5f;
+        float halfH = parentRect.rect.height * 0.5f;
+        float gap = 20f;
+        float pad = 10f;
+
+        // 默认位置：鼠标右下
+        float px = localPoint.x + gap;
+        float py = localPoint.y - gap;
+
+        // 计算 tooltip 四条边在父坐标系中的位置
+        float tipRight = px + (1f - pivot.x) * size.x;
+        float tipBottom = py - pivot.y * size.y;
+        float tipLeft = px - pivot.x * size.x;
+        float tipTop = py + (1f - pivot.y) * size.y;
+
+        // 超出右边界 → 翻转到鼠标左侧
+        if (tipRight > halfW - pad)
+            px = localPoint.x - gap - size.x;
+
+        // 超出下边界 → 翻转到鼠标上方
+        if (tipBottom < -halfH + pad)
+            py = localPoint.y + gap + size.y;
+
+        // 兜底钳制，确保不超出任意边界
+        tipRight = px + (1f - pivot.x) * size.x;
+        tipBottom = py - pivot.y * size.y;
+        tipLeft = px - pivot.x * size.x;
+        tipTop = py + (1f - pivot.y) * size.y;
+
+        if (tipLeft < -halfW + pad) px += (-halfW + pad) - tipLeft;
+        else if (tipRight > halfW - pad) px -= tipRight - (halfW - pad);
+        if (tipBottom < -halfH + pad) py += (-halfH + pad) - tipBottom;
+        else if (tipTop > halfH - pad) py -= tipTop - (halfH - pad);
+
+        panelRect.localPosition = new Vector2(px, py);
     }
 
     public void Show(string content, string header = "")

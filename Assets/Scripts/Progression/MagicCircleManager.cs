@@ -6,6 +6,7 @@ public class MagicCircleManager : MonoBehaviour
     public static MagicCircleManager Instance;
 
     [Header("Magic Circle")]
+    public Sprite defaultDiceIcon;
     public List<MagicCircleSlot> magicSlots = new List<MagicCircleSlot>();
 
     public List<PlayerDice> allOwnedDice = new List<PlayerDice>();

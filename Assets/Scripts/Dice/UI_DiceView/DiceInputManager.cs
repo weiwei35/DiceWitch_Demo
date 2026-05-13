@@ -56,6 +56,17 @@ public class DiceInputManager : MonoBehaviour
     }
     void HandleHover()
     {
+        // 骰子还在滚动中，跳过射线检测防止唤醒物理睡眠
+        if (DiceThrower.Instance != null && DiceThrower.Instance.IsAnyDiceRolling())
+        {
+            if (_currentHover != null)
+            {
+                _currentHover.OnManualMouseExit();
+                _currentHover = null;
+            }
+            return;
+        }
+
         // 如果正在拖拽中，就不要检测悬浮了，防止 Tips 乱跳
         if (_currentDragger != null) 
         {
