@@ -1,0 +1,6 @@
+- [Map/Board System](project_map_system.md) — Board generation, node types, movement, landing flow, room clearing, state machine
+- [Dice Forging System](project_forge_system.md) — Forge UI, inventory, icon system, Editor setup
+- [Dice System Fixes](project_dice_fixes.md) — Text orientation, hover-during-rolling, WaitForStop timeout
+- [Design Philosophy](feedback_design_philosophy.md) — Keep it simple, WYSIWYG, auto-find over manual config
+- [Plan Before Code](feedback_plan_first.md) — Align on full interaction flow before implementing
+- [Use Skills Proactively](feedback_use_skills.md) — Check and invoke applicable skills before acting
