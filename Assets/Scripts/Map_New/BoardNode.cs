@@ -6,7 +6,7 @@ public class BoardNode
     public int index;               
     public GameEnums.BoardNodeType type;
     public int effectValue;
-    public GameEnums.BoardNodeType forgeBonusType = GameEnums.BoardNodeType.Empty; // 仅当 type=Forge 时生效，指定 effectValue 的效果类型         
+    public GameEnums.BoardNodeType forgeBonusType = GameEnums.BoardNodeType.空; // 仅当 type=Forge 时生效，指定 effectValue 的效果类型         
     public int roomId;
     public RoomDataSO roomDataRef;  
     public int regionIndex;         
@@ -20,7 +20,7 @@ public class BoardNode
     {
         this.index = index;
         this.regionIndex = regionIndex;
-        this.type = GameEnums.BoardNodeType.Empty;
+        this.type = GameEnums.BoardNodeType.空;
         this.isInvalidated = false; // 默认不失效
     }
 }

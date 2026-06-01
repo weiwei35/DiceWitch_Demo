@@ -1,5 +1,6 @@
 - [Map/Board System](project_map_system.md) — Board generation, node types, movement, landing flow, room clearing, state machine
 - [Dice Forging System](project_forge_system.md) — Forge UI, inventory, icon system, Editor setup
+- [Forge + Dice UI Stage 2026-05-31](project_stage_2026_05_31_forge_dice_ui.md) — Current Forge meditation flow, material UX, UI animations, fixed dice, clone dice, DiceViewMonitor bug
 - [Dice System Fixes](project_dice_fixes.md) — Text orientation, hover-during-rolling, WaitForStop timeout
 - [Design Philosophy](feedback_design_philosophy.md) — Keep it simple, WYSIWYG, auto-find over manual config
 - [Plan Before Code](feedback_plan_first.md) — Align on full interaction flow before implementing

@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using DG.Tweening;
 
 public class DiceSquadGroup : MonoBehaviour
 {
@@ -20,6 +21,48 @@ public class DiceSquadGroup : MonoBehaviour
         }
     }
 
+    public void ArrangeAt(Vector3 centerPos, float duration)
+    {
+        memberDice.RemoveAll(d => d == null);
+        int count = memberDice.Count;
+        if (count == 0) return;
+
+        float clusterRadius = 0.09f;
+        Camera cam = Camera.main;
+
+        for (int i = 0; i < count; i++)
+        {
+            DiceDragger dragger = memberDice[i];
+            PhysicsDice physicsDice = dragger.GetComponent<PhysicsDice>();
+            Vector3 offset = Vector3.zero;
+            if (count > 1)
+            {
+                float angle = i * Mathf.PI * 2f / count;
+                float radius = i == 0 ? 0f : clusterRadius;
+                offset = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+            }
+            Vector3 targetPos = centerPos + offset;
+
+            dragger.SetKinematic(true);
+            dragger.transform.DOJump(targetPos, 0.04f, 1, duration).SetEase(Ease.OutQuad);
+
+            Vector3 euler = physicsDice != null && DiceThrower.Instance != null
+                ? DiceThrower.Instance.GetOrganizedEuler(physicsDice, cam, physicsDice.CurrentResultIndex)
+                : dragger.transform.eulerAngles;
+            dragger.transform.DORotate(euler, duration).SetEase(Ease.OutQuad);
+        }
+
+        DOVirtual.DelayedCall(duration, CaptureMemberTrayPoses);
+    }
+
+    private void CaptureMemberTrayPoses()
+    {
+        foreach (var d in memberDice)
+        {
+            if (d != null) d.CaptureTrayPose();
+        }
+    }
+
     // --- 2. 拖拽开始 ---
     public void OnSquadDragStart(DiceDragger leader)
     {
@@ -31,6 +74,7 @@ public class DiceSquadGroup : MonoBehaviour
         {
             d.isDragging = true; 
             d.SetKinematic(true);
+            d.CaptureTrayPose();
         }
     }
 
@@ -49,12 +93,7 @@ public class DiceSquadGroup : MonoBehaviour
         // 之前的蛇形跟随是基于队长位移的，如果队长不动，队员也不会动。
         // 你可以加一点 Perlin Noise 让它们原地抖动，显得很急切想攻击。
         
-        foreach(var member in memberDice) {
-            if(member == _leader) continue;
-            // 简单的原地抖动
-            member.transform.position += Random.insideUnitSphere * Time.deltaTime * 0.5f; 
-            // 记得加限制让它们别跑太远
-        }
+        // 队员保持当前阵型，只由队长负责指示目标。
     }
 
     // --- 4. 拖拽结束 ---
@@ -65,17 +104,6 @@ public class DiceSquadGroup : MonoBehaviour
 
         if (target != null)
         {
-            if (BattleManager.Instance != null)
-            {
-                // 方案 A: 整个小队算 1 次使用
-                // BattleManager.Instance.TriggerPlayerUseDice();
-
-                // 方案 B (建议): 小队里有几颗骰子，就算几次 (成长怪会疯涨，但符合"每颗骰子"的描述)
-                for (int i = 0; i < memberDice.Count; i++)
-                {
-                    BattleManager.Instance.TriggerPlayerUseDice();
-                }
-            }
             // 攻击！
             StartCoroutine(SequenceAttack(target));
         }
@@ -130,7 +158,12 @@ public class DiceSquadGroup : MonoBehaviour
             {
                 // 获取数据 (通常是1点)
                 var data = attacker.GetComponent<PhysicsDice>().GetCurrentData();
-                
+
+                if (BattleManager.Instance != null)
+                {
+                    BattleManager.Instance.TriggerPlayerUseDice();
+                }
+
                 // 启动抛物线攻击 (复用你现有的逻辑)
                 // 注意：这里我们不需要等待 StartCoroutine 返回，因为我们希望稍微重叠一点节奏
                 // 但如果你想要严格的一个接一个，就加 yield return
@@ -167,8 +200,7 @@ public class DiceSquadGroup : MonoBehaviour
     {
         foreach (var d in memberDice)
         {
-            d.ReturnToTray();
-            d.SetKinematic(false);
+            d.ReturnToTray(true);
             d.isDragging = false;
         }
     }

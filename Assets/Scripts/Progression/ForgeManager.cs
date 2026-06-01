@@ -54,12 +54,19 @@ public class ForgeManager : MonoBehaviour
         return _inventory.TryGetValue(res, out int count) ? count : 0;
     }
 
-    private bool ConsumeResource(ForgeResourceSO res)
+    public bool TryConsumeResource(ForgeResourceSO res, int amount = 1)
     {
-        if (res == null) return false;
-        if (!_inventory.TryGetValue(res, out int count) || count <= 0) return false;
-        _inventory[res] = count - 1;
+        if (res == null || amount <= 0) return false;
+        if (!_inventory.TryGetValue(res, out int count) || count < amount) return false;
+        _inventory[res] = count - amount;
         return true;
+    }
+
+    public void RefundResource(ForgeResourceSO res, int amount = 1)
+    {
+        if (res == null || amount <= 0) return;
+        if (!_inventory.ContainsKey(res)) _inventory[res] = 0;
+        _inventory[res] += amount;
     }
 
     // =========================================================
@@ -103,7 +110,7 @@ public class ForgeManager : MonoBehaviour
     {
         if (CurrentSession == null || resource == null) return false;
 
-        if (!ConsumeResource(resource))
+        if (!TryConsumeResource(resource))
         {
             Debug.LogWarning($"材料 [{resource.resourceName}] 库存不足！");
             return false;
@@ -118,6 +125,45 @@ public class ForgeManager : MonoBehaviour
 
         Debug.Log($"<color=yellow>投入 [{resource.resourceName}]，生成选项: {newOption.affixName} (T{newOption.tier})  已锻造次数: {CurrentSession.ForgeCount}</color>");
         return true;
+    }
+
+    public ForgeAffixSO MeditateWithResources(PlayerDice dice, List<ForgeResourceSO> resources)
+    {
+        if (dice == null || resources == null || resources.Count != 3)
+        {
+            Debug.LogWarning("冥想需要选择目标骰子，并放满 3 个材料槽。");
+            return null;
+        }
+
+        foreach (var resource in resources)
+        {
+            if (resource == null)
+            {
+                Debug.LogWarning("冥想材料中存在空槽位。");
+                return null;
+            }
+        }
+
+        if (CurrentSession == null || CurrentSession.targetDice != dice)
+            StartForgeSession(dice);
+
+        if (CurrentSession == null || !CurrentSession.CanForgeMore)
+        {
+            Debug.Log("当前锻造会话已达启迪上限，或目标骰子不可锻造。");
+            return null;
+        }
+
+        CurrentSession.investedResources.AddRange(resources);
+        CurrentSession.diceLocked = true;
+
+        int tier = CurrentSession.currentTier + 1;
+        ForgeAffixSO newOption = GenerateAffix(tier, resources);
+        if (newOption == null) return null;
+
+        CurrentSession.generatedOptions.Add(newOption);
+
+        Debug.Log($"<color=yellow>冥想完成，生成启迪: {newOption.affixName} (T{newOption.tier})  启迪次数: {CurrentSession.ForgeCount}/3</color>");
+        return newOption;
     }
 
     public void CommitAffix(ForgeAffixSO affix)

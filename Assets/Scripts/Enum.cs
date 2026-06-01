@@ -40,16 +40,16 @@ public static class GameEnums
     // 棋盘节点效果类型
     public enum BoardNodeType
     {
-        Empty,              // 空地（无事发生）
-        HpChange,           // ±生命值 (合并了原 Heal 和 Trap)
-        ResourceChange,     // ±资源 (替代了原 Treasure)
-        RoomEvent,          // 房间主事件
-        NextBattleArmor,    // 下次战斗给护甲
-        NextBattleFixedDice,// 下次战斗有一枚固定骰子点数
-        BlockNextDamage,    // 抵消下一次伤害 (全图+战斗通用)
-        NextBattleDamageUp, // 下次战斗伤害增加
-        Relic,              // 获得遗物
-        Forge               // 骰子锻造
+        空,              // 空地（无事发生）
+        加减Hp,           // ±生命值 (合并了原 Heal 和 Trap)
+        加减资源,     // ±资源 (替代了原 Treasure)
+        事件,          // 房间主事件
+        一次护甲,    // 下次战斗给护甲
+        骰子点数必中,// 下次战斗有一枚固定骰子点数
+        抵消下一次伤害,    // 抵消下一次伤害 (全图+战斗通用)
+        一次伤害增加, // 下次战斗伤害增加
+        遗物,              // 获得遗物
+        锻造               // 骰子锻造
     }
     public enum EnemyTier
     {

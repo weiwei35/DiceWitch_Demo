@@ -25,8 +25,8 @@ public class ForgeSession
     public List<ForgeAffixSO> generatedOptions = new List<ForgeAffixSO>();
     public bool diceLocked = false;                      // 首次锻造后锁定骰子
 
-    public bool CanForgeMore => investedResources.Count < 3;
-    public int ForgeCount => investedResources.Count;
+    public bool CanForgeMore => generatedOptions.Count < 3;
+    public int ForgeCount => generatedOptions.Count;
 }
 
 [System.Serializable]

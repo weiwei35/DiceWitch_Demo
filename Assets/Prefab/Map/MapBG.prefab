@@ -1485,11 +1485,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1860430800705267517, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: nodeType
-      value: 1
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: forgeIcon
@@ -1509,12 +1509,16 @@ PrefabInstance:
       objectReference: {fileID: -984354836, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: forgeBonusType
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3576696863257032524, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_text
       value: -3
       objectReference: {fileID: 0}
+    - target: {fileID: 5918708630941351193, guid: b9a5893c663484c459b20d2134260f65, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 658204653, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 6433530915488934559, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
       value: 
@@ -1813,9 +1817,13 @@ PrefabInstance:
       propertyPath: baseIconSprite
       value: 
       objectReference: {fileID: 950795517, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
+      propertyPath: hidePlusSignForPositiveValue
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3576696863257032524, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_text
-      value: +1
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6433530915488934559, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
@@ -2682,18 +2690,18 @@ PrefabInstance:
     - target: {fileID: 101313990376115857, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: -1026956783, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+      objectReference: {fileID: 1294339962, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 1468368993657177572, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1860430800705267517, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: nodeType
-      value: 2
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: forgeIcon
@@ -2705,7 +2713,7 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: fff81805c4b2a4f5fb1fd50408299584, type: 2}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: effectValue
-      value: 15
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: baseIconSprite
@@ -2713,16 +2721,20 @@ PrefabInstance:
       objectReference: {fileID: -2039678223, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: forgeBonusType
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
+      propertyPath: hidePlusSignForPositiveValue
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3576696863257032524, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_text
-      value: +15
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 5918708630941351193, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 658204653, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 6433530915488934559, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
       value: 
@@ -2854,7 +2866,11 @@ PrefabInstance:
       objectReference: {fileID: 1294339962, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 1860430800705267517, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
+      propertyPath: nodeType
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: iconConfig
@@ -2868,10 +2884,18 @@ PrefabInstance:
       propertyPath: baseIconSprite
       value: 
       objectReference: {fileID: -984354836, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
+      propertyPath: forgeBonusType
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3576696863257032524, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_text
       value: +3
       objectReference: {fileID: 0}
+    - target: {fileID: 5918708630941351193, guid: b9a5893c663484c459b20d2134260f65, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 658204653, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 6433530915488934559, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
       value: 
@@ -3017,9 +3041,13 @@ PrefabInstance:
       propertyPath: baseIconSprite
       value: 
       objectReference: {fileID: 950795517, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
+      propertyPath: hidePlusSignForPositiveValue
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3576696863257032524, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_text
-      value: +1
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6433530915488934559, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
@@ -3762,9 +3790,13 @@ PrefabInstance:
       propertyPath: baseIconSprite
       value: 
       objectReference: {fileID: 950795517, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
+      propertyPath: hidePlusSignForPositiveValue
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3576696863257032524, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_text
-      value: +1
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6433530915488934559, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
@@ -4039,18 +4071,18 @@ PrefabInstance:
     - target: {fileID: 101313990376115857, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: -1026956783, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+      objectReference: {fileID: 1294339962, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 1468368993657177572, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1860430800705267517, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: nodeType
-      value: 2
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: forgeIcon
@@ -4062,7 +4094,7 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: fff81805c4b2a4f5fb1fd50408299584, type: 2}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: effectValue
-      value: 20
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: baseIconSprite
@@ -4070,16 +4102,20 @@ PrefabInstance:
       objectReference: {fileID: -2039678223, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: forgeBonusType
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
+      propertyPath: hidePlusSignForPositiveValue
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3576696863257032524, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_text
-      value: +20
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 5918708630941351193, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 658204653, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 6433530915488934559, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
       value: 
@@ -4229,9 +4265,13 @@ PrefabInstance:
       propertyPath: baseIconSprite
       value: 
       objectReference: {fileID: -2039678223, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
+      propertyPath: hidePlusSignForPositiveValue
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3576696863257032524, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_text
-      value: +6
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 6433530915488934559, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
@@ -4378,9 +4418,13 @@ PrefabInstance:
       propertyPath: baseIconSprite
       value: 
       objectReference: {fileID: -2039678223, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
+      propertyPath: hidePlusSignForPositiveValue
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3576696863257032524, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_text
-      value: +1
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6433530915488934559, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
@@ -5259,18 +5303,18 @@ PrefabInstance:
     - target: {fileID: 101313990376115857, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: -1026956783, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+      objectReference: {fileID: 1294339962, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 1468368993657177572, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1860430800705267517, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: nodeType
-      value: 2
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: forgeIcon
@@ -5282,7 +5326,7 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: fff81805c4b2a4f5fb1fd50408299584, type: 2}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: effectValue
-      value: 15
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: baseIconSprite
@@ -5290,16 +5334,20 @@ PrefabInstance:
       objectReference: {fileID: -2039678223, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: forgeBonusType
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
+      propertyPath: hidePlusSignForPositiveValue
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3576696863257032524, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_text
-      value: +15
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 5918708630941351193, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 658204653, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 6433530915488934559, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
       value: 
@@ -5577,14 +5625,14 @@ PrefabInstance:
     - target: {fileID: 101313990376115857, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: -1026956783, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+      objectReference: {fileID: 1294339962, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 1860430800705267517, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: nodeType
-      value: 2
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: iconConfig
@@ -5598,10 +5646,18 @@ PrefabInstance:
       propertyPath: baseIconSprite
       value: 
       objectReference: {fileID: -984354836, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    - target: {fileID: 2196938719478076392, guid: b9a5893c663484c459b20d2134260f65, type: 3}
+      propertyPath: forgeBonusType
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3576696863257032524, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_text
       value: +15
       objectReference: {fileID: 0}
+    - target: {fileID: 5918708630941351193, guid: b9a5893c663484c459b20d2134260f65, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 658204653, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     - target: {fileID: 6433530915488934559, guid: b9a5893c663484c459b20d2134260f65, type: 3}
       propertyPath: m_Sprite
       value: 

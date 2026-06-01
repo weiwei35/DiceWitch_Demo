@@ -124,16 +124,14 @@ public class BattleManager : MonoBehaviour
         else
         {
             Debug.Log("该房间没有附魔奖励，直接返回大地图。");
-            // ReturnToMapState();
+            ReturnToMapState();
         }
     }
-    // private void ReturnToMapState()
-    // {
-    //     // 可以在这里加一个清理本场战斗临时数据的逻辑
-    //     currentBattleDamageBonus = 0; 
-    //     
-    //     GameFlowController.Instance.EnterMapState();
-    // }
+    private void ReturnToMapState()
+    {
+        currentBattleDamageBonus = 0;
+        GameFlowController.Instance.ChangeState(new MapState());
+    }
     // =========================================================
     // 战斗逻辑 (Battle Logic)
     // =========================================================
@@ -214,6 +212,14 @@ public class BattleManager : MonoBehaviour
 
         // 从养成系统获取骰子数据
         var newDeck = MagicCircleManager.Instance.GetBattleDeck();
+        if (PlayerManager.Instance.nextBattleFixedDiceValue > 0 && newDeck.Count > 0)
+        {
+            int fixedValue = Mathf.Clamp(PlayerManager.Instance.nextBattleFixedDiceValue, 1, 6);
+            int fixedDiceIndex = Random.Range(0, newDeck.Count);
+            newDeck[fixedDiceIndex].forcedResultValue = fixedValue;
+            PlayerManager.Instance.nextBattleFixedDiceValue = 0;
+            Debug.Log($"<color=cyan>【节点Buff生效】本次战斗第 {fixedDiceIndex + 1} 颗骰子将被拨动为 {fixedValue}</color>");
+        }
         diceThrower.SpawnAndThrow(newDeck);
     
         Debug.Log("--- 玩家回合开始 ---");

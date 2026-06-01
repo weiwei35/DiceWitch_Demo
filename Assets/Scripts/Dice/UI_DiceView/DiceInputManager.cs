@@ -3,6 +3,8 @@ using UnityEngine;
 public class DiceInputManager : MonoBehaviour
 {
     public static DiceInputManager Instance;
+    public DiceViewMonitor diceViewMonitor;
+    public bool logDiceInputDebug = false;
     
     // 当前正在拖拽的骰子
     private DiceDragger _currentDragger;
@@ -21,22 +23,27 @@ public class DiceInputManager : MonoBehaviour
         // --- 1. 按下鼠标：尝试抓取骰子 ---
         if (Input.GetMouseButtonDown(0))
         {
+            TooltipSystem.Instance?.Hide();
+
             // 获取转换后的射线
-            Ray ray = DiceViewMonitor.Instance.GetDiceRay(Input.mousePosition);
+            DiceViewMonitor monitor = GetDiceViewMonitor();
+            if (monitor == null) return;
+
+            Ray ray = monitor.GetDiceRay(Input.mousePosition);
             
             // 在骰子世界 (DiceWorld Layer) 进行检测
             int layerMask = 1 << LayerMask.NameToLayer("DiceArea");
-            
-            if (Physics.Raycast(ray, out RaycastHit hit, 1000f, layerMask))
+
+            DiceDragger dragger = FindDiceDraggerUnderMouse(ray, layerMask);
+            if (dragger != null)
             {
-                // 看看是不是打中了骰子
-                DiceDragger dragger = hit.collider.GetComponentInParent<DiceDragger>();
-                if (dragger != null)
-                {
-                    _currentDragger = dragger;
-                    // 手动通知骰子被点击了
-                    dragger.OnManualMouseDown(); 
-                }
+                _currentDragger = dragger;
+                dragger.OnManualMouseDown();
+                if (logDiceInputDebug) Debug.Log($"抓取骰子: {dragger.name}");
+            }
+            else if (logDiceInputDebug)
+            {
+                Debug.Log("点击骰子盘，但没有命中 DiceDragger。");
             }
         }
 
@@ -49,10 +56,26 @@ public class DiceInputManager : MonoBehaviour
             // --- 3. 松开鼠标：释放 ---
             if (Input.GetMouseButtonUp(0))
             {
+                TooltipSystem.Instance?.Hide();
                 _currentDragger.OnManualMouseUp();
                 _currentDragger = null;
             }
         }
+    }
+
+    private DiceDragger FindDiceDraggerUnderMouse(Ray ray, int layerMask)
+    {
+        RaycastHit[] hits = Physics.RaycastAll(ray, 1000f, layerMask);
+        if (hits == null || hits.Length == 0) return null;
+
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        foreach (var hit in hits)
+        {
+            DiceDragger dragger = hit.collider.GetComponentInParent<DiceDragger>();
+            if (dragger != null) return dragger;
+        }
+
+        return null;
     }
     void HandleHover()
     {
@@ -79,7 +102,10 @@ public class DiceInputManager : MonoBehaviour
         }
 
         // 1. 获取转换后的射线
-        Ray ray = DiceViewMonitor.Instance.GetDiceRay(Input.mousePosition);
+        DiceViewMonitor monitor = GetDiceViewMonitor();
+        if (monitor == null) return;
+
+        Ray ray = monitor.GetDiceRay(Input.mousePosition);
         int layerMask = 1 << LayerMask.NameToLayer("DiceArea");
 
         // 2. 射线检测
@@ -107,5 +133,30 @@ public class DiceInputManager : MonoBehaviour
                 _currentHover = null;
             }
         }
+    }
+
+    private DiceViewMonitor GetDiceViewMonitor()
+    {
+        if (diceViewMonitor != null) return diceViewMonitor;
+        if (DiceViewMonitor.Instance != null)
+        {
+            diceViewMonitor = DiceViewMonitor.Instance;
+            return diceViewMonitor;
+        }
+
+        DiceViewMonitor[] monitors = FindObjectsOfType<DiceViewMonitor>();
+        foreach (var monitor in monitors)
+        {
+            if (monitor != null && monitor.gameObject.name == "UI_DiceView")
+            {
+                diceViewMonitor = monitor;
+                return diceViewMonitor;
+            }
+        }
+
+        if (monitors.Length > 0)
+            diceViewMonitor = monitors[0];
+
+        return diceViewMonitor;
     }
 }

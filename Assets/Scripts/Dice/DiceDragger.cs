@@ -33,11 +33,18 @@ public class DiceDragger : MonoBehaviour
         if(rb != null) rb.isKinematic = state;
     }
 
+    public void CaptureTrayPose()
+    {
+        originalPos = transform.position;
+        originalRot = transform.rotation;
+    }
+
     // --- 手动输入入口 (由 DiceInputManager 调用) ---
 
     public void OnManualMouseDown()
     {
         if (physicsDice.isRolling) return;
+        TooltipSystem.Instance?.Hide();
 
         // 记录归位点
         originalPos = transform.position;
@@ -152,6 +159,11 @@ public class DiceDragger : MonoBehaviour
 
     public void ReturnToTray()
     {
+        ReturnToTray(false);
+    }
+
+    public void ReturnToTray(bool keepKinematic)
+    {
         if (this == null || gameObject == null) return;
 
         transform.position = originalPos;
@@ -159,8 +171,9 @@ public class DiceDragger : MonoBehaviour
         
         if (rb != null)
         {
-            rb.isKinematic = false; // 恢复物理让它自然掉落
+            rb.isKinematic = keepKinematic;
             rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
         }
         
         isDragging = false;

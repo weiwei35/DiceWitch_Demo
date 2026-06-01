@@ -11,6 +11,7 @@ originSessionId: 7791e3c7-8824-46ca-a085-d27c574c5d97
 **How to apply**: 
 - Prefer single-field configs over multi-field (e.g., forge bonus = one number = WYSIWYG)
 - Auto-find UI children by name instead of requiring manual Inspector drags on every instance
+- Important later correction: when the UI relationship is already explicit in the scene, prefer Inspector references over auto-find to avoid duplicate configuration paths. Do not both auto-find and expose the same reference unless there is a clear fallback reason.
 - Shared SO configs over per-instance field duplication
 - Don't create derived classes when a simple field on a base class works
 - WYSIWYG: tooltip shows what player gets, damage equals tooltip value — no hidden separate bonuses

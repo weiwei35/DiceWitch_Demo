@@ -74,4 +74,5 @@ public class BattleDiceEntry
 {
     public RuntimeDiceData combatData;
     public PlayerDice sourceRef;
+    public int forcedResultValue;
 }

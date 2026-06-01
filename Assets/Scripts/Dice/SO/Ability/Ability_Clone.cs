@@ -42,13 +42,17 @@ public class Ability_Clone : DiceAbilitySO
             pDice.ForceSetValue(0); 
             if (thrower != null)
             {
-                thrower.RegisterDice(pDice);
+                thrower.RegisterSettledDice(pDice);
             }
             spawnedMinions.Add(minion.GetComponent<DiceDragger>());
         }
 
         // 3. 编队
         squad.Initialize(spawnedMinions);
+        if (thrower != null)
+        {
+            thrower.TryOrganizeDiceLayout();
+        }
 
         // 4. 销毁本体 (大骰子)
         Destroy(sourceDice.gameObject);

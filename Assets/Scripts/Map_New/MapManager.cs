@@ -118,14 +118,14 @@ public class MapManager : MonoBehaviour
         ProcessNodeEffect(landedNode, pawnPos);
 
         // 2. 如果是锻造节点，先进入锻造流程，完成后根据房间是否已通关决定去向
-        if (landedNode.type == GameEnums.BoardNodeType.Forge)
+        if (landedNode.type == GameEnums.BoardNodeType.锻造)
         {
             GameFlowController.Instance.StartForgeProcess(() =>
             {
                 if (landedNode.roomDataRef != null && !clearedRoomIds.Contains(landedNode.roomId))
                 {
                     // 房间未通关，进入房间事件
-                    StartCoroutine(DelayEnterRoom(landedNode));
+                    StartCoroutine(DelayEnterRoom(landedNode, 0f));
                 }
                 else
                 {
@@ -141,10 +141,10 @@ public class MapManager : MonoBehaviour
     }
 
     // 【新增】延迟进入房间的协程
-    private System.Collections.IEnumerator DelayEnterRoom(BoardNode landedNode)
+    private System.Collections.IEnumerator DelayEnterRoom(BoardNode landedNode, float? delayOverride = null)
     {
         // 如果有实际效果，多等一会 (1秒)；如果是空地或者直接进事件的格子，少等一会 (0.3秒缓冲)
-        float delayTime = (landedNode.type == GameEnums.BoardNodeType.Empty || landedNode.type == GameEnums.BoardNodeType.RoomEvent) ? 0.3f : 2.0f;
+        float delayTime = delayOverride ?? ((landedNode.type == GameEnums.BoardNodeType.空 || landedNode.type == GameEnums.BoardNodeType.事件) ? 0.3f : 2.0f);
         
         yield return new WaitForSeconds(delayTime);
 
@@ -178,7 +178,7 @@ public class MapManager : MonoBehaviour
 
         switch (node.type)
         {
-            case GameEnums.BoardNodeType.HpChange:
+            case GameEnums.BoardNodeType.加减Hp:
                 if (node.effectValue > 0) 
                 {
                     PlayerManager.Instance.Heal(node.effectValue);
@@ -193,7 +193,7 @@ public class MapManager : MonoBehaviour
                 }
                 break;
                 
-            case GameEnums.BoardNodeType.ResourceChange:
+            case GameEnums.BoardNodeType.加减资源:
                 if (node.effectValue > 0) 
                 {
                     ResourceManager.Instance.AddManaDust(node.effectValue);
@@ -208,41 +208,41 @@ public class MapManager : MonoBehaviour
                 }
                 break;
                 
-            case GameEnums.BoardNodeType.NextBattleArmor:
+            case GameEnums.BoardNodeType.一次护甲:
                 PlayerManager.Instance.nextBattleArmorBonus += node.effectValue;
                 floatText = $"开局护甲 +{node.effectValue}";
                 floatColor = new Color(0.2f, 0.6f, 1f); // 蓝色
                 break;
                 
-            case GameEnums.BoardNodeType.NextBattleFixedDice:
+            case GameEnums.BoardNodeType.骰子点数必中:
                 PlayerManager.Instance.nextBattleFixedDiceValue = node.effectValue;
                 floatText = $"必定掷出 {node.effectValue}";
                 floatColor = new Color(0.8f, 0.2f, 1f); // 紫色
                 break;
                 
-            case GameEnums.BoardNodeType.BlockNextDamage:
+            case GameEnums.BoardNodeType.抵消下一次伤害:
                 PlayerManager.Instance.hasBlockNextDamageShield = true;
                 PlayerManager.Instance.UpdateUI();
                 floatText = "获得圣盾";
                 floatColor = Color.cyan;
                 break;
                 
-            case GameEnums.BoardNodeType.NextBattleDamageUp:
+            case GameEnums.BoardNodeType.一次伤害增加:
                 PlayerManager.Instance.nextBattleDamageBonus += node.effectValue;
                 floatText = $"伤害 +{node.effectValue}";
                 floatColor = new Color(1f, 0.5f, 0f); // 橙色
                 break;
                 
-            case GameEnums.BoardNodeType.Relic:
+            case GameEnums.BoardNodeType.遗物:
                 floatText = "获得遗物";
                 floatColor = Color.yellow;
                 break;
 
-            case GameEnums.BoardNodeType.Forge:
+            case GameEnums.BoardNodeType.锻造:
                 // 锻造节点的额外加成：根据 forgeBonusType 判定
                 switch (node.forgeBonusType)
                 {
-                    case GameEnums.BoardNodeType.HpChange:
+                    case GameEnums.BoardNodeType.加减Hp:
                         if (node.effectValue > 0)
                         {
                             PlayerManager.Instance.Heal(node.effectValue);
@@ -256,7 +256,7 @@ public class MapManager : MonoBehaviour
                             floatColor = Color.red;
                         }
                         break;
-                    case GameEnums.BoardNodeType.ResourceChange:
+                    case GameEnums.BoardNodeType.加减资源:
                         if (node.effectValue > 0)
                         {
                             ResourceManager.Instance.AddManaDust(node.effectValue);
@@ -270,23 +270,23 @@ public class MapManager : MonoBehaviour
                             floatColor = Color.red;
                         }
                         break;
-                    case GameEnums.BoardNodeType.NextBattleArmor:
+                    case GameEnums.BoardNodeType.一次护甲:
                         PlayerManager.Instance.nextBattleArmorBonus += node.effectValue;
                         floatText = $"开局护甲 +{node.effectValue}";
                         floatColor = new Color(0.2f, 0.6f, 1f);
                         break;
-                    case GameEnums.BoardNodeType.NextBattleFixedDice:
+                    case GameEnums.BoardNodeType.骰子点数必中:
                         PlayerManager.Instance.nextBattleFixedDiceValue = node.effectValue;
                         floatText = $"必定掷出 {node.effectValue}";
                         floatColor = new Color(0.8f, 0.2f, 1f);
                         break;
-                    case GameEnums.BoardNodeType.BlockNextDamage:
+                    case GameEnums.BoardNodeType.抵消下一次伤害:
                         PlayerManager.Instance.hasBlockNextDamageShield = true;
                         PlayerManager.Instance.UpdateUI();
                         floatText = "获得圣盾";
                         floatColor = Color.cyan;
                         break;
-                    case GameEnums.BoardNodeType.NextBattleDamageUp:
+                    case GameEnums.BoardNodeType.一次伤害增加:
                         PlayerManager.Instance.nextBattleDamageBonus += node.effectValue;
                         floatText = $"伤害 +{node.effectValue}";
                         floatColor = new Color(1f, 0.5f, 0f);

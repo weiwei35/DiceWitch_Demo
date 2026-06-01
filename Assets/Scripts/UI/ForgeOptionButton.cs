@@ -17,7 +17,8 @@ public class ForgeOptionButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         _affix = affix;
         if (nameText != null) nameText.text = affix.affixName;
         if (iconImage != null && affix.icon != null) iconImage.sprite = affix.icon;
-        if (attachButton != null) attachButton.gameObject.SetActive(showAttach);
+        if (attachButton != null && attachButton.gameObject != gameObject)
+            attachButton.gameObject.SetActive(showAttach);
     }
 
     public void OnPointerEnter(PointerEventData eventData)

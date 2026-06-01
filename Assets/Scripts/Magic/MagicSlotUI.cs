@@ -71,12 +71,7 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
         // A. 显示 Tips (复用你的 TooltipSystem)
         string title = _targetSlot.currentDice?.diceName ?? "空槽位";
-        string desc = "暂无属性";
-        if (_targetSlot.currentAttribute != null && _targetSlot.currentAttribute.data != null)
-        {
-            var attr = _targetSlot.currentAttribute;
-            desc = $"{attr.data.attributeName} Lv.{attr.level}\n效果: +{attr.GetCurrentValue()}";
-        }
+        string desc = BuildTooltipDescription();
         TooltipSystem.Instance.Show(desc, title);
 
         // B. 3D 骰子高亮联动
@@ -85,6 +80,51 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             // 通知 DiceThrower 高亮这颗骰子
             DiceThrower.Instance.HighlightDice(_targetSlot.currentDice);
         }
+    }
+
+    private string BuildTooltipDescription()
+    {
+        if (_targetSlot.currentDice == null) return "空槽位";
+
+        string desc = "";
+        PlayerDice dice = _targetSlot.currentDice;
+
+        if (dice.boundAbility != null)
+        {
+            desc += $"<color=yellow>★ {dice.boundAbility.abilityName}</color>";
+            if (!string.IsNullOrEmpty(dice.boundAbility.description))
+                desc += $"\n{dice.boundAbility.description}";
+        }
+
+        if (_targetSlot.currentAttribute != null && _targetSlot.currentAttribute.data != null)
+        {
+            var attr = _targetSlot.currentAttribute;
+            if (!string.IsNullOrEmpty(desc)) desc += "\n\n";
+            desc += $"{attr.data.attributeName} Lv.{attr.level}\n效果: +{attr.GetCurrentValue()}";
+        }
+
+        if (dice.forgeSlots != null)
+        {
+            bool hasForged = false;
+            foreach (var slot in dice.forgeSlots)
+            {
+                if (slot != null && slot.isForged && slot.affix != null)
+                {
+                    if (!hasForged)
+                    {
+                        if (!string.IsNullOrEmpty(desc)) desc += "\n\n";
+                        desc += "<color=#FF8800>◆ 已刻印词条</color>";
+                        hasForged = true;
+                    }
+
+                    desc += $"\nT{slot.tier}: {slot.affix.affixName}";
+                    if (!string.IsNullOrEmpty(slot.affix.description))
+                        desc += $"\n{slot.affix.description}";
+                }
+            }
+        }
+
+        return string.IsNullOrEmpty(desc) ? "暂无属性" : desc;
     }
 
     public void OnPointerExit(PointerEventData eventData)

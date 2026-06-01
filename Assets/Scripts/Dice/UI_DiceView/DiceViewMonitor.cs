@@ -12,9 +12,28 @@ public class DiceViewMonitor : MonoBehaviour
 
     void Awake()
     {
-        Instance = this;
         if (rawImage == null) rawImage = GetComponent<RawImage>();
         if (rectTrans == null) rectTrans = GetComponent<RectTransform>();
+
+        if (Instance == null || IsPreferredOver(Instance))
+            Instance = this;
+    }
+
+    private bool IsPreferredOver(DiceViewMonitor other)
+    {
+        if (other == null) return true;
+
+        bool thisIsMainView = gameObject.name == "UI_DiceView";
+        bool otherIsMainView = other.gameObject.name == "UI_DiceView";
+        if (thisIsMainView != otherIsMainView)
+            return thisIsMainView;
+
+        bool thisActive = gameObject.activeInHierarchy;
+        bool otherActive = other.gameObject.activeInHierarchy;
+        if (thisActive != otherActive)
+            return thisActive;
+
+        return false;
     }
 
     // --- 核心数学：屏幕坐标 -> 骰子世界射线 ---
@@ -22,19 +41,14 @@ public class DiceViewMonitor : MonoBehaviour
     {
         Vector2 localPoint;
 
-        // --- 核心修改 ---
-        // 1. 获取渲染 UI 的摄像机
-        // 如果你的 Canvas Render Mode 是 Screen Space - Camera，这里必须传对应的相机
-        Camera uiCamera = Camera.main; 
-        
-        // 2. 将第三个参数从 null 改为 uiCamera
+        // Canvas 使用 Screen Space - Camera 时，需要传入对应 UI 相机。
+        Camera uiCamera = Camera.main;
+
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTrans, screenPos, uiCamera, out localPoint))
         {
-            return new Ray(); 
+            return new Ray();
         }
-        // ----------------
 
-        // 下面的逻辑保持不变
         float normalizedX = (localPoint.x / rectTrans.rect.width) + 0.5f;
         float normalizedY = (localPoint.y / rectTrans.rect.height) + 0.5f;
 

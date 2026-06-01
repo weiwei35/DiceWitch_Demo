@@ -24,8 +24,14 @@ public class DiceThrower : MonoBehaviour
 
     private Transform _container;
     private List<PhysicsDice> _highlightedDiceList = new List<PhysicsDice>();
-    private Vector3 _originalScale;
+    private Dictionary<PhysicsDice, Color> _highlightOriginalColors = new Dictionary<PhysicsDice, Color>();
     private List<PhysicsDice> activeDiceList = new List<PhysicsDice>();
+
+    private struct LayoutSlot
+    {
+        public PhysicsDice dice;
+        public DiceSquadGroup squad;
+    }
     
     private int _settledDiceCount = 0;
     private int _totalDiceExpected = 0; 
@@ -35,9 +41,29 @@ public class DiceThrower : MonoBehaviour
     {
         if (!activeDiceList.Contains(dice))
         {
+            AttachDiceToContainer(dice);
             activeDiceList.Add(dice);
             dice.OnDiceSettled += HandleSingleDiceSettled;
             _totalDiceExpected++;
+        }
+    }
+
+    public void RegisterSettledDice(PhysicsDice dice)
+    {
+        if (dice == null || activeDiceList.Contains(dice)) return;
+
+        AttachDiceToContainer(dice);
+        activeDiceList.Add(dice);
+        dice.OnDiceSettled += HandleSingleDiceSettled;
+        _totalDiceExpected++;
+        _settledDiceCount++;
+    }
+
+    public void TryOrganizeDiceLayout()
+    {
+        if (_settledDiceCount >= _totalDiceExpected && _totalDiceExpected > 0 && !IsAnyDiceRolling())
+        {
+            OrganizeDiceLayout();
         }
     }
 
@@ -46,6 +72,28 @@ public class DiceThrower : MonoBehaviour
         foreach (var dice in activeDiceList)
             if (dice != null && dice.isRolling) return true;
         return false;
+    }
+
+    private void AttachDiceToContainer(PhysicsDice dice)
+    {
+        if (dice == null) return;
+
+        if (_container == null) _container = new GameObject("--- Dice Container ---").transform;
+        dice.transform.SetParent(_container);
+
+        if (dicePrefab != null)
+            SetLayerRecursively(dice.gameObject, dicePrefab.layer);
+    }
+
+    private void SetLayerRecursively(GameObject obj, int layer)
+    {
+        if (obj == null) return;
+
+        obj.layer = layer;
+        foreach (Transform child in obj.transform)
+        {
+            SetLayerRecursively(child.gameObject, layer);
+        }
     }
 
     public void SpawnAndThrow(List<BattleDiceEntry> diceEntries)
@@ -83,7 +131,7 @@ public class DiceThrower : MonoBehaviour
             PhysicsDice pDice = newDiceObj.GetComponent<PhysicsDice>();
             if (pDice != null)
             {
-                pDice.Initialize(entry.combatData, entry.sourceRef); 
+                pDice.Initialize(entry.combatData, entry.sourceRef, entry.forcedResultValue); 
                 activeDiceList.Add(pDice);
                 pDice.OnDiceSettled += HandleSingleDiceSettled;
                 
@@ -156,11 +204,7 @@ public class DiceThrower : MonoBehaviour
     private void HandleSingleDiceSettled(int value)
     {
         _settledDiceCount++;
-        
-        if (_settledDiceCount >= _totalDiceExpected && _totalDiceExpected > 0)
-        {
-            OrganizeDiceLayout();
-        }
+        TryOrganizeDiceLayout();
     }
 
     private void OrganizeDiceLayout()
@@ -168,7 +212,9 @@ public class DiceThrower : MonoBehaviour
         // 清理已被外部销毁的骰子引用
         activeDiceList.RemoveAll(d => d == null);
 
-        int count = activeDiceList.Count;
+        List<LayoutSlot> layoutSlots = BuildLayoutSlots();
+
+        int count = layoutSlots.Count;
         if (count == 0) return;
 
         float totalWidth = (count - 1) * diceSpacing;
@@ -179,28 +225,109 @@ public class DiceThrower : MonoBehaviour
 
         for (int i = 0; i < count; i++)
         {
-            PhysicsDice dice = activeDiceList[i];
-            if (dice == null) continue;
+            LayoutSlot slot = layoutSlots[i];
 
             // 再次冻结物理，让动画接管整理
+            Vector3 targetPos = centerPos + Vector3.right * (startX + i * diceSpacing);
+
+            if (slot.squad != null)
+            {
+                slot.squad.ArrangeAt(targetPos, layoutTweenDuration);
+                continue;
+            }
+
+            PhysicsDice dice = slot.dice;
+            if (dice == null) continue;
+
             Rigidbody rb = dice.GetComponent<Rigidbody>();
             if (rb != null) rb.isKinematic = true;
-
-            Vector3 targetPos = centerPos + Vector3.right * (startX + i * diceSpacing);
 
             // 小幅度跳跃回到完美阵型
             dice.transform.DOJump(targetPos, 0.1f, 1, layoutTweenDuration).SetEase(Ease.OutQuad);
 
             // 角度取整放平 (将倾斜的骰子”咔哒”一声拉正)
-            Vector3 euler = dice.transform.eulerAngles;
-            euler.x = Mathf.Round(euler.x / 90f) * 90f;
-            euler.y = Mathf.Round(euler.y / 90f) * 90f;
-            euler.z = Mathf.Round(euler.z / 90f) * 90f;
-
-            euler = OrientUpFaceToCamera(dice, euler, cam);
+            Vector3 euler = GetOrganizedEuler(dice, cam);
 
             dice.transform.DORotate(euler, layoutTweenDuration).SetEase(Ease.OutQuad);
         }
+
+        DOVirtual.DelayedCall(layoutTweenDuration + 0.05f, RevealForcedDiceResults);
+    }
+
+    private List<LayoutSlot> BuildLayoutSlots()
+    {
+        List<LayoutSlot> slots = new List<LayoutSlot>();
+        HashSet<DiceSquadGroup> addedSquads = new HashSet<DiceSquadGroup>();
+
+        foreach (var dice in activeDiceList)
+        {
+            if (dice == null) continue;
+
+            DiceDragger dragger = dice.GetComponent<DiceDragger>();
+            DiceSquadGroup squad = dragger != null ? dragger.squadGroup : null;
+
+            if (squad != null)
+            {
+                if (addedSquads.Add(squad))
+                    slots.Add(new LayoutSlot { squad = squad });
+            }
+            else
+            {
+                slots.Add(new LayoutSlot { dice = dice });
+            }
+        }
+
+        return slots;
+    }
+
+    private void RevealForcedDiceResults()
+    {
+        foreach (var dice in activeDiceList)
+        {
+            if (dice != null && dice.HasPendingForcedResult)
+            {
+                dice.ApplyForcedResultAfterLayout();
+            }
+        }
+    }
+
+    public Vector3 GetOrganizedEuler(PhysicsDice dice, Camera cam, int forcedUpFaceIndex = -1)
+    {
+        Vector3 euler = dice.transform.eulerAngles;
+        euler.x = Mathf.Round(euler.x / 90f) * 90f;
+        euler.y = Mathf.Round(euler.y / 90f) * 90f;
+        euler.z = Mathf.Round(euler.z / 90f) * 90f;
+
+        if (forcedUpFaceIndex >= 0)
+            return OrientFaceToCamera(dice, euler, forcedUpFaceIndex, cam);
+
+        return OrientUpFaceToCamera(dice, euler, cam);
+    }
+
+    private Vector3 OrientFaceToCamera(PhysicsDice dice, Vector3 snappedEuler, int faceIndex, Camera cam)
+    {
+        Transform[] faces = dice.visualManager?.faceTransforms;
+        if (faces == null || faceIndex < 0 || faceIndex >= faces.Length || faces[faceIndex] == null)
+            return snappedEuler;
+
+        Quaternion snappedRot = Quaternion.Euler(snappedEuler);
+        Transform face = faces[faceIndex];
+        Vector3 localFaceDir = face.localPosition.sqrMagnitude > 0.0001f ? face.localPosition.normalized : face.localRotation * Vector3.forward;
+        Quaternion target = Quaternion.FromToRotation(snappedRot * localFaceDir, Vector3.up) * snappedRot;
+
+        if (cam == null) return target.eulerAngles;
+
+        Vector3 faceWorldUp = target * face.localRotation * Vector3.up;
+        Vector3 faceUpXZ = new Vector3(faceWorldUp.x, 0, faceWorldUp.z);
+        Vector3 toCamera = cam.transform.position - dice.transform.position;
+        Vector3 toCameraXZ = new Vector3(toCamera.x, 0, toCamera.z);
+
+        if (faceUpXZ.sqrMagnitude < 0.0001f || toCameraXZ.sqrMagnitude < 0.0001f)
+            return target.eulerAngles;
+
+        float angle = Vector3.SignedAngle(faceUpXZ.normalized, toCameraXZ.normalized, Vector3.up);
+        float yAdjust = Mathf.Round(angle / 90f) * 90f - 90f;
+        return (Quaternion.AngleAxis(yAdjust, Vector3.up) * target).eulerAngles;
     }
 
     private Vector3 OrientUpFaceToCamera(PhysicsDice dice, Vector3 snappedEuler, Camera cam)
@@ -282,9 +409,12 @@ public class DiceThrower : MonoBehaviour
             if (dice.sourceDataRef == targetData)
             {
                 _highlightedDiceList.Add(dice);
-                dice.transform.DOKill();
-                _originalScale = dice.transform.localScale;
-                dice.transform.DOScale(dice.transform.localScale * 1.3f, 0.2f).SetLoops(-1, LoopType.Yoyo).SetLink(dice.gameObject);
+                if (dice.diceRenderer != null)
+                {
+                    Color originalColor = dice.diceRenderer.material.color;
+                    _highlightOriginalColors[dice] = originalColor;
+                    dice.diceRenderer.material.color = Color.Lerp(originalColor, Color.yellow, 0.45f);
+                }
             }
         }
     }
@@ -297,11 +427,14 @@ public class DiceThrower : MonoBehaviour
             {
                 if (dice != null)
                 {
-                    dice.transform.DOKill();
-                    dice.transform.localScale = _originalScale;
+                    if (dice.diceRenderer != null && _highlightOriginalColors.TryGetValue(dice, out Color originalColor))
+                    {
+                        dice.diceRenderer.material.color = originalColor;
+                    }
                 }
             }
             _highlightedDiceList.Clear();
+            _highlightOriginalColors.Clear();
         }
     }
 }

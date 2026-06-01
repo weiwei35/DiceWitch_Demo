@@ -42,14 +42,16 @@ public class DiceVisualManager : MonoBehaviour
         if (text != null)
         {
             // --- 修改显示逻辑 ---
-            if (data.bonusValue > 0)
+            if (data.bonusValue != 0)
             {
+                string sign = data.bonusValue > 0 ? "+" : "";
+                string color = data.bonusValue > 0 ? "#00FF00" : "#FF5555";
                 // 方案 A: 显示总数，但用绿色表示有加成
                 // text.text = data.TotalValue.ToString();
                 // text.color = Color.green;
 
                 // 方案 B: 显示 "基础+加成" (推荐，更直观)
-                text.text = $"{data.value}<size=60%><color=#00FF00>+{data.bonusValue}</color></size>";
+                text.text = $"{data.value}<size=60%><color={color}>{sign}{data.bonusValue}</color></size>";
                 
                 // 方案 C: 仅显示总数 (如果你觉得骰子上字太多看不清)
                 // text.text = data.TotalValue.ToString();
