@@ -53,6 +53,16 @@ Forging is a **node event** (BoardNodeType.Forge), not a room event. Trigger ord
 2. OnCalculateDamage: pass-through
 3. OnPostHit: available for status effects etc.
 
+## Hold-to-Commit (Long Press Affix)
+- Replaced click-to-commit with long-press: player holds an option for holdDuration seconds (default 3s).
+- `ForgeOptionButton` now implements `IPointerDownHandler`/`IPointerUpHandler`, forwards events to `ForgeUIManager.OnOptionPressStart`/`OnOptionPressEnd`.
+- `HoldCommitSequence` coroutine: two lines grow from spell-icon edge and option edge toward midpoint via `Image.Type.Filled` (fillAmount 0→1), not stretch. Lines shake during hold, intensity decreases near end.
+- Releasing early cancels (lines destroyed, option resets, no commit). Holding full duration triggers `CommitAffix`.
+- All interactions locked during hold: dice switch, material slots, bag, confirm button, close button cancels hold.
+- Key Inspector fields: `holdDuration`, `holdLineColor` (tint), `holdLineThickness` (default 20), `holdShakeIntensity`, `holdShakeFrequency`.
+- `connectionLineSprite` field (shared by hold lines and committed option lines). Committed lines use `Image.Type.Sliced`; hold lines use `Image.Type.Filled`.
+- Helpers: `CreateHoldLine(fillFromStart)`, `SetHoldLineFull(from,to,dir)`, `SetHoldLineFill(progress)`, `ApplyHoldLineShake(offset)`, `CancelHold()`, `GetCenterRectTransform()`, `GetRectEdgePoint(center,size,target)`.
+
 ## Remaining Editor setup
 - Create SO assets: right-click → Create → Forge → Affix / Resource; right-click → Abilities → ...
 - Add ForgeManager to a persistent GameObject, populate allAffixes + allResources + initialInventory

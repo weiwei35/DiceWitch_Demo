@@ -38,9 +38,9 @@ public class ForgeUIManager : MonoBehaviour
     public bool positionOptionsAroundSpellIcon = true;
     public List<Vector2> optionOffsets = new List<Vector2>
     {
-        new Vector2(-170f, 0f),
-        new Vector2(0f, 120f),
-        new Vector2(170f, 0f)
+        new Vector2(-260f, -40f),
+        new Vector2(0f, 190f),
+        new Vector2(260f, -40f)
     };
     public List<Vector2> committedOptionOffsets = new List<Vector2>
     {
@@ -49,7 +49,8 @@ public class ForgeUIManager : MonoBehaviour
         new Vector2(210f, -120f)
     };
     public bool showCommittedOptionLines = true;
-    public Color committedOptionLineColor = new Color(0.42f, 0.58f, 1f, 0.8f);
+    public Sprite connectionLineSprite;
+    public Color committedOptionLineColor = new Color(1f, 1f, 1f, 1f);
     public float committedOptionLineThickness = 4f;
 
     [Header("Option Animation")]
@@ -63,6 +64,13 @@ public class ForgeUIManager : MonoBehaviour
     public float materialPopDuration = 0.18f;
     public float materialReplaceDuration = 0.24f;
     public float affixCommitDuration = 0.45f;
+
+    [Header("Hold Commit")]
+    public float holdDuration = 3f;
+    public Color holdLineColor = new Color(1f, 1f, 1f, 1f);
+    public float holdLineThickness = 20f;
+    public float holdShakeIntensity = 6f;
+    public float holdShakeFrequency = 0.03f;
 
     [Header("Actions")]
     public Button confirmButton;
@@ -81,6 +89,17 @@ public class ForgeUIManager : MonoBehaviour
     private readonly List<Color> _materialSlotDefaultColors = new List<Color>();
     private readonly ForgeResourceSO[] _slotResources = new ForgeResourceSO[MaterialSlotCount];
     private bool _isCommittingAffix;
+
+    // Hold commit state
+    private bool _holdActive;
+    private float _holdElapsed;
+    private ForgeAffixSO _holdAffix;
+    private RectTransform _holdOptionRect;
+    private RectTransform _holdLine1;
+    private RectTransform _holdLine2;
+    private Vector2 _holdLine1BasePos;
+    private Vector2 _holdLine2BasePos;
+    private Coroutine _holdCoroutine;
 
     void Awake() { Instance = this; }
 
@@ -168,6 +187,7 @@ public class ForgeUIManager : MonoBehaviour
 
     private void OnCloseClicked()
     {
+        CancelHold();
         TooltipSystem.Instance?.Hide();
         RefundSlotResources();
         ClearSlots(shouldRefund: false);
@@ -221,7 +241,7 @@ public class ForgeUIManager : MonoBehaviour
 
     private void OnDiceClicked(PlayerDice dice)
     {
-        if (HasPendingOptions()) return;
+        if (HasPendingOptions() || _holdActive) return;
         if (_isCommittingAffix) return;
 
         int index = _availableDice.IndexOf(dice);
@@ -230,14 +250,14 @@ public class ForgeUIManager : MonoBehaviour
 
     private void OnPreviousDiceClicked()
     {
-        if (HasPendingOptions() || _availableDice.Count == 0) return;
+        if (HasPendingOptions() || _holdActive || _availableDice.Count == 0) return;
         if (_isCommittingAffix) return;
         SelectDiceByIndex((_selectedDiceIndex - 1 + _availableDice.Count) % _availableDice.Count);
     }
 
     private void OnNextDiceClicked()
     {
-        if (HasPendingOptions() || _availableDice.Count == 0) return;
+        if (HasPendingOptions() || _holdActive || _availableDice.Count == 0) return;
         if (_isCommittingAffix) return;
         SelectDiceByIndex((_selectedDiceIndex + 1) % _availableDice.Count);
     }
@@ -356,7 +376,7 @@ public class ForgeUIManager : MonoBehaviour
     private void OnMaterialSlotClicked(int index)
     {
         if (index < 0 || index >= MaterialSlotCount) return;
-        if (_isCommittingAffix) return;
+        if (_isCommittingAffix || _holdActive) return;
         if (HasPendingOptions() && !ForgeManager.Instance.CanForgeMore) return;
 
         if (_slotResources[index] != null && _editingSlotIndex == index && bagPanel != null && bagPanel.activeSelf)
@@ -412,6 +432,7 @@ public class ForgeUIManager : MonoBehaviour
     {
         if (_editingSlotIndex < 0 || _editingSlotIndex >= MaterialSlotCount) return;
         if (resource == null || ForgeManager.Instance == null) return;
+        if (_isCommittingAffix || _holdActive) return;
         if (HasPendingOptions() && !ForgeManager.Instance.CanForgeMore) return;
         if (ForgeManager.Instance.GetResourceCount(resource) <= 0) return;
 
@@ -466,7 +487,7 @@ public class ForgeUIManager : MonoBehaviour
     public void OnConfirmClicked()
     {
         TooltipSystem.Instance?.Hide();
-        if (_isCommittingAffix) return;
+        if (_isCommittingAffix || _holdActive) return;
         if (!CanMeditate()) return;
 
         var resources = new List<ForgeResourceSO>(_slotResources);
@@ -523,16 +544,6 @@ public class ForgeUIManager : MonoBehaviour
             if (optionBtn != null)
             {
                 optionBtn.Setup(affix, showAttach: true);
-                var captured = affix;
-                if (optionBtn.attachButton != null)
-                    optionBtn.attachButton.onClick.AddListener(() => OnAttachAffix(captured));
-            }
-
-            var rootButton = btnObj.GetComponent<Button>();
-            if (rootButton != null)
-            {
-                var captured = affix;
-                rootButton.onClick.AddListener(() => OnAttachAffix(captured));
             }
 
             PositionOptionButton(btnObj, optionIndex, optionOffsets);
@@ -589,6 +600,7 @@ public class ForgeUIManager : MonoBehaviour
         lineObject.transform.SetAsFirstSibling();
 
         Image lineImage = lineObject.GetComponent<Image>();
+        if (connectionLineSprite != null) { lineImage.sprite = connectionLineSprite; lineImage.type = Image.Type.Sliced; }
         lineImage.color = committedOptionLineColor;
         lineImage.raycastTarget = false;
 
@@ -695,11 +707,219 @@ public class ForgeUIManager : MonoBehaviour
         });
     }
 
+    // ── Hold Commit ──
+
+    public void OnOptionPressStart(ForgeAffixSO affix, RectTransform optionRect)
+    {
+        if (_isCommittingAffix || _holdActive) return;
+        if (affix == null || optionRect == null) return;
+
+        TooltipSystem.Instance?.Hide();
+        _holdCoroutine = StartCoroutine(HoldCommitSequence(affix, optionRect));
+    }
+
+    public void OnOptionPressEnd()
+    {
+        if (!_holdActive) return;
+        _holdActive = false;
+    }
+
+    private System.Collections.IEnumerator HoldCommitSequence(ForgeAffixSO affix, RectTransform optionRect)
+    {
+        _holdActive = true;
+        _holdElapsed = 0f;
+        _holdAffix = affix;
+        _holdOptionRect = optionRect;
+
+        RectTransform container = optionsContainer as RectTransform;
+        if (container == null) { _holdActive = false; yield break; }
+
+        // Get center rect for edge calculation
+        RectTransform centerRect = GetCenterRectTransform();
+        Vector2 centerPos = GetOptionCenterInOptionsContainer(container);
+        Vector2 optionPos = optionRect.anchoredPosition;
+
+        // Calculate edge positions with minimum size fallback for icons
+        Vector2 centerSize = centerRect != null ? centerRect.rect.size : Vector2.zero;
+        if (centerSize.x < 20f && centerSize.y < 20f) centerSize = new Vector2(64f, 64f);
+        Vector2 centerEdge = GetRectEdgePoint(centerPos, centerSize, optionPos);
+        Vector2 optionEdge = GetRectEdgePoint(optionPos, optionRect.rect.size, centerPos);
+
+        Vector2 dir = (optionEdge - centerEdge).normalized;
+        Vector2 midpoint = (centerEdge + optionEdge) * 0.5f;
+
+        // Create full-length lines (use Image Fill instead of stretching)
+        _holdLine1 = CreateHoldLine(container, fillFromStart: true);
+        _holdLine2 = CreateHoldLine(container, fillFromStart: false);
+        SetHoldLineFull(_holdLine1, centerEdge, midpoint, dir);
+        SetHoldLineFull(_holdLine2, optionEdge, midpoint, -dir);
+
+        Vector3 optionBaseScale = optionRect.localScale;
+        Vector2 optionBasePos = optionRect.anchoredPosition;
+
+        float shakeTimer = 0f;
+
+        while (_holdElapsed < holdDuration && _holdActive)
+        {
+            _holdElapsed += Time.deltaTime;
+            float progress = Mathf.Clamp01(_holdElapsed / holdDuration);
+
+            // Update shake offset at frequency
+            shakeTimer -= Time.deltaTime;
+            if (shakeTimer <= 0f)
+            {
+                shakeTimer = holdShakeFrequency;
+                float intensity = holdShakeIntensity * (1f - progress * 0.4f);
+                Vector2 shakeOffset = new Vector2(
+                    UnityEngine.Random.Range(-intensity, intensity),
+                    UnityEngine.Random.Range(-intensity, intensity));
+                ApplyHoldLineShake(_holdLine1, shakeOffset);
+                ApplyHoldLineShake(_holdLine2, shakeOffset);
+            }
+
+            // Reveal lines via fill amount
+            SetHoldLineFill(_holdLine1, progress);
+            SetHoldLineFill(_holdLine2, progress);
+
+            // Shake option button
+            float optShake = holdShakeIntensity * 0.015f * (1f - progress * 0.4f);
+            optionRect.localScale = optionBaseScale * (1f + UnityEngine.Random.Range(-optShake, optShake));
+            optionRect.anchoredPosition = optionBasePos + new Vector2(
+                UnityEngine.Random.Range(-holdShakeIntensity * 0.3f, holdShakeIntensity * 0.3f),
+                UnityEngine.Random.Range(-holdShakeIntensity * 0.3f, holdShakeIntensity * 0.3f));
+
+            yield return null;
+        }
+
+        if (_holdActive && _holdElapsed >= holdDuration)
+        {
+            // Success — destroy lines and commit
+            DestroyHoldLines();
+            _holdActive = false;
+            _isCommittingAffix = true;
+
+            PlayerDice committedDice = _selectedDice;
+            GameObject selectedOption = FindOptionObject(affix);
+
+            PlayAffixCommitAnimation(selectedOption, () =>
+            {
+                RefundSlotResources();
+                ForgeManager.Instance.CommitAffix(affix);
+                RefreshDiceList();
+                SelectDice(committedDice);
+                RefreshBag();
+                _isCommittingAffix = false;
+                UpdateUI();
+            });
+        }
+        else
+        {
+            // Canceled — destroy lines, reset option
+            DestroyHoldLines();
+            if (optionRect != null)
+            {
+                optionRect.DOKill();
+                optionRect.localScale = optionBaseScale;
+                optionRect.anchoredPosition = optionBasePos;
+            }
+            _holdActive = false;
+        }
+    }
+
+    private RectTransform CreateHoldLine(Transform parent, bool fillFromStart)
+    {
+        GameObject go = new GameObject("HoldLine", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        go.transform.SetParent(parent, false);
+        go.transform.SetAsFirstSibling();
+
+        Image img = go.GetComponent<Image>();
+        if (connectionLineSprite != null) img.sprite = connectionLineSprite;
+        img.type = Image.Type.Filled;
+        img.fillMethod = Image.FillMethod.Horizontal;
+        img.fillOrigin = fillFromStart ? 0 : 1;
+        img.fillAmount = 0f;
+        img.color = holdLineColor;
+        img.raycastTarget = false;
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+
+        return rect;
+    }
+
+    private void SetHoldLineFull(RectTransform line, Vector2 from, Vector2 to, Vector2 dir)
+    {
+        if (line == null) return;
+        float length = Vector2.Distance(from, to);
+        Vector2 center = (from + to) * 0.5f;
+        line.anchoredPosition = center;
+        line.sizeDelta = new Vector2(length, holdLineThickness);
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+        line.localRotation = Quaternion.Euler(0f, 0f, angle);
+
+        if (line == _holdLine1) _holdLine1BasePos = center;
+        else if (line == _holdLine2) _holdLine2BasePos = center;
+    }
+
+    private static void SetHoldLineFill(RectTransform line, float fill)
+    {
+        if (line == null) return;
+        var img = line.GetComponent<Image>();
+        if (img != null) img.fillAmount = fill;
+    }
+
+    private void ApplyHoldLineShake(RectTransform line, Vector2 shake)
+    {
+        if (line == null) return;
+        Vector2 basePos = line == _holdLine1 ? _holdLine1BasePos : _holdLine2BasePos;
+        line.anchoredPosition = basePos + shake;
+    }
+
+    private RectTransform GetCenterRectTransform()
+    {
+        if (optionPlacementCenter != null) return optionPlacementCenter;
+        if (spellIconImage != null) return spellIconImage.rectTransform;
+        if (currentDiceIcon != null) return currentDiceIcon.rectTransform;
+        return null;
+    }
+
+    private static Vector2 GetRectEdgePoint(Vector2 center, Vector2 size, Vector2 target)
+    {
+        Vector2 dir = (target - center).normalized;
+        if (dir == Vector2.zero) return center;
+
+        Vector2 halfSize = size * 0.5f;
+        float tx = Mathf.Abs(dir.x) < 0.0001f ? float.MaxValue : halfSize.x / Mathf.Abs(dir.x);
+        float ty = Mathf.Abs(dir.y) < 0.0001f ? float.MaxValue : halfSize.y / Mathf.Abs(dir.y);
+        float t = Mathf.Min(tx, ty);
+        return center + dir * t;
+    }
+
+    private void DestroyHoldLines()
+    {
+        if (_holdLine1 != null) { Destroy(_holdLine1.gameObject); _holdLine1 = null; }
+        if (_holdLine2 != null) { Destroy(_holdLine2.gameObject); _holdLine2 = null; }
+    }
+
+    private void CancelHold()
+    {
+        if (!_holdActive) return;
+        _holdActive = false;
+        DestroyHoldLines();
+        if (_holdOptionRect != null)
+        {
+            _holdOptionRect.DOKill();
+            _holdOptionRect.localScale = Vector3.one;
+        }
+    }
+
     private void UpdateUI()
     {
         bool pendingOptions = HasPendingOptions();
         int generatedCount = pendingOptions ? ForgeManager.Instance.CurrentSession.ForgeCount : 0;
-        bool canMeditate = !_isCommittingAffix && CanMeditate();
+        bool canMeditate = !_isCommittingAffix && !_holdActive && CanMeditate();
 
         if (confirmButton != null)
             confirmButton.interactable = canMeditate;
@@ -708,9 +928,9 @@ public class ForgeUIManager : MonoBehaviour
             confirmButtonLabel.text = pendingOptions && generatedCount >= 3 ? "已达上限" : "冥想";
 
         if (previousDiceButton != null)
-            previousDiceButton.interactable = !_isCommittingAffix && !pendingOptions && _availableDice.Count > 1;
+            previousDiceButton.interactable = !_isCommittingAffix && !_holdActive && !pendingOptions && _availableDice.Count > 1;
         if (nextDiceButton != null)
-            nextDiceButton.interactable = !_isCommittingAffix && !pendingOptions && _availableDice.Count > 1;
+            nextDiceButton.interactable = !_isCommittingAffix && !_holdActive && !pendingOptions && _availableDice.Count > 1;
 
         if (stepText != null)
         {
