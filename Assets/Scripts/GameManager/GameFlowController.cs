@@ -8,6 +8,7 @@ public class GameFlowController : MonoBehaviour
     [Header("Map UI")]
     public GameObject _mapPanel;
     public GameObject _roomUIRoot;
+    public GameObject _battleUIRoot;
 
     [Header("Visual Feedback")]
     public GameObject _selectionModeTip;
@@ -16,6 +17,7 @@ public class GameFlowController : MonoBehaviour
     public static GameObject MapPanel => Instance._mapPanel;
     public static GameObject RoomUIRoot => Instance._roomUIRoot;
     public static GameObject SelectionModeTip => Instance._selectionModeTip;
+    public static GameObject BattleUIRoot => Instance.GetBattleUIRoot();
 
     private IGameState _currentState;
 
@@ -125,5 +127,23 @@ public class GameFlowController : MonoBehaviour
     public void StartForgeProcess(Action onComplete = null)
     {
         ChangeState(new ForgeState(onComplete));
+    }
+
+    public static void SetBattleUIVisible(bool visible)
+    {
+        GameObject root = BattleUIRoot;
+        if (root != null) root.SetActive(visible);
+    }
+
+    private GameObject GetBattleUIRoot()
+    {
+        if (_battleUIRoot != null) return _battleUIRoot;
+        if (_roomUIRoot == null) return null;
+
+        Transform battleRoot = _roomUIRoot.transform.Find("Battle");
+        if (battleRoot == null) return null;
+
+        _battleUIRoot = battleRoot.gameObject;
+        return _battleUIRoot;
     }
 }

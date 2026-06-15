@@ -43,9 +43,9 @@ public class MagicCircleManager : MonoBehaviour
             PlayerDice startDice = new PlayerDice();
             startDice.forgeSlots = new List<ForgeSlot>
             {
-                new ForgeSlot { tier = 1 },
-                new ForgeSlot { tier = 2 },
-                new ForgeSlot { tier = 3 }
+                new ForgeSlot { tier = 1, optionIndex = -1 },
+                new ForgeSlot { tier = 2, optionIndex = -1 },
+                new ForgeSlot { tier = 3, optionIndex = -1 }
             };
             allOwnedDice.Add(startDice);
             magicSlots[i].currentDice = startDice;

@@ -20,6 +20,7 @@ public class EventState : IGameState
 
         GameFlowController.MapPanel?.SetActive(false);
         GameFlowController.RoomUIRoot?.SetActive(true);
+        GameFlowController.SetBattleUIVisible(false);
 
         if (_roomData.possibleEvents.Count > 0)
         {

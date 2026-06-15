@@ -12,6 +12,7 @@ public class SpellDraftState : IGameState
 
     public void Enter()
     {
+        GameFlowController.SetBattleUIVisible(false);
         SpellDraftPanel.Instance.OnSpellSelected = OnSpellSelected;
         SpellDraftPanel.Instance.ShowDraft();
     }

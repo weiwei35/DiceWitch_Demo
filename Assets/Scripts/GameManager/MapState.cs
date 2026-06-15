@@ -6,6 +6,7 @@ public class MapState : IGameState
     {
         GameFlowController.MapPanel?.SetActive(true);
         GameFlowController.RoomUIRoot?.SetActive(false);
+        GameFlowController.SetBattleUIVisible(false);
         SpellDraftPanel.Instance.Hide();
         GameFlowController.SelectionModeTip?.SetActive(false);
         MagicCircleDisplay.Instance.RefreshAll();

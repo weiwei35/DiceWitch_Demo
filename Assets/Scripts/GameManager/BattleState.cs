@@ -13,10 +13,14 @@ public class BattleState : IGameState
     {
         GameFlowController.MapPanel?.SetActive(false);
         GameFlowController.RoomUIRoot?.SetActive(true);
+        GameFlowController.SetBattleUIVisible(true);
         BattleManager.Instance.StartNewBattle(_roomData);
     }
 
-    public void Exit() { }
+    public void Exit()
+    {
+        GameFlowController.SetBattleUIVisible(false);
+    }
 
     public void OnSlotClicked(MagicCircleSlot slotData, Vector3 uiPos) { }
 }

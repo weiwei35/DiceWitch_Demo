@@ -14,6 +14,7 @@ public class TargetSelectionState : IGameState
 
     public void Enter()
     {
+        GameFlowController.SetBattleUIVisible(false);
         GameFlowController.SelectionModeTip?.SetActive(true);
         MagicCircleDisplay.Instance?.SetSelectionMode(true);
     }
