@@ -134,14 +134,7 @@ public class MapViewController : MonoBehaviour
             linesContainer = new GameObject("RouteLinesContainer");
             linesContainer.transform.SetParent(contentParent, false);
 
-            for (int i = 0; i < nodes.Count - 1; i++)
-            {
-                if (nodeUIRects.TryGetValue(nodes[i].index, out RectTransform rectA) &&
-                    nodeUIRects.TryGetValue(nodes[i + 1].index, out RectTransform rectB))
-                {
-                    DrawLineBetweenNodes(rectA, rectB, linesContainer.transform);
-                }
-            }
+            DrawRouteLines(linesContainer.transform);
         }
 
         // 强制重排三明治层级
@@ -221,6 +214,37 @@ public class MapViewController : MonoBehaviour
 
         Image img = lineObj.GetComponent<Image>();
         if (img != null) img.color = routeLineColor;
+    }
+
+    private void DrawRouteLines(Transform parent)
+    {
+        if (MapManager.Instance == null || MapManager.Instance.boardRooms == null) return;
+
+        foreach (BoardRoom room in MapManager.Instance.boardRooms)
+        {
+            if (room == null) continue;
+
+            for (int i = room.startNodeIndex; i < room.endNodeIndex; i++)
+                DrawRouteLineIfPossible(i, i + 1, parent);
+
+            if (room.nextRoomIds == null) continue;
+
+            foreach (int nextRoomId in room.nextRoomIds)
+            {
+                BoardRoom nextRoom = MapManager.Instance.GetRoom(nextRoomId);
+                if (nextRoom == null) continue;
+                DrawRouteLineIfPossible(room.endNodeIndex, nextRoom.startNodeIndex, parent);
+            }
+        }
+    }
+
+    private void DrawRouteLineIfPossible(int fromNodeIndex, int toNodeIndex, Transform parent)
+    {
+        if (nodeUIRects.TryGetValue(fromNodeIndex, out RectTransform rectA) &&
+            nodeUIRects.TryGetValue(toNodeIndex, out RectTransform rectB))
+        {
+            DrawLineBetweenNodes(rectA, rectB, parent);
+        }
     }
 
     public void UpdateNodeStates(int currentIndex)

@@ -668,7 +668,6 @@ RectTransform:
   - {fileID: 641179478}
   - {fileID: 503274663}
   - {fileID: 2097124889}
-  - {fileID: 2056239183}
   - {fileID: 1624792446}
   m_Father: {fileID: 1464373356}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2607,14 +2606,14 @@ RectTransform:
   m_GameObject: {fileID: 277070735}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.75, y: 0.75, z: 0.75}
+  m_LocalScale: {x: 0.75000006, y: 0.75000006, z: 0.75000006}
   m_ConstrainProportionsScale: 1
   m_Children: []
-  m_Father: {fileID: 1464373356}
+  m_Father: {fileID: 577406814}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -407, y: -257.5}
+  m_AnchoredPosition: {x: 0.000030517578, y: 0}
   m_SizeDelta: {x: 407, y: 565}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &277070737
@@ -4391,6 +4390,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   boardConfig: {fileID: 11400000, guid: cb9f1dc6ff8194647bae20a6cea778c6, type: 2}
   boardNodes: []
+  boardRooms: []
   currentPlayerNodeIndex: 0
 --- !u!4 &524277251
 Transform:
@@ -4422,7 +4422,11 @@ MonoBehaviour:
   rollDiceButton: {fileID: 1763811457}
   mapDiceData: {fileID: 11400000, guid: 7a684e89c86181845b088941713419d8, type: 2}
   mapUI: {fileID: 573487365}
+  fontMaterial: {fileID: 11400000, guid: 38b3c3d7556fe7647a6e0835e6f1645e, type: 2}
   playerPawnPrefab: {fileID: 2988484521507482689, guid: fccbdd6c61091764181013a8abccee7c, type: 3}
+  branchChoiceOffset: {x: 130, y: 0}
+  branchChoiceButtonSize: {x: 150, y: 42}
+  branchChoiceButtonSpacing: 48
 --- !u!1 &559779973
 GameObject:
   m_ObjectHideFlags: 0
@@ -4654,6 +4658,43 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 574762245}
   m_CullTransparentMesh: 1
+--- !u!1 &577406813
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 577406814}
+  m_Layer: 5
+  m_Name: FrontEnv
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &577406814
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 577406813}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2056239183}
+  - {fileID: 277070736}
+  m_Father: {fileID: 1464373356}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -407, y: -257.5}
+  m_SizeDelta: {x: 305.25, y: 423.75}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &582285806
 GameObject:
   m_ObjectHideFlags: 0
@@ -5857,7 +5898,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 852421910}
   m_HandleRect: {fileID: 852421909}
   m_Direction: 0
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -9180,7 +9221,7 @@ RectTransform:
   - {fileID: 1783890768}
   - {fileID: 694741068}
   - {fileID: 1688180665}
-  - {fileID: 277070736}
+  - {fileID: 577406814}
   - {fileID: 1592798159}
   - {fileID: 445571704}
   - {fileID: 1067016791}
@@ -10336,7 +10377,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.509434, g: 0.509434, b: 0.509434, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -13515,11 +13556,11 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 39081426}
+  m_Father: {fileID: 577406814}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 204, y: 305.25}
+  m_AnchoredPosition: {x: -246, y: 234.625}
   m_SizeDelta: {x: 530.25, y: 610.5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2056239184
@@ -13535,7 +13576,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.38679248, g: 0.38679248, b: 0.38679248, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

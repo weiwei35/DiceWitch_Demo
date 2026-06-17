@@ -9,6 +9,7 @@ public class MapManager : MonoBehaviour
     
     [Header("Runtime Data")]
     public List<BoardNode> boardNodes = new List<BoardNode>();
+    public List<BoardRoom> boardRooms = new List<BoardRoom>();
     public int currentPlayerNodeIndex = 0; 
     
     // 记录已经通关的房间全局ID
@@ -50,11 +51,15 @@ public class MapManager : MonoBehaviour
     public void GenerateBoard()
     {
         boardNodes.Clear();
+        boardRooms.Clear();
         clearedRoomIds.Clear(); // 重置通关记录
         currentPlayerNodeIndex = 0;
         
         int globalNodeIndex = 0;
         int globalRoomId = 0; // 全局房间ID，用来标记房间是否通关
+        Dictionary<MapRoomLayout, int> roomIdByLayout = new Dictionary<MapRoomLayout, int>();
+        List<MapRoomLayout> flattenedRooms = new List<MapRoomLayout>();
+        List<int> flattenedRegionIndices = new List<int>();
 
         // 防空检查
         if (boardConfig.regions == null || boardConfig.regions.Count == 0)
@@ -74,32 +79,72 @@ public class MapManager : MonoBehaviour
                 continue;
             }
 
-            // 遍历区域里的所有房间
+            int regionIndex = boardConfig.regions.IndexOf(region);
             foreach (var roomLayout in layout.orderedRooms)
             {
                 if (roomLayout == null) continue; // 防空检查
+                if (roomIdByLayout.ContainsKey(roomLayout)) continue;
 
-                // 遍历房间里的所有节点
-                foreach (var anchor in roomLayout.roomNodes)
+                roomIdByLayout[roomLayout] = flattenedRooms.Count;
+                flattenedRooms.Add(roomLayout);
+                flattenedRegionIndices.Add(regionIndex);
+            }
+        }
+
+        for (int roomIndex = 0; roomIndex < flattenedRooms.Count; roomIndex++)
+        {
+            var roomLayout = flattenedRooms[roomIndex];
+            int regionIndex = flattenedRegionIndices[roomIndex];
+            int roomStartIndex = globalNodeIndex;
+
+            // 遍历房间里的所有节点
+            foreach (var anchor in roomLayout.roomNodes)
+            {
+                if (anchor == null) continue; // 防空检查
+
+                BoardNode node = new BoardNode(globalNodeIndex, regionIndex);
+
+                node.type = anchor.nodeType;
+                node.effectValue = anchor.effectValue;
+                node.forgeBonusType = anchor.forgeBonusType;
+
+                // 记录房间归属
+                node.roomDataRef = roomLayout.roomData;
+                node.roomId = globalRoomId;
+
+                boardNodes.Add(node);
+                globalNodeIndex++;
+            }
+
+            BoardRoom room = new BoardRoom
+            {
+                roomId = globalRoomId,
+                regionIndex = regionIndex,
+                roomDataRef = roomLayout.roomData,
+                startNodeIndex = roomStartIndex,
+                endNodeIndex = Mathf.Max(roomStartIndex, globalNodeIndex - 1)
+            };
+            boardRooms.Add(room);
+            globalRoomId++; // 切换到下一个房间
+        }
+
+        for (int roomIndex = 0; roomIndex < flattenedRooms.Count; roomIndex++)
+        {
+            MapRoomLayout roomLayout = flattenedRooms[roomIndex];
+            BoardRoom room = boardRooms[roomIndex];
+
+            if (roomLayout.nextRooms != null && roomLayout.nextRooms.Count > 0)
+            {
+                foreach (MapRoomLayout nextRoom in roomLayout.nextRooms)
                 {
-                    if (anchor == null) continue; // 防空检查
-
-                    // 获取当前区域的真实索引
-                    int regionIndex = boardConfig.regions.IndexOf(region);
-                    BoardNode node = new BoardNode(globalNodeIndex, regionIndex); 
-                    
-                    node.type = anchor.nodeType;
-                    node.effectValue = anchor.effectValue;
-                    node.forgeBonusType = anchor.forgeBonusType;
-                    
-                    // 记录房间归属
-                    node.roomDataRef = roomLayout.roomData;
-                    node.roomId = globalRoomId; 
-
-                    boardNodes.Add(node);
-                    globalNodeIndex++;
+                    if (nextRoom == null) continue;
+                    if (roomIdByLayout.TryGetValue(nextRoom, out int nextRoomId) && !room.nextRoomIds.Contains(nextRoomId))
+                        room.nextRoomIds.Add(nextRoomId);
                 }
-                globalRoomId++; // 切换到下一个房间
+            }
+            else if (roomIndex + 1 < boardRooms.Count)
+            {
+                room.nextRoomIds.Add(boardRooms[roomIndex + 1].roomId);
             }
         }
         
@@ -304,17 +349,75 @@ public class MapManager : MonoBehaviour
     //找下一个房间的起点
     public int GetNextRoomStartIndex(int currentRoomId)
     {
-        // 遍历整个地图节点列表
-        for (int i = 0; i < boardNodes.Count; i++)
+        BoardRoom currentRoom = GetRoom(currentRoomId);
+        if (currentRoom != null && currentRoom.nextRoomIds.Count > 0)
         {
-            // 找到第一个归属于不同/更大 Room ID 的节点
-            if (boardNodes[i].roomId > currentRoomId)
-            {
-                return i; // 返回这个节点的绝对索引
-            }
+            return GetRoomStartIndex(currentRoom.nextRoomIds[0]);
         }
         
         // 如果返回 -1，说明这已经是整个大地图的最后一个房间了，没地方可跳了
         return -1; 
+    }
+
+    public BoardRoom GetRoom(int roomId)
+    {
+        if (roomId < 0 || roomId >= boardRooms.Count) return null;
+        return boardRooms[roomId];
+    }
+
+    public int GetRoomStartIndex(int roomId)
+    {
+        BoardRoom room = GetRoom(roomId);
+        return room != null ? room.startNodeIndex : -1;
+    }
+
+    public bool TryGetNextNode(int currentIndex, out int nextIndex, out List<BoardRoom> branchChoices)
+    {
+        nextIndex = -1;
+        branchChoices = null;
+
+        if (currentIndex < 0 || currentIndex >= boardNodes.Count) return false;
+
+        BoardNode currentNode = boardNodes[currentIndex];
+        BoardRoom currentRoom = GetRoom(currentNode.roomId);
+        if (currentRoom == null) return false;
+
+        bool shouldSkipRemainingRoomNodes =
+            currentNode.roomDataRef != null &&
+            currentNode.roomDataRef.skipRemainingNodesOnClear &&
+            clearedRoomIds.Contains(currentNode.roomId) &&
+            currentIndex < currentRoom.endNodeIndex;
+
+        if (!shouldSkipRemainingRoomNodes && currentIndex < currentRoom.endNodeIndex)
+        {
+            nextIndex = currentIndex + 1;
+            return true;
+        }
+
+        if (currentRoom.nextRoomIds == null || currentRoom.nextRoomIds.Count == 0)
+            return false;
+
+        if (currentRoom.nextRoomIds.Count == 1)
+        {
+            nextIndex = GetRoomStartIndex(currentRoom.nextRoomIds[0]);
+            return nextIndex >= 0;
+        }
+
+        branchChoices = new List<BoardRoom>();
+        foreach (int nextRoomId in currentRoom.nextRoomIds)
+        {
+            BoardRoom nextRoom = GetRoom(nextRoomId);
+            if (nextRoom != null)
+                branchChoices.Add(nextRoom);
+        }
+
+        if (branchChoices.Count == 1)
+        {
+            nextIndex = branchChoices[0].startNodeIndex;
+            branchChoices = null;
+            return nextIndex >= 0;
+        }
+
+        return branchChoices.Count > 1;
     }
 }

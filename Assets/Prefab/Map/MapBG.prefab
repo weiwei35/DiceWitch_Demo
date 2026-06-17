@@ -96,6 +96,7 @@ MonoBehaviour:
   - {fileID: 6417291257913406090}
   - {fileID: 1563462954033055399}
   - {fileID: 8093704278911053159}
+  nextRooms: []
 --- !u!1 &1262142894394858638
 GameObject:
   m_ObjectHideFlags: 0
@@ -194,6 +195,7 @@ MonoBehaviour:
   - {fileID: 2844356860034434003}
   - {fileID: 761319878867400893}
   - {fileID: 7139984372271067402}
+  nextRooms: []
 --- !u!1 &1377185085729619676
 GameObject:
   m_ObjectHideFlags: 0
@@ -290,6 +292,7 @@ MonoBehaviour:
   - {fileID: 277451595247628290}
   - {fileID: 2436012754175856665}
   - {fileID: 5828935271629640559}
+  nextRooms: []
 --- !u!1 &1504544812850854281
 GameObject:
   m_ObjectHideFlags: 0
@@ -382,6 +385,7 @@ MonoBehaviour:
   roomData: {fileID: 11400000, guid: b4e7176daff4d3643ab1af9e2953d523, type: 2}
   roomNodes:
   - {fileID: 8449883885556141379}
+  nextRooms: []
 --- !u!1 &3817972674929270974
 GameObject:
   m_ObjectHideFlags: 0
@@ -478,6 +482,7 @@ MonoBehaviour:
   - {fileID: 56387485036511155}
   - {fileID: 6381072260477735883}
   - {fileID: 3476986067692781148}
+  nextRooms: []
 --- !u!1 &4212291368999055703
 GameObject:
   m_ObjectHideFlags: 0
@@ -574,6 +579,7 @@ MonoBehaviour:
   - {fileID: 2889302524681403645}
   - {fileID: 5344961766476331667}
   - {fileID: 9060192665975333336}
+  nextRooms: []
 --- !u!1 &5108781822561946434
 GameObject:
   m_ObjectHideFlags: 0
@@ -670,6 +676,9 @@ MonoBehaviour:
   - {fileID: 2367563644085803837}
   - {fileID: 7919978937719096028}
   - {fileID: 5096639736242046899}
+  nextRooms:
+  - {fileID: 5710299463863098938}
+  - {fileID: 5792452264135680196}
 --- !u!1 &5669746883047952129
 GameObject:
   m_ObjectHideFlags: 0
@@ -877,6 +886,7 @@ MonoBehaviour:
   - {fileID: 1530498022683054311}
   - {fileID: 7579759217354918217}
   - {fileID: 3855665786140520867}
+  nextRooms: []
 --- !u!1 &7346107246434566809
 GameObject:
   m_ObjectHideFlags: 0
@@ -915,7 +925,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 600, y: 0}
+  m_AnchoredPosition: {x: 1039, y: 273}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &4553721112021086028
@@ -973,6 +983,8 @@ MonoBehaviour:
   - {fileID: 2406551761151909801}
   - {fileID: 1422222012185347543}
   - {fileID: 7092082956581821122}
+  nextRooms:
+  - {fileID: 7005794376810277962}
 --- !u!1 &7387800328911590021
 GameObject:
   m_ObjectHideFlags: 0
@@ -1069,6 +1081,7 @@ MonoBehaviour:
   - {fileID: 8772327115272364913}
   - {fileID: 7012672475683426873}
   - {fileID: 6708284273458707972}
+  nextRooms: []
 --- !u!1 &8379853819882698055
 GameObject:
   m_ObjectHideFlags: 0
@@ -1107,7 +1120,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 1200, y: 0}
+  m_AnchoredPosition: {x: 735, y: -189}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &1266294042578807808
@@ -1165,6 +1178,8 @@ MonoBehaviour:
   - {fileID: 5020403607548533603}
   - {fileID: 5998878354223437152}
   - {fileID: 8786791291305798024}
+  nextRooms:
+  - {fileID: 7005794376810277962}
 --- !u!1001 &810775440384639759
 PrefabInstance:
   m_ObjectHideFlags: 0
