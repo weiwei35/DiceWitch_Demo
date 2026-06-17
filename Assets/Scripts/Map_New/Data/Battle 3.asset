@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c49a4af8bf5cbc4f97e6baf5f2cf99f, type: 3}
   m_Name: Battle 3
   m_EditorClassIdentifier: 
-  roomName: "\u7CBE\u82F1\u602A\u7269\u623F"
+  roomName: "\u8FF7\u96FE\u524D\u54E8"
   roomType: 0
   roomIcon: {fileID: -1963661152, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   description: 

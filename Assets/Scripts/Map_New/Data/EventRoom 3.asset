@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b91dac7b3aa15324480529a4266abe44, type: 3}
-  m_Name: EventRoom 1
+  m_Name: EventRoom 3
   m_EditorClassIdentifier: 
-  roomName: "\u6C89\u601D\u55B7\u6CC9"
+  roomName: "\u5E7B\u89C9\u8FF7\u5BAB"
   roomType: 7
   roomIcon: {fileID: -984354836, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   description: 

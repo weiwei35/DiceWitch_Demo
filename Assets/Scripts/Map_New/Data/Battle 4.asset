@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c49a4af8bf5cbc4f97e6baf5f2cf99f, type: 3}
   m_Name: Battle 4
   m_EditorClassIdentifier: 
-  roomName: "BOSS \u623F"
+  roomName: "\u7B26\u6587\u796D\u575B"
   roomType: 0
   roomIcon: {fileID: -1963661152, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   description: 
-  skipRemainingNodesOnClear: 1
-  enemyWave: {fileID: 11400000, guid: 84b6c62d0c3d6984e8151759dbe3959e, type: 2}
-  rewardAbilityDraft: 0
+  skipRemainingNodesOnClear: 0
+  enemyWave: {fileID: 11400000, guid: 99853ab11ab436e4aa491bab8381e848, type: 2}
+  rewardAbilityDraft: 1

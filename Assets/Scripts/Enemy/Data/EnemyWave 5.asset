@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b0a826518b11bf74aa3f1e27e0ae9435, type: 3}
-  m_Name: BoardMap
+  m_Script: {fileID: 11500000, guid: 1e25cf0630de44f4f967812d8780ad1d, type: 3}
+  m_Name: EnemyWave 5
   m_EditorClassIdentifier: 
-  regions:
-  - regionName: "\u5377\u8F741"
-    regionPrefab: {fileID: 5669746883047952129, guid: 29ed298758fef4e48bcfc5b8a484bb2d, type: 3}
+  enemyPrefabs:
+  - {fileID: 1828192061474647661, guid: 5d4f6d5a9c2367f489f38289ef566b42, type: 3}
+  - {fileID: 1828192061474647661, guid: 8d9727ba3d16e5248ad9a6d0ce527d41, type: 3}
