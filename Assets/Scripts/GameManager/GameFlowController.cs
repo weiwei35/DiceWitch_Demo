@@ -89,6 +89,11 @@ public class GameFlowController : MonoBehaviour
 
         switch (roomData.roomType)
         {
+            case GameEnums.RoomType.Start:
+                Debug.Log("起点房间不触发额外流程，返回大地图");
+                ChangeState(new MapState());
+                break;
+
             case GameEnums.RoomType.Battle:
             case GameEnums.RoomType.Elite:
             case GameEnums.RoomType.Boss:

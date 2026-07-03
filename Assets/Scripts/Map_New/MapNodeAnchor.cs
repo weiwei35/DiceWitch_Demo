@@ -8,9 +8,8 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     [Header("节点配置")]
     public GameEnums.BoardNodeType nodeType = GameEnums.BoardNodeType.空;
     public int effectValue = 0;
-    public bool hidePlusSignForPositiveValue = false;
-    public GameEnums.BoardNodeType forgeBonusType = GameEnums.BoardNodeType.空; // 仅当 nodeType=Forge 时生效
-    public Sprite baseIconSprite;
+    [Tooltip("锻造节点必填。锻造一定会附带一个额外节点效果。")]
+    public GameEnums.BoardNodeType forgeBonusType = GameEnums.BoardNodeType.空;
 
     [Header("UI 表现 (子节点引用)")]
     public Image backgroundImage;
@@ -18,8 +17,8 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     public Image effectIconImage;
     public TextMeshProUGUI valueText;
 
-    [Header("共享配置")]
-    public MapIconConfigSO iconConfig; // 所有节点共用这一份
+    private RoomDataSO _roomData;
+    private MapPresentationCatalogSO _presentationCatalog;
 
     // 锻造行 UI 元素（自动查找子物体 ForgeRow/Icon、ForgeRow/Text）
     private Image _forgeIconImage;
@@ -44,31 +43,22 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     [Header("当前运行状态")]
     public NodeState currentState = NodeState.Future;
 
-    private void OnValidate()
-    {
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.delayCall += () =>
-        {
-            if (this == null) return;
-            UpdateVisuals();
-        };
-#endif
-    }
-
     public void UpdateVisuals()
     {
         EnsureForgeRow();
 
-        // 0. 更新主建筑图标
+        // 0. 主图标由房间类型决定，不再在单个节点上手动配置。
         if (baseIconImage != null)
         {
-            if (baseIconSprite != null)
+            Sprite roomIcon = _presentationCatalog != null ? _presentationCatalog.GetRoomIcon(_roomData) : null;
+            if (roomIcon != null)
             {
-                baseIconImage.sprite = baseIconSprite;
+                baseIconImage.sprite = roomIcon;
                 baseIconImage.gameObject.SetActive(true);
             }
             else
             {
+                baseIconImage.sprite = null;
                 baseIconImage.gameObject.SetActive(false);
             }
         }
@@ -86,9 +76,9 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
         if (effectIconImage != null)
         {
-            if (showEffectRow && iconConfig != null)
+            if (showEffectRow && _presentationCatalog != null)
             {
-                effectIconImage.sprite = GetIconForType(effectiveType);
+                effectIconImage.sprite = _presentationCatalog.GetNodeEffectIcon(effectiveType, effectValue);
                 effectIconImage.gameObject.SetActive(true);
             }
             else
@@ -100,9 +90,9 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
         if (valueText != null)
         {
-            if (showEffectRow && hasValue)
+            if (showEffectRow && hasValue && _presentationCatalog != null && _presentationCatalog.ShouldShowNodeValue(effectiveType, effectValue))
             {
-                valueText.text = FormatEffectValue();
+                valueText.text = _presentationCatalog.FormatNodeValue(effectiveType, effectValue);
                 valueText.gameObject.SetActive(true);
             }
             else
@@ -116,9 +106,9 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         bool showForgeRow = isNodeActive && nodeType == GameEnums.BoardNodeType.锻造;
         if (_forgeIconImage != null)
         {
-            if (showForgeRow && iconConfig != null)
+            if (showForgeRow && _presentationCatalog != null)
             {
-                _forgeIconImage.sprite = iconConfig.forgeIcon;
+                _forgeIconImage.sprite = _presentationCatalog.forgeIcon;
                 _forgeIconImage.gameObject.SetActive(true);
             }
             else
@@ -131,46 +121,28 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
             _forgeText.gameObject.SetActive(showForgeRow);
 
         // 3. 更新底图颜色（进度状态）
-        if (backgroundImage != null && iconConfig != null)
+        if (backgroundImage != null && _presentationCatalog != null)
         {
             switch (currentState)
             {
-                case NodeState.Passed: backgroundImage.color = iconConfig.passedColor; break;
-                case NodeState.Current: backgroundImage.color = iconConfig.currentColor; break;
-                case NodeState.Future: backgroundImage.color = iconConfig.futureColor; break;
-                case NodeState.Disabled: backgroundImage.color = iconConfig.disabledColor; break;
+                case NodeState.Passed: backgroundImage.color = _presentationCatalog.passedColor; break;
+                case NodeState.Current: backgroundImage.color = _presentationCatalog.currentColor; break;
+                case NodeState.Future: backgroundImage.color = _presentationCatalog.futureColor; break;
+                case NodeState.Disabled: backgroundImage.color = _presentationCatalog.disabledColor; break;
             }
-        }
-    }
-
-    private string FormatEffectValue()
-    {
-        if (effectValue > 0 && !hidePlusSignForPositiveValue)
-            return $"+{effectValue}";
-
-        return effectValue.ToString();
-    }
-
-    private Sprite GetIconForType(GameEnums.BoardNodeType type)
-    {
-        switch (type)
-        {
-            case GameEnums.BoardNodeType.加减Hp: return effectValue > 0 ? iconConfig.hpHealIcon : iconConfig.hpDamageIcon;
-            case GameEnums.BoardNodeType.加减资源: return iconConfig.resourceIcon;
-            case GameEnums.BoardNodeType.事件: return iconConfig.roomEventIcon;
-            case GameEnums.BoardNodeType.一次护甲: return iconConfig.nextBattleArmorIcon;
-            case GameEnums.BoardNodeType.骰子点数必中: return iconConfig.nextBattleFixedDiceIcon;
-            case GameEnums.BoardNodeType.抵消下一次伤害: return iconConfig.blockNextDamageIcon;
-            case GameEnums.BoardNodeType.一次伤害增加: return iconConfig.nextBattleDamageUpIcon;
-            case GameEnums.BoardNodeType.遗物: return iconConfig.relicIcon;
-            case GameEnums.BoardNodeType.锻造: return iconConfig.forgeIcon;
-            default: return null;
         }
     }
 
     public void SetState(NodeState newState)
     {
         currentState = newState;
+        UpdateVisuals();
+    }
+
+    public void SetPresentationContext(RoomDataSO roomData, MapPresentationCatalogSO presentationCatalog)
+    {
+        _roomData = roomData;
+        _presentationCatalog = presentationCatalog;
         UpdateVisuals();
     }
 
@@ -187,102 +159,40 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         if (currentState == NodeState.Disabled)
         {
             header = "已失效";
-            content = "<color=#888888>该路线已废弃，无法触发任何效果。</color>";
+            content = AppendRoomInfo("<color=#888888>该路线已废弃，无法触发任何效果。</color>");
             return;
         }
 
-        switch (nodeType)
+        if (_presentationCatalog == null)
         {
-            case GameEnums.BoardNodeType.加减Hp:
-                if (effectValue > 0)
-                {
-                    header = "恢复泉水";
-                    content = $"<color=#008800>恢复 {effectValue} 点生命值</color>";
-                }
-                else
-                {
-                    header = "危险陷阱";
-                    content = $"<color=#FF0000>失去 {Mathf.Abs(effectValue)} 点生命值</color>";
-                }
-                break;
-
-            case GameEnums.BoardNodeType.加减资源:
-                if (effectValue > 0)
-                {
-                    header = "宝藏";
-                    content = $"<color=#0000FF>获得 {effectValue} 点粉尘</color>";
-                }
-                else
-                {
-                    header = "强盗营地";
-                    content = $"<color=#FF0000>失去 {Mathf.Abs(effectValue)} 点粉尘</color>";
-                }
-                break;
-
-            case GameEnums.BoardNodeType.一次护甲:
-                header = "坚固防线";
-                content = $"<color=#3333FF>下场战斗开局获得 {effectValue} 点护甲</color>";
-                break;
-
-            case GameEnums.BoardNodeType.骰子点数必中:
-                header = "命运干预";
-                content = $"<color=#AA00AA>下场战斗第一回合必定有一枚骰子掷出 {effectValue} 点</color>";
-                break;
-
-            case GameEnums.BoardNodeType.抵消下一次伤害:
-                header = "神圣护盾";
-                content = "<color=#0088FF>抵消下一次受到的任何伤害\n(地图陷阱或战斗通用)</color>";
-                break;
-
-            case GameEnums.BoardNodeType.一次伤害增加:
-                header = "磨刀石";
-                content = $"<color=#FF8800>下场战斗期间，所有伤害增加 {effectValue} 点</color>";
-                break;
-
-            case GameEnums.BoardNodeType.遗物:
-                header = "远古遗物";
-                content = "<color=#FFD700>获得一件随机遗物</color>";
-                break;
-
-            case GameEnums.BoardNodeType.事件:
-                header = "未知的挑战";
-                content = "触发该房间的主事件或战斗";
-                break;
-
-            case GameEnums.BoardNodeType.锻造:
-                header = "锻造熔炉";
-                content = "<color=#FF8800>可以为骰子刻印词条</color>";
-                if (forgeBonusType != GameEnums.BoardNodeType.空 && effectValue != 0)
-                    content += GetBonusEffectText();
-                break;
-
-            case GameEnums.BoardNodeType.空:
-            default:
-                header = "安全空地";
-                content = "这里很安全，无事发生";
-                break;
+            header = nodeType.ToString();
+            content = AppendRoomInfo("地图表现配置未设置");
+            return;
         }
+
+        if (nodeType == GameEnums.BoardNodeType.锻造)
+        {
+            header = "锻造熔炉";
+            content = "<color=#FF8800>可以为骰子刻印词条</color>";
+            if (forgeBonusType != GameEnums.BoardNodeType.空)
+                content += "\n" + _presentationCatalog.BuildNodeTooltip(forgeBonusType, effectValue);
+        }
+        else
+        {
+            header = _presentationCatalog.GetNodeTooltipHeader(nodeType);
+            content = _presentationCatalog.BuildNodeTooltip(nodeType, effectValue);
+        }
+
+        content = AppendRoomInfo(content);
     }
 
-    private string GetBonusEffectText()
+    private string AppendRoomInfo(string content)
     {
-        switch (forgeBonusType)
-        {
-            case GameEnums.BoardNodeType.加减Hp:
-                return effectValue > 0 ? $"\n<color=#008800>额外: 恢复 {effectValue} 点生命</color>" : $"\n<color=#FF0000>额外: 失去 {Mathf.Abs(effectValue)} 点生命</color>";
-            case GameEnums.BoardNodeType.加减资源:
-                return effectValue > 0 ? $"\n<color=#0000FF>额外: 获得 {effectValue} 点粉尘</color>" : $"\n<color=#FF0000>额外: 失去 {Mathf.Abs(effectValue)} 点粉尘</color>";
-            case GameEnums.BoardNodeType.一次护甲:
-                return $"\n<color=#3333FF>额外: 下场战斗获得 {effectValue} 点护甲</color>";
-            case GameEnums.BoardNodeType.骰子点数必中:
-                return $"\n<color=#AA00AA>额外: 下场战斗必有 {effectValue} 点骰子</color>";
-            case GameEnums.BoardNodeType.抵消下一次伤害:
-                return "\n<color=#0088FF>额外: 获得圣盾</color>";
-            case GameEnums.BoardNodeType.一次伤害增加:
-                return $"\n<color=#FF8800>额外: 下场战斗伤害 +{effectValue}</color>";
-            default:
-                return "";
-        }
+        if (_roomData == null) return content;
+
+        string roomName = string.IsNullOrEmpty(_roomData.roomName) ? "未命名房间" : _roomData.roomName;
+        string roomType = _presentationCatalog != null ? _presentationCatalog.GetRoomDisplayName(_roomData.roomType) : _roomData.roomType.ToString();
+        return $"{content}\n\n房间: {roomName}\n类别: {roomType}";
     }
 
     public void OnPointerEnter(PointerEventData eventData)

@@ -22,9 +22,35 @@ public class ForgeResourceButton : MonoBehaviour, IPointerEnterHandler, IPointer
     public void Setup(ForgeResourceSO res, int count)
     {
         _resource = res;
-        if (iconImage != null && res.icon != null)
+        if (iconImage != null)
+        {
+            iconImage.enabled = res != null && res.icon != null;
+            iconImage.sprite = res != null ? res.icon : null;
+        }
+        if (iconImage != null && res != null && res.icon != null)
             iconImage.sprite = res.icon;
+        if (countText != null)
+            countText.gameObject.SetActive(true);
         RefreshCount(count);
+    }
+
+    /// <summary>
+    /// 将按钮显示为空背包格。
+    /// 保留按钮背景，但隐藏材料图标、数量和 tooltip 数据。
+    /// </summary>
+    public void SetupEmpty()
+    {
+        _resource = null;
+        if (iconImage != null)
+        {
+            iconImage.sprite = null;
+            iconImage.enabled = false;
+        }
+        if (countText != null)
+        {
+            countText.text = "";
+            countText.gameObject.SetActive(false);
+        }
     }
 
     /// <summary>

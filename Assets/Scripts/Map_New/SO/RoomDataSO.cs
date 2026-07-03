@@ -4,6 +4,7 @@ using UnityEngine;
 public abstract class RoomDataSO : ScriptableObject
 {
     public string roomName;
+    [HideInInspector]
     public GameEnums.RoomType roomType;
     public Sprite roomIcon; // 地图上显示的图标
     [TextArea] public string description; // 鼠标悬停时的描述
@@ -13,4 +14,16 @@ public abstract class RoomDataSO : ScriptableObject
     // ==========================================
     [Header("地图规则")][Tooltip("如果为 true，打通此房间后，下一次掷骰子的第 1 步将直接飞跃到下一个房间的起点。")]
     public bool skipRemainingNodesOnClear = false; 
+
+    protected abstract GameEnums.RoomType FixedRoomType { get; }
+
+    protected virtual void OnEnable()
+    {
+        roomType = FixedRoomType;
+    }
+
+    protected virtual void OnValidate()
+    {
+        roomType = FixedRoomType;
+    }
 }

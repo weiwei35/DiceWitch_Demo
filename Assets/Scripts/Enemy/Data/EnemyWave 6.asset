@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: EnemyWave 6
   m_EditorClassIdentifier: 
   enemyPrefabs:
-  - {fileID: 1828192061474647661, guid: 5d4f6d5a9c2367f489f38289ef566b42, type: 3}
+  - {fileID: 1828192061474647661, guid: 479b6d8c6c3d344418b486150aab6a40, type: 3}
   - {fileID: 1828192061474647661, guid: 8d9727ba3d16e5248ad9a6d0ce527d41, type: 3}

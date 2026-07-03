@@ -15,24 +15,45 @@ public class TargetSelectionState : IGameState
     public void Enter()
     {
         GameFlowController.SetBattleUIVisible(false);
-        GameFlowController.SelectionModeTip?.SetActive(true);
-        MagicCircleDisplay.Instance?.SetSelectionMode(true);
+        RewardDiceSelectionPanel panel = RewardDiceSelectionPanel.GetConfigured();
+        if (panel == null)
+        {
+            CompleteFlow();
+            return;
+        }
+
+        panel.Show(_pendingSpell, OnSlotSelected);
     }
 
     public void Exit()
     {
-        GameFlowController.SelectionModeTip?.SetActive(false);
-        MagicCircleDisplay.Instance?.SetSelectionMode(false);
+        RewardDiceSelectionPanel.Instance?.Hide();
     }
 
     public void OnSlotClicked(MagicCircleSlot slotData, Vector3 uiPos)
+    {
+    }
+
+    private void OnSlotSelected(MagicCircleSlot slotData)
     {
         if (!slotData.isUnlocked || slotData.currentDice == null) return;
 
         MagicCircleManager.Instance.ImprintAbilityToDice(slotData.currentDice, _pendingSpell);
         Debug.Log("附魔成功！");
 
-        _onComplete?.Invoke();
-        GameFlowController.Instance.ChangeState(new MapState());
+        MagicCircleDisplay.Instance?.RefreshAll();
+        CompleteFlow();
+    }
+
+    private void CompleteFlow()
+    {
+        if (_onComplete != null)
+        {
+            _onComplete.Invoke();
+        }
+        else
+        {
+            GameFlowController.Instance.ChangeState(new MapState());
+        }
     }
 }

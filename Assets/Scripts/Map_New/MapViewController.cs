@@ -114,7 +114,9 @@ public class MapViewController : MonoBehaviour
                     MapNodeAnchor anchor = room.roomNodes[j];
                     RectTransform anchorRect = anchor.GetComponent<RectTransform>();
 
-                    int nodeIndex = nodes[globalNodeIndex].index;
+                    BoardNode nodeData = nodes[globalNodeIndex];
+                    int nodeIndex = nodeData.index;
+                    anchor.SetPresentationContext(nodeData.roomDataRef, MapManager.Instance.MapPresentationCatalog);
                     nodeUIRects[nodeIndex] = anchorRect;
                     nodeAnchors[nodeIndex] = anchor;
 

@@ -19,21 +19,6 @@ public class ForgeOptionButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     public ForgeInspiration Inspiration => _inspiration;
 
     /// <summary>
-    /// 使用单个词条配置初始化按钮，主要用于旧数据或兼容显示。
-    /// </summary>
-    /// <param name="affix">该按钮展示的词条配置。</param>
-    /// <param name="showAttach">是否显示/启用刻印入口。</param>
-    public void Setup(ForgeAffixSO affix, bool showAttach)
-    {
-        _affix = affix;
-        _inspiration = null;
-        if (iconImage != null && affix.icon != null) iconImage.sprite = affix.icon;
-        if (attachButton != null && attachButton.gameObject != gameObject)
-            attachButton.gameObject.SetActive(showAttach);
-        SetCommitInteractable(showAttach);
-    }
-
-    /// <summary>
     /// 使用持久启迪记录初始化按钮。
     /// </summary>
     /// <param name="inspiration">该按钮对应的启迪记录。</param>
@@ -109,11 +94,8 @@ public class ForgeOptionButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     /// <param name="eventData">Unity UI 指针事件数据。</param>
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (_affix == null || !_commitInteractable) return;
-        if (_inspiration != null)
-            ForgeUIManager.Instance?.OnOptionPressStart(_inspiration, transform as RectTransform);
-        else
-            ForgeUIManager.Instance?.OnOptionPressStart(_affix, transform as RectTransform);
+        if (_inspiration == null || _affix == null || !_commitInteractable) return;
+        ForgeUIManager.Instance?.OnOptionPressStart(_inspiration, transform as RectTransform);
     }
 
     /// <summary>

@@ -8,25 +8,82 @@ originSessionId: 8632ebdf-3b91-4cd5-91fb-5cd351530b29
 
 ## Architecture Overview
 
-The map is a linear board of connected nodes grouped into **rooms**. Each room can contain multiple nodes of different types. When the player lands on a node, it triggers effects and (if the room hasn't been cleared) enters the room's event (battle, shop, etc.).
+The map is a board of connected nodes grouped into **rooms**. It began as a linear board, but now supports branching **between rooms**. Branches are not configured inside a room; they happen when leaving a room and choosing among multiple next rooms.
 
-**Key concept**: A "room" is a group of consecutive nodes sharing the same `roomId`. One node per room (type `RoomEvent`) is the entry trigger. But entering happens when landing on ANY node in an uncleared room.
+**Current authoring concept**: map configuration is now **room-first**. A `Region` is a chapter/act, a `Room` is the main authoring unit, and `Node` objects are landing points inside a room. Room type controls the main room icon; node type controls the local node effect.
+
+**Key runtime concept**: A "room" is a group of consecutive nodes sharing the same `roomId`. Entering happens when landing on ANY node in an uncleared room.
+
+## 2026-07-03 Map Authoring Refactor
+
+The map authoring model was cleaned up so art/design can build a chapter from independent rooms:
+
+- `Region` means a chapter/act. It is expected to end with a Boss room.
+- `MapRoomLayout` is the primary authoring unit. Configure `roomData`, `roomNodes`, and optional `nextRooms`.
+- `MapNodeAnchor` no longer owns the room/base icon. Node main icons are derived from `roomData.roomType`.
+- Node local effect configuration remains on `MapNodeAnchor`: `nodeType`, `effectValue`, and `forgeBonusType`.
+- Forge nodes are intentionally modeled as `锻造 + bonus effect`; `forgeBonusType` is required for forge nodes.
+- `MapIconConfigSO` was removed. Use `MapPresentationCatalogSO` instead.
+- `BoardMapConfigSO` now has one shared `presentationCatalog` reference for the whole map.
+- `MapPresentationCatalogSO` owns room icons, node effect icons, tooltip text templates, floating text templates/colors, and node state colors.
+- `Fill Missing Default Entries` only adds missing catalog entries and fills blank text fields. It must not clear or overwrite configured icons/text/options.
+- `RoomDataSO.roomType` is hidden in Inspector and fixed by the concrete SO class to avoid false manual edits.
+- Use `StartRoomSO` for map start rooms. Do not use `BattleRoomSO` and manually set it to Start; battle rooms force their type back to Battle.
+- `GameEnums.RoomType.Start` exists for map start rooms. If entered accidentally, `GameFlowController.EnterRoom` returns to MapState.
+- A map validation menu exists: select `BoardMapConfigSO`, then run `DiceWitch/Map/Validate Selected Map Config`.
+- The user-facing setup document is `制作文档/地图新建手册.md`.
 
 ## Board Setup
 
 ### ScriptableObject hierarchy (design-time, Inspector-configured)
 ```
 BoardMapConfigSO
+  ├─ presentationCatalog (MapPresentationCatalogSO)
   └─ List<BoardRegionConfig> regions
        └─ regionName, regionPrefab (with MapRegionLayout)
             └─ MapRegionLayout
                  └─ List<MapRoomLayout> orderedRooms
-                      └─ roomData (RoomDataSO), List<MapNodeAnchor> roomNodes
+                      └─ roomData (RoomDataSO), List<MapNodeAnchor> roomNodes, List<MapRoomLayout> nextRooms
                            └─ MapNodeAnchor: nodeType, effectValue, forgeBonusType
 ```
 
 ### Runtime generation (`MapManager.GenerateBoard()`)
 Iterates all regions → rooms → anchors, creates flat `List<BoardNode> boardNodes` with global `index`, `roomId`, `regionIndex`, `type`, `effectValue`, `forgeBonusType`, `roomDataRef`.
+
+Also creates `List<BoardRoom> boardRooms`. `BoardRoom` stores room id, region index, room data, start/end node indices, and `nextRoomIds`.
+
+### Branching room configuration
+
+Current configured map prefab:
+- `Assets/Prefab/Map/MapBG_new.prefab`
+
+`MapRegionLayout.orderedRooms` still defines the full room set and display order. `MapRoomLayout.nextRooms` defines where a room can go after its last node.
+
+Rules:
+- Leave `nextRooms` empty for old linear behavior. The room auto-connects to the next entry in `orderedRooms`.
+- Put 1 target room in `nextRooms` for an explicit single successor.
+- Put 2+ target rooms in `nextRooms` for a branch choice.
+- Target rooms must also be present in `orderedRooms`, because `orderedRooms` is still used to instantiate and map node UI.
+
+Example:
+```
+A.nextRooms = [B, C]
+B.nextRooms = [D]
+C.nextRooms = [D]
+```
+
+The player does not choose early. Movement remains automatic until the pawn reaches a room exit while the dice roll still has remaining steps. Then the map pauses and shows simple branch buttons to the right of the current node. After choosing, movement continues consuming the remaining steps.
+
+If the roll lands exactly on the branch room's final node with no remaining steps, no branch choice opens yet; that node resolves normally.
+
+### Scene reference lines
+
+`MapRegionLayout.OnDrawGizmos()` draws green editor reference lines using the same room graph logic:
+- Room internal lines connect each room's `roomNodes` in order.
+- Room exit lines connect the room's last node to each configured `nextRooms` target's first node.
+- Empty `nextRooms` falls back to the next `orderedRooms` room.
+
+This means Scene-view reference lines preview the same branch structure used at runtime.
 
 ## BoardNode Fields
 ```csharp
@@ -38,6 +95,16 @@ int roomId;                             // Room membership ID
 RoomDataSO roomDataRef;                 // Room data reference
 int regionIndex;                        // Region section
 bool isInvalidated;                     // Skipped via room-clear jump
+```
+
+## BoardRoom Fields
+```csharp
+int roomId;
+int regionIndex;
+RoomDataSO roomDataRef;
+int startNodeIndex;
+int endNodeIndex;
+List<int> nextRoomIds;
 ```
 
 ## BoardNodeType Enum (10 types)
@@ -54,6 +121,26 @@ bool isInvalidated;                     // Skipped via room-clear jump
 | `Relic` (8) | Gain relic |
 | `Forge` (9) | Enter forge (dice enchantment) |
 
+## Room Type Authoring
+
+Room type is not manually edited in Inspector. It is fixed by the concrete room SO class:
+
+- `StartRoomSO` -> `RoomType.Start`
+- `BattleRoomSO` -> `RoomType.Battle`
+- `EventRoomSO` -> `RoomType.Event`
+
+If more room data classes are added, they should override the fixed room type rather than asking designers to edit `roomType` by hand.
+
+The map start should be authored as a normal room with `StartRoomSO` and usually one empty node:
+
+```text
+RoomData = StartRoomSO
+Node Type = 空
+Effect Value = 0
+```
+
+Do not create a battle room and attempt to set it to Start; `BattleRoomSO` will always restore its fixed room type to Battle.
+
 ## 核心规则：经过节点不触发
 
 **只有最终落点触发 `OnPlayerLanded`，棋子跳跃经过的中间节点一律不生效。**
@@ -65,13 +152,17 @@ bool isInvalidated;                     // Skipped via room-clear jump
 ## Player Movement Flow
 
 1. **Click "Roll Dice"** → `MapInteractionManager.OnRollDiceClicked()` spawns physics dice, disables button
-2. **Dice settles** → `HandleDiceResult(steps)` computes path:
+2. **Dice settles** → `HandleDiceResult(steps)` starts step-by-step movement:
    - 从 `MapManager.currentPlayerNodeIndex` 出发
-   - 每步 +1 前进
-   - **跳跃逻辑**：如果当前房间 `skipRemainingNodesOnClear == true` 且已通关，第一步直接跳到 `GetNextRoomStartIndex()`（下一房间的首节点），跳过当前房间剩余所有节点
-   - 收集路径上每个节点的世界坐标
-3. **Pawn animates** → `MapPlayerPawn.MoveAlongPath()` DOTween jump-bounce 沿路径跳跃
+   - 每一步调用 `MapManager.TryGetNextNode(currentIndex, out nextIndex, out branchChoices)`
+   - 房间内部默认走到下一个节点
+   - 房间出口按 `BoardRoom.nextRoomIds` 选择下一房间首节点
+   - 如果出口有多个后继房间，且本次投骰仍有剩余步数，暂停并显示分岔选择按钮
+   - **跳跃逻辑**：如果当前房间 `skipRemainingNodesOnClear == true` 且已通关，下一步直接离开当前房间，按房间出口图进入后继房间
+3. **Pawn animates** → `MapPlayerPawn.MoveAlongPath()` DOTween jump-bounce 每步跳跃
 4. **On complete** → update node visuals, call `MapManager.OnPlayerLanded(landedNode)`
+
+Important invariant: branch choice only changes which room path to follow; only the final landing node triggers node effects.
 
 ## Landing Logic: OnPlayerLanded (MapManager.cs:113)
 
@@ -150,6 +241,66 @@ if (roomDataRef != null && !clearedRoomIds.Contains(roomId))
 - `EventRoomSO` → `EventState` (hides map, shows random event)
 - Other types → currently fall through to MapState
 
+## Map Node Tooltip Room Info
+
+`MapNodeAnchor` tooltips now show both node effect and room information.
+
+Implementation:
+- `MapViewController.DrawMap()` assigns each instantiated `MapNodeAnchor` its runtime `BoardNode.roomDataRef` plus map presentation catalog using `anchor.SetPresentationContext(nodeData.roomDataRef, MapManager.Instance.MapPresentationCatalog)`.
+- `MapNodeAnchor.GetTooltipInfo()` uses `MapPresentationCatalogSO` for node text and appends:
+  - `房间: {roomName}`
+  - `类别: {roomType display name from catalog}`
+- Disabled/invalidated route nodes still show room info after the disabled text.
+
+This lets the player inspect not only HP/resource/forge effects, but also which room and room category the node belongs to.
+
+## Map Presentation Catalog
+
+`MapPresentationCatalogSO` is the single source of truth for map presentation:
+
+- Room type icon and display name.
+- Node effect icon, including positive/negative/neutral variants.
+- Node value display rules, including whether positive values show `+`.
+- Node tooltip text templates.
+- Floating text template and color.
+- Node state colors.
+- Forge icon.
+
+Template variables:
+
+- `{value}` = raw value
+- `{abs}` = absolute value
+- `{signed}` = positive value with `+`, negative value as-is
+
+Important: `Fill Missing Default Entries` must be treated as a safe helper. It should not erase existing configured art or text.
+
+## Map Configuration Validation
+
+Editor menu:
+
+```text
+DiceWitch/Map/Validate Selected Map Config
+```
+
+Usage:
+
+1. Select a `BoardMapConfigSO` in Project.
+2. Run the menu.
+3. Read Console output.
+
+Checks include:
+
+- Missing `presentationCatalog`.
+- Missing region prefab.
+- Region prefab missing `MapRegionLayout`.
+- Empty `orderedRooms`.
+- Missing `roomData`.
+- Room with no nodes.
+- Forge node missing valid `forgeBonusType`.
+- Node UI reference incomplete.
+- Chapter last room is not Boss.
+- Catalog missing icon/effect entries used by the map.
+
 ## State Machine (GameFlowController)
 
 ### All States (IGameState: Enter/Exit/OnSlotClicked)
@@ -182,19 +333,24 @@ MapState → [dice roll → land on node]
 | File | Purpose |
 |---|---|
 | `Scripts/Map_New/MapManager.cs` | Singleton, board generation, OnPlayerLanded, clearedRoomIds, DelayEnterRoom |
+| `Scripts/Map_New/BoardRoom.cs` | Runtime room graph data for branching map paths |
 | `Scripts/Map_New/BoardNode.cs` | Runtime node data class |
 | `Scripts/Map_New/MapViewController.cs` | UI rendering, scroll, camera follow, node states |
 | `Scripts/Map_New/MapInteractionManager.cs` | Dice roll, pawn spawn, movement orchestration |
 | `Scripts/Map_New/MapPlayerPawn.cs` | DOTween jump animation |
 | `Scripts/Map_New/MapNodeAnchor.cs` | Per-node MonoBehaviour: icons, tooltips, state colors |
+| `Scripts/Map_New/MapPresentationCatalogSO.cs` | Shared room/node presentation catalog for icons, tooltip templates, floating text, state colors |
 | `Scripts/Map_New/MapRegionLayout.cs` | Design-time region layout |
 | `Scripts/Map_New/MapRoomLayout.cs` | Design-time room layout |
 | `Scripts/Map_New/SO/BoardMapConfigSO.cs` | Top-level board config SO |
 | `Scripts/Map_New/SO/RoomDataSO.cs` | Abstract room data (skipRemainingNodesOnClear) |
+| `Scripts/Map_New/SO/StartRoomSO.cs` | Start room data |
 | `Scripts/Map_New/SO/BattleRoomSO.cs` | Battle room data |
 | `Scripts/Map_New/SO/EventRoomSO.cs` | Event room data |
+| `Scripts/Editor/MapConfigurationValidator.cs` | Editor validation menu for map authoring |
 | `Scripts/GameManager/GameFlowController.cs` | State machine, room routing |
 | `Scripts/GameManager/MapState.cs` | Map UI state |
+| `制作文档/地图新建手册.md` | Art/design friendly guide for creating a new chapter map |
 | `Scripts/GameManager/BattleState.cs` | Battle state |
 | `Scripts/GameManager/EventState.cs` | Event state |
 | `Scripts/GameManager/ForgeState.cs` | Forge state |

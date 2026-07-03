@@ -4,8 +4,11 @@ using System.Collections.Generic;
 
 public class MapManager : MonoBehaviour
 {
-    public static MapManager Instance;[Header("Config")]
+    public static MapManager Instance;
+
+    [Header("Config")]
     public BoardMapConfigSO boardConfig;
+    public MapPresentationCatalogSO MapPresentationCatalog => boardConfig != null ? boardConfig.presentationCatalog : null;
     
     [Header("Runtime Data")]
     public List<BoardNode> boardNodes = new List<BoardNode>();
@@ -67,6 +70,9 @@ public class MapManager : MonoBehaviour
             Debug.LogWarning("BoardConfig 中没有任何 Region 配置！");
             return;
         }
+
+        if (boardConfig.presentationCatalog == null)
+            Debug.LogError("BoardConfig 未配置 presentationCatalog。地图节点图标、tooltip 和状态颜色将无法正常显示。");
 
         foreach (var region in boardConfig.regions)
         {
@@ -218,133 +224,61 @@ public class MapManager : MonoBehaviour
     // 【修改】处理效果并呼叫飘字
     private void ProcessNodeEffect(BoardNode node, Vector3 pawnPos)
     {
-        string floatText = "";
-        Color floatColor = Color.white;
+        GameEnums.BoardNodeType effectType = ResolveExecutableNodeEffect(node);
+        if (effectType == GameEnums.BoardNodeType.空) return;
 
-        switch (node.type)
+        ApplyNodeEffect(effectType, node.effectValue);
+        ShowNodeEffectFeedback(effectType, node.effectValue, pawnPos);
+    }
+
+    private GameEnums.BoardNodeType ResolveExecutableNodeEffect(BoardNode node)
+    {
+        if (node == null) return GameEnums.BoardNodeType.空;
+        if (node.type == GameEnums.BoardNodeType.锻造)
+            return node.forgeBonusType;
+
+        return node.type;
+    }
+
+    private void ApplyNodeEffect(GameEnums.BoardNodeType effectType, int value)
+    {
+        switch (effectType)
         {
             case GameEnums.BoardNodeType.加减Hp:
-                if (node.effectValue > 0) 
-                {
-                    PlayerManager.Instance.Heal(node.effectValue);
-                    floatText = $"+{node.effectValue} HP";
-                    floatColor = Color.green;
-                }
-                else if (node.effectValue < 0) 
-                {
-                    PlayerManager.Instance.TakeDamage(Mathf.Abs(node.effectValue));
-                    floatText = $"{node.effectValue} HP"; // 负数自带减号
-                    floatColor = Color.red;
-                }
+                if (value > 0) PlayerManager.Instance.Heal(value);
+                else if (value < 0) PlayerManager.Instance.TakeDamage(Mathf.Abs(value));
                 break;
                 
             case GameEnums.BoardNodeType.加减资源:
-                if (node.effectValue > 0) 
-                {
-                    ResourceManager.Instance.AddManaDust(node.effectValue);
-                    floatText = $"+{node.effectValue} 粉尘";
-                    floatColor = new Color(1f, 0.8f, 0f); // 黄色
-                }
-                else if (node.effectValue < 0) 
-                {
-                    ResourceManager.Instance.TrySpendManaDust(Mathf.Abs(node.effectValue));
-                    floatText = $"{node.effectValue} 粉尘";
-                    floatColor = Color.red;
-                }
+                if (value > 0) ResourceManager.Instance.AddManaDust(value);
+                else if (value < 0) ResourceManager.Instance.TrySpendManaDust(Mathf.Abs(value));
                 break;
                 
             case GameEnums.BoardNodeType.一次护甲:
-                PlayerManager.Instance.nextBattleArmorBonus += node.effectValue;
-                floatText = $"开局护甲 +{node.effectValue}";
-                floatColor = new Color(0.2f, 0.6f, 1f); // 蓝色
+                PlayerManager.Instance.nextBattleArmorBonus += value;
                 break;
                 
             case GameEnums.BoardNodeType.骰子点数必中:
-                PlayerManager.Instance.nextBattleFixedDiceValue = node.effectValue;
-                floatText = $"必定掷出 {node.effectValue}";
-                floatColor = new Color(0.8f, 0.2f, 1f); // 紫色
+                PlayerManager.Instance.nextBattleFixedDiceValue = value;
                 break;
                 
             case GameEnums.BoardNodeType.抵消下一次伤害:
                 PlayerManager.Instance.hasBlockNextDamageShield = true;
                 PlayerManager.Instance.UpdateUI();
-                floatText = "获得圣盾";
-                floatColor = Color.cyan;
                 break;
                 
             case GameEnums.BoardNodeType.一次伤害增加:
-                PlayerManager.Instance.nextBattleDamageBonus += node.effectValue;
-                floatText = $"伤害 +{node.effectValue}";
-                floatColor = new Color(1f, 0.5f, 0f); // 橙色
-                break;
-                
-            case GameEnums.BoardNodeType.遗物:
-                floatText = "获得遗物";
-                floatColor = Color.yellow;
-                break;
-
-            case GameEnums.BoardNodeType.锻造:
-                // 锻造节点的额外加成：根据 forgeBonusType 判定
-                switch (node.forgeBonusType)
-                {
-                    case GameEnums.BoardNodeType.加减Hp:
-                        if (node.effectValue > 0)
-                        {
-                            PlayerManager.Instance.Heal(node.effectValue);
-                            floatText = $"+{node.effectValue} HP";
-                            floatColor = Color.green;
-                        }
-                        else if (node.effectValue < 0)
-                        {
-                            PlayerManager.Instance.TakeDamage(Mathf.Abs(node.effectValue));
-                            floatText = $"{node.effectValue} HP";
-                            floatColor = Color.red;
-                        }
-                        break;
-                    case GameEnums.BoardNodeType.加减资源:
-                        if (node.effectValue > 0)
-                        {
-                            ResourceManager.Instance.AddManaDust(node.effectValue);
-                            floatText = $"+{node.effectValue} 粉尘";
-                            floatColor = new Color(1f, 0.8f, 0f);
-                        }
-                        else if (node.effectValue < 0)
-                        {
-                            ResourceManager.Instance.TrySpendManaDust(Mathf.Abs(node.effectValue));
-                            floatText = $"{node.effectValue} 粉尘";
-                            floatColor = Color.red;
-                        }
-                        break;
-                    case GameEnums.BoardNodeType.一次护甲:
-                        PlayerManager.Instance.nextBattleArmorBonus += node.effectValue;
-                        floatText = $"开局护甲 +{node.effectValue}";
-                        floatColor = new Color(0.2f, 0.6f, 1f);
-                        break;
-                    case GameEnums.BoardNodeType.骰子点数必中:
-                        PlayerManager.Instance.nextBattleFixedDiceValue = node.effectValue;
-                        floatText = $"必定掷出 {node.effectValue}";
-                        floatColor = new Color(0.8f, 0.2f, 1f);
-                        break;
-                    case GameEnums.BoardNodeType.抵消下一次伤害:
-                        PlayerManager.Instance.hasBlockNextDamageShield = true;
-                        PlayerManager.Instance.UpdateUI();
-                        floatText = "获得圣盾";
-                        floatColor = Color.cyan;
-                        break;
-                    case GameEnums.BoardNodeType.一次伤害增加:
-                        PlayerManager.Instance.nextBattleDamageBonus += node.effectValue;
-                        floatText = $"伤害 +{node.effectValue}";
-                        floatColor = new Color(1f, 0.5f, 0f);
-                        break;
-                }
+                PlayerManager.Instance.nextBattleDamageBonus += value;
                 break;
         }
+    }
 
-        // 呼叫飘字管理器
-        if (!string.IsNullOrEmpty(floatText) && FloatingTextManager.Instance != null)
-        {
+    private void ShowNodeEffectFeedback(GameEnums.BoardNodeType effectType, int value, Vector3 pawnPos)
+    {
+        if (FloatingTextManager.Instance == null || MapPresentationCatalog == null) return;
+
+        if (MapPresentationCatalog.TryBuildFloatingText(effectType, value, out string floatText, out Color floatColor))
             FloatingTextManager.Instance.ShowText(pawnPos, floatText, floatColor);
-        }
     }
     //找下一个房间的起点
     public int GetNextRoomStartIndex(int currentRoomId)

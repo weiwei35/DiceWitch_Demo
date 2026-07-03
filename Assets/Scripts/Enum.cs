@@ -16,6 +16,7 @@ public static class GameEnums
     //房间类型
     public enum RoomType
     {
+        Start,      // 地图起点
         Battle,     // 普通战斗
         Elite,      // 精英战斗
         Boss,       // Boss

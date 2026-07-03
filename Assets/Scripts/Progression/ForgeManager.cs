@@ -139,35 +139,6 @@ public class ForgeManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 旧版逐个投入材料的入口。
-    /// 当前 UI 主要使用 MeditateWithResources 一次投入三个材料；保留此方法用于兼容。
-    /// </summary>
-    /// <param name="resource">要投入的材料。</param>
-    /// <returns>投入并生成启迪成功返回 true。</returns>
-    public bool AddResource(ForgeResourceSO resource)
-    {
-        if (CurrentSession == null || resource == null) return false;
-
-        if (!TryConsumeResource(resource))
-        {
-            Debug.LogWarning($"材料 [{resource.resourceName}] 库存不足！");
-            return false;
-        }
-
-        CurrentSession.investedResources.Add(resource);
-        CurrentSession.diceLocked = true;
-
-        int tier = CurrentSession.currentTier + 1;
-        ForgeAffixSO newOption = GenerateAffix(tier, CurrentSession.investedResources);
-        CurrentSession.generatedOptions.Add(newOption);
-        ForgeInspiration inspiration = CreateInspiration(CurrentSession.targetDice, newOption, CurrentSession.generatedInspirations.Count);
-        CurrentSession.generatedInspirations.Add(inspiration);
-
-        Debug.Log($"<color=yellow>投入 [{resource.resourceName}]，生成选项: {newOption.affixName} (T{newOption.tier})  已锻造次数: {CurrentSession.ForgeCount}</color>");
-        return true;
-    }
-
-    /// <summary>
     /// 使用三个材料完成一次冥想，生成一个启迪并记录在目标骰子上。
     /// </summary>
     /// <param name="dice">本次冥想的目标骰子。</param>
@@ -221,44 +192,17 @@ public class ForgeManager : MonoBehaviour
     /// <param name="inspiration">玩家选择并长按完成的启迪记录。</param>
     public void CommitAffix(ForgeInspiration inspiration)
     {
-        if (inspiration == null) return;
-        CommitAffix(inspiration.affix, inspiration.optionIndex, inspiration);
-    }
-
-    /// <summary>
-    /// 按词条配置刻印到当前槽位的兼容入口。
-    /// </summary>
-    /// <param name="affix">要刻印的词条配置。</param>
-    /// <param name="optionIndex">该词条在法术周围的显示位置索引。</param>
-    public void CommitAffix(ForgeAffixSO affix, int optionIndex = -1)
-    {
-        CommitAffix(affix, optionIndex, FindCurrentInspiration(affix, optionIndex));
-    }
-
-    /// <summary>
-    /// 执行刻印的共享实现，写入骰子槽位并更新启迪状态。
-    /// </summary>
-    /// <param name="affix">最终刻印的词条配置。</param>
-    /// <param name="optionIndex">启迪显示位置索引。</param>
-    /// <param name="inspiration">对应的持久启迪记录；旧数据路径可为空。</param>
-    private void CommitAffix(ForgeAffixSO affix, int optionIndex, ForgeInspiration inspiration)
-    {
-        if (CurrentSession == null || affix == null) return;
+        if (CurrentSession == null || inspiration == null || inspiration.affix == null) return;
 
         int idx = CurrentSession.currentTier;
-        CurrentSession.targetDice.forgeSlots[idx].affix = affix;
+        CurrentSession.targetDice.forgeSlots[idx].affix = inspiration.affix;
         CurrentSession.targetDice.forgeSlots[idx].isForged = true;
         CurrentSession.targetDice.forgeSlots[idx].tier = idx + 1;
-        CurrentSession.targetDice.forgeSlots[idx].optionIndex = optionIndex;
-        if (inspiration != null)
-        {
-            inspiration.isCommitted = true;
-            inspiration.slotIndex = idx;
-            if (inspiration.optionIndex < 0)
-                inspiration.optionIndex = optionIndex;
-        }
+        CurrentSession.targetDice.forgeSlots[idx].optionIndex = inspiration.optionIndex;
+        inspiration.isCommitted = true;
+        inspiration.slotIndex = idx;
 
-        Debug.Log($"<color=green>刻印完成！{CurrentSession.targetDice.diceName} 的 T{idx + 1} 槽位获得词条: {affix.affixName}，启迪位置: {optionIndex}</color>");
+        Debug.Log($"<color=green>刻印完成！{CurrentSession.targetDice.diceName} 的 T{idx + 1} 槽位获得词条: {inspiration.affix.affixName}，启迪位置: {inspiration.optionIndex}</color>");
 
         CurrentSession = null;
     }
@@ -300,26 +244,6 @@ public class ForgeManager : MonoBehaviour
         };
         dice.forgeInspirations.Add(inspiration);
         return inspiration;
-    }
-
-    /// <summary>
-    /// 在当前会话中查找与词条和位置匹配的启迪记录。
-    /// </summary>
-    /// <param name="affix">要匹配的词条配置。</param>
-    /// <param name="optionIndex">要匹配的位置索引；小于 0 时只按词条匹配。</param>
-    /// <returns>匹配的启迪记录；未找到时返回 null。</returns>
-    private ForgeInspiration FindCurrentInspiration(ForgeAffixSO affix, int optionIndex)
-    {
-        if (CurrentSession == null || affix == null || CurrentSession.generatedInspirations == null) return null;
-
-        foreach (var inspiration in CurrentSession.generatedInspirations)
-        {
-            if (inspiration == null || inspiration.affix != affix) continue;
-            if (optionIndex < 0 || inspiration.optionIndex == optionIndex)
-                return inspiration;
-        }
-
-        return null;
     }
 
     /// <summary>

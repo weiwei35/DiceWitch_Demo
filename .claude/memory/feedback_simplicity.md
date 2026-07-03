@@ -9,3 +9,9 @@ Prefer simple, pragmatic solutions. The project is not large — don't over-engi
 **Why:** User explicitly stated the project won't be very large and wants to keep velocity high by avoiding unnecessary complexity.
 
 **How to apply:** When choosing between a simple solution (singletons, direct references) and a more complex one (DI frameworks, event buses, elaborate abstractions), default to the simple one unless there's a concrete, immediate problem it can't solve.
+
+## Compatibility / Migration Preference
+
+Do not keep old compatibility code paths unless the user explicitly asks for backward compatibility. Prefer one clear current implementation over parallel old/new configuration systems. If an existing scene or prefab breaks because it still uses the old shape, handle that as a deliberate migration task later instead of keeping both paths forever.
+
+**Why:** User explicitly said old compatibility makes the codebase increasingly bloated. They prefer clean current code, and if errors appear, migrate to the new version then.
