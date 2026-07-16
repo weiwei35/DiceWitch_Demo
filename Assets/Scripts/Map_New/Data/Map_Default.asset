@@ -19,25 +19,25 @@ MonoBehaviour:
     icon: {fileID: -1599469985, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     displayName: "\u8D77\u70B9"
   - roomType: 1
-    icon: {fileID: -2039678223, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    icon: {fileID: 21300000, guid: b63b9702ddcc9b3478f1482cf399f563, type: 3}
     displayName: "\u666E\u901A\u6218\u6597"
   - roomType: 2
-    icon: {fileID: 1334556711, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    icon: {fileID: 21300000, guid: 1ac1e87be7ede3649ba73717fa8b3f41, type: 3}
     displayName: "\u7CBE\u82F1\u6218\u6597"
   - roomType: 3
-    icon: {fileID: 950795517, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    icon: {fileID: 21300000, guid: a737c1685f4b06e42aebc5f474a12225, type: 3}
     displayName: Boss
   - roomType: 4
     icon: {fileID: 1351659694, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     displayName: "\u4F11\u606F\u70B9"
   - roomType: 5
-    icon: {fileID: 1163802720, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    icon: {fileID: 21300000, guid: 99f6a51dbbf430847a3db09cee25ad0d, type: 3}
     displayName: "\u5546\u5E97"
   - roomType: 6
     icon: {fileID: -501067757, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
     displayName: "\u5B9D\u7BB1"
   - roomType: 8
-    icon: {fileID: -984354836, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    icon: {fileID: 21300000, guid: e50fbb599bdab25469b08e9999a0d92e, type: 3}
     displayName: "\u4E8B\u4EF6"
   - roomType: 7
     icon: {fileID: -1599469985, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
