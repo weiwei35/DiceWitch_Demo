@@ -10,6 +10,9 @@ public class GameFlowController : MonoBehaviour
     public GameObject _roomUIRoot;
     public GameObject _battleUIRoot;
 
+    [Header("Start UI")]
+    public GameObject _startPanelRoot;
+
     [Header("Visual Feedback")]
     public GameObject _selectionModeTip;
 
@@ -35,7 +38,13 @@ public class GameFlowController : MonoBehaviour
             BattleManager.Instance.OnBattleDefeatEvent += HandleBattleDefeat;
         }
 
-        ChangeState(new MapState());
+        if (_startPanelRoot != null)
+        {
+            ShowStartPanel();
+            return;
+        }
+
+        BeginGame();
     }
 
     void OnDestroy()
@@ -53,6 +62,29 @@ public class GameFlowController : MonoBehaviour
         _currentState = newState;
         Debug.Log($"<color=green>游戏状态切换至: {newState.GetType().Name}</color>");
         _currentState.Enter();
+    }
+
+    public void BeginGame()
+    {
+        if (_startPanelRoot != null)
+            _startPanelRoot.SetActive(false);
+
+        ChangeState(new MapState());
+    }
+
+    private void ShowStartPanel()
+    {
+        _currentState?.Exit();
+        _currentState = null;
+
+        _startPanelRoot.SetActive(true);
+        _mapPanel?.SetActive(false);
+        _roomUIRoot?.SetActive(false);
+        SetBattleUIVisible(false);
+        _selectionModeTip?.SetActive(false);
+        SpellDraftPanel.Instance?.Hide();
+        RewardDiceSelectionPanel.Instance?.Hide();
+        TooltipSystem.Instance?.Hide();
     }
 
     public void OnSlotClicked(MagicCircleSlot slotData, Vector3 uiPos)
