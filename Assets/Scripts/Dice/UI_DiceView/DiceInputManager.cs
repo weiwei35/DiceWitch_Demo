@@ -9,6 +9,7 @@ public class DiceInputManager : MonoBehaviour
     // 当前正在拖拽的骰子
     private DiceDragger _currentDragger;
     private DiceHover _currentHover;
+    public bool IsDragging => _currentDragger != null && _currentDragger.IsDragging;
 
     void Awake() { Instance = this; }
 
@@ -25,17 +26,12 @@ public class DiceInputManager : MonoBehaviour
         {
             TooltipSystem.Instance?.Hide();
 
-            // 获取转换后的射线
             DiceViewMonitor monitor = GetDiceViewMonitor();
             if (monitor == null) return;
 
-            Ray ray = monitor.GetDiceRay(Input.mousePosition);
-            
-            // 在骰子世界 (DiceWorld Layer) 进行检测
-            int layerMask = 1 << LayerMask.NameToLayer("DiceArea");
-
-            DiceDragger dragger = FindDiceDraggerUnderMouse(ray, layerMask);
-            if (dragger != null)
+            PhysicsDice dice = monitor.GetDiceUnderScreenPoint(Input.mousePosition);
+            DiceDragger dragger = dice != null ? dice.GetComponent<DiceDragger>() : null;
+            if (dragger != null && dragger.enabled)
             {
                 _currentDragger = dragger;
                 dragger.OnManualMouseDown();
@@ -63,20 +59,6 @@ public class DiceInputManager : MonoBehaviour
         }
     }
 
-    private DiceDragger FindDiceDraggerUnderMouse(Ray ray, int layerMask)
-    {
-        RaycastHit[] hits = Physics.RaycastAll(ray, 1000f, layerMask);
-        if (hits == null || hits.Length == 0) return null;
-
-        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
-        foreach (var hit in hits)
-        {
-            DiceDragger dragger = hit.collider.GetComponentInParent<DiceDragger>();
-            if (dragger != null) return dragger;
-        }
-
-        return null;
-    }
     void HandleHover()
     {
         // 骰子还在滚动中，跳过射线检测防止唤醒物理睡眠
@@ -101,17 +83,13 @@ public class DiceInputManager : MonoBehaviour
             return;
         }
 
-        // 1. 获取转换后的射线
         DiceViewMonitor monitor = GetDiceViewMonitor();
         if (monitor == null) return;
 
-        Ray ray = monitor.GetDiceRay(Input.mousePosition);
-        int layerMask = 1 << LayerMask.NameToLayer("DiceArea");
-
-        // 2. 射线检测
-        if (Physics.Raycast(ray, out RaycastHit hit, 1000f, layerMask))
+        PhysicsDice dice = monitor.GetDiceUnderScreenPoint(Input.mousePosition);
+        if (dice != null)
         {
-            DiceHover hitHover = hit.collider.GetComponentInParent<DiceHover>();
+            DiceHover hitHover = dice.GetComponent<DiceHover>();
             
             // 如果指到了一个新的骰子
             if (hitHover != _currentHover)

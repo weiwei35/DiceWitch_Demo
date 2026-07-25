@@ -36,8 +36,6 @@ public static class GameEnums
         // 以后可以加更多：倍率、状态层数等
     }
     
-    //骰子属性类型
-    public enum DiceActionType { Attack, Defend, Magic, Empty }
     // 棋盘节点效果类型
     public enum BoardNodeType
     {

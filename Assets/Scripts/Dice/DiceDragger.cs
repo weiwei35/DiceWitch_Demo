@@ -137,6 +137,7 @@ public class DiceDragger : MonoBehaviour
         if (target != null)
         {
             Debug.Log("命中目标！");
+            BattleManager.Instance?.NotifyPlayerDiceTargeted(target);
             
             //通知战斗管理器，使用了一个骰子
             if (BattleManager.Instance != null)
@@ -182,18 +183,11 @@ public class DiceDragger : MonoBehaviour
         // 骰子盘是 Camera 模式的 UI，它就在 3D 世界里！
         // 我们直接把骰子在 DiceCamera 里的相对位置，映射到 RawImage 在 MainCamera 前的世界位置。
 
-        // A. 获取骰子在 DiceCamera 视口中的比例 (0~1)
-        Vector3 viewportPos = DiceViewMonitor.Instance.diceCamera.WorldToViewportPoint(transform.position);
-
-        // B. 获取 RawImage 的矩形角落 (世界坐标)
-        // [0]=左下, [1]=左上, [2]=右上, [3]=右下
-        Vector3[] corners = new Vector3[4];
-        DiceViewMonitor.Instance.rectTrans.GetWorldCorners(corners);
-
-        // C. 插值计算出 RawImage 表面上的那个点 (世界坐标)
-        Vector3 bottomEdge = Vector3.Lerp(corners[0], corners[3], viewportPos.x);
-        Vector3 topEdge = Vector3.Lerp(corners[1], corners[2], viewportPos.x);
-        Vector3 uiWorldPos = Vector3.Lerp(bottomEdge, topEdge, viewportPos.y);
+        DiceViewMonitor monitor = DiceInputManager.Instance != null
+            ? DiceInputManager.Instance.diceViewMonitor
+            : DiceViewMonitor.Instance;
+        if (monitor == null) return;
+        Vector3 uiWorldPos = monitor.GetWorldPositionFromDice(transform.position);
 
         // D. 稍微往摄像机反方向拉一点点，防止穿模
         Vector3 arrowStart = uiWorldPos + new Vector3(0, 0, -2);
@@ -296,7 +290,6 @@ public class DiceDragger : MonoBehaviour
             // 1. 伤害副本
             DiceFaceData calculatedData = new DiceFaceData();
             calculatedData.value = damageData.TotalValue;
-            calculatedData.type = damageData.type;
             calculatedData.icon = damageData.icon;
             calculatedData.color = damageData.color;
             calculatedData.effectDescription = damageData.effectDescription;

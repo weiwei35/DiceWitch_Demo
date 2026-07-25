@@ -105,6 +105,7 @@ public class DiceSquadGroup : MonoBehaviour
         if (target != null)
         {
             // 攻击！
+            BattleManager.Instance?.NotifyPlayerDiceTargeted(target);
             StartCoroutine(SequenceAttack(target));
         }
         else

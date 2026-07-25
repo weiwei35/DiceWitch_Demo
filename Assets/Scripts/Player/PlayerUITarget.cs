@@ -24,22 +24,7 @@ public class PlayerUITarget : BattleTarget
     // =========================================================
     public override void OnHit(DiceFaceData data, BattleTarget attacker = null)
     {
-        // 1. 如果是攻击骰子 -> 拖给自己算作“格挡/加甲” (绕过伤害管线，直接转为护甲)
-        if (data.type == GameEnums.DiceActionType.Attack)
-        {
-            GainArmor(data.value);
-        }
-        // 2. 如果是防御骰子 -> 加甲
-        else if (data.type == GameEnums.DiceActionType.Defend)
-        {
-            GainArmor(data.value);
-        }
-        // 3. 如果未来有“诅咒/陷阱”骰子，就可以打包丢进管线
-        // else if (data.type == GameEnums.DiceActionType.Curse)
-        // {
-        //     DamageInfo info = new DamageInfo(attacker, this, data.value, DamageType.Magic);
-        //     BattleManager.Instance.ProcessDamage(info);
-        // }
+        GainArmor(data.value);
     }
 
     // =========================================================

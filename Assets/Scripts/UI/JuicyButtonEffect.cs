@@ -28,6 +28,7 @@ public class JuicyButtonEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private float _hoverRotationSign = 1f;
     private float _scaleFactor = 1f;
     private float _punchFactor;
+    private float _guideScaleFactor = 1f;
     private float _rotationOffsetZ;
     private float _lastAppliedScaleFactor = 1f;
     private Quaternion _lastAppliedRotationOffset = Quaternion.identity;
@@ -62,7 +63,7 @@ public class JuicyButtonEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         RemoveAppliedEffect();
 
-        float combinedScale = Mathf.Max(0.01f, _scaleFactor + _punchFactor);
+        float combinedScale = Mathf.Max(0.01f, (_scaleFactor + _punchFactor) * _guideScaleFactor);
         if (Mathf.Abs(combinedScale - 1f) < 0.0001f && Mathf.Abs(_rotationOffsetZ) < 0.0001f)
             return;
 
@@ -238,12 +239,21 @@ public class JuicyButtonEffect : MonoBehaviour, IPointerEnterHandler, IPointerEx
     {
         _scaleFactor = 1f;
         _punchFactor = 0f;
+        _guideScaleFactor = 1f;
         _rotationOffsetZ = 0f;
         _lastAppliedScaleFactor = 1f;
         _lastAppliedRotationOffset = Quaternion.identity;
         _lastOutputScale = Vector3.one;
         _lastOutputRotation = Quaternion.identity;
         _hasAppliedEffect = false;
+    }
+
+    /// <summary>
+    /// 设置弱引导使用的独立缩放倍率，与 Hover、按下和点击反馈相乘叠加。
+    /// </summary>
+    public void SetGuideScaleFactor(float factor)
+    {
+        _guideScaleFactor = Mathf.Max(0.01f, factor);
     }
 
     private bool IsSameScale(Vector3 a, Vector3 b)

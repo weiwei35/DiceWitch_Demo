@@ -9,8 +9,8 @@ public class MapInteractionManager : MonoBehaviour
     public static MapInteractionManager Instance;
 
     [Header("References")]
-    public Button rollDiceButton;        
-    public DiceDataSO mapDiceData;       
+    public DiceViewMonitor mapDiceViewMonitor;
+    public DiceDataSO mapDiceData;
     public MapViewController mapUI;
     public TMP_FontAsset fontMaterial;
 
@@ -27,12 +27,27 @@ public class MapInteractionManager : MonoBehaviour
     private GameObject _branchChoiceRoot;
     private int? _selectedBranchRoomId;
     private PhysicsDice _mapDice;
+    private ProjectedDiceWeakGuide _projectedDiceGuide;
+    private bool _mapDiceStageActive;
 
-    void Awake() { Instance = this; }
-
-    void Start()
+    void Awake()
     {
-        rollDiceButton.onClick.AddListener(OnRollDiceClicked);
+        Instance = this;
+        _projectedDiceGuide = GetComponent<ProjectedDiceWeakGuide>();
+        if (_projectedDiceGuide == null)
+            _projectedDiceGuide = gameObject.AddComponent<ProjectedDiceWeakGuide>();
+    }
+
+    private void Update()
+    {
+        if (!_mapDiceStageActive || _isProcessing || _spawnedPawn == null)
+            return;
+        if (!Input.GetMouseButtonDown(0) || mapDiceViewMonitor == null)
+            return;
+
+        PhysicsDice clickedDice = mapDiceViewMonitor.GetDiceUnderScreenPoint(Input.mousePosition);
+        if (clickedDice == _mapDice)
+            RollMapDice();
     }
 
     public void InitPawnPosition()
@@ -69,37 +84,43 @@ public class MapInteractionManager : MonoBehaviour
 
     public void EnterMapDiceStage()
     {
+        _mapDiceStageActive = true;
         ReleaseMapDiceReference();
+        WeakGuideService.Instance?.ActivateScreen(this);
 
         DiceThrower thrower = DiceThrower.Instance;
         if (thrower == null) return;
 
         thrower.ClearOldDice();
         EnsureMapDice();
+        ShowMapDiceGuide();
     }
 
     public void ExitMapDiceStage()
     {
+        _mapDiceStageActive = false;
+        WeakGuideService.Instance?.DeactivateScreen(this);
+        _projectedDiceGuide?.Hide();
         ReleaseMapDiceReference();
         DiceThrower.Instance?.ClearOldDice();
     }
 
-    public void OnRollDiceClicked()
+    private void RollMapDice()
     {
         if (_isProcessing || _spawnedPawn == null) return;
         
         _isProcessing = true;
-        rollDiceButton.interactable = false;
 
         DiceThrower thrower = DiceThrower.Instance;
         EnsureMapDice();
         if (_mapDice == null)
         {
             _isProcessing = false;
-            rollDiceButton.interactable = true;
             return;
         }
 
+        WeakGuideService.Instance?.CompleteGuide(WeakGuideIds.MapRollDice);
+        _projectedDiceGuide?.Hide();
         _mapDice.OnDiceSettled -= HandleDiceResult;
         _mapDice.OnDiceSettled += HandleDiceResult;
         thrower.RollExistingSingleDice(_mapDice);
@@ -115,6 +136,22 @@ public class MapInteractionManager : MonoBehaviour
 
         DiceDragger dragger = _mapDice.GetComponent<DiceDragger>();
         if (dragger != null) dragger.enabled = false;
+    }
+
+    private void ShowMapDiceGuide()
+    {
+        if (!_mapDiceStageActive
+            || _mapDice == null
+            || mapDiceViewMonitor == null
+            || WeakGuideService.Instance == null
+            || WeakGuideService.Instance.IsCompleted(WeakGuideIds.MapRollDice))
+        {
+            _projectedDiceGuide?.Hide();
+            return;
+        }
+
+        _projectedDiceGuide.Bind(mapDiceViewMonitor, _mapDice);
+        _projectedDiceGuide.Show(this, WeakGuideIds.MapRollDice);
     }
 
     private void ReleaseMapDiceReference()
@@ -162,6 +199,7 @@ public class MapInteractionManager : MonoBehaviour
 
                 int chosenRoomId = _selectedBranchRoomId.Value;
                 MapManager.Instance.CommitBranchChoice(targetIndex, chosenRoomId);
+                WeakGuideService.Instance?.CompleteGuide(WeakGuideIds.MapChooseBranch);
                 if (mapUI != null)
                     mapUI.UpdateNodeStates(targetIndex);
 
@@ -195,7 +233,6 @@ public class MapInteractionManager : MonoBehaviour
         MapManager.Instance.OnPlayerLanded(landedNode, _spawnedPawn.transform.position);
 
         _isProcessing = false;
-        rollDiceButton.interactable = true;
     }
 
     private void ShowBranchChoiceButtons(int currentNodeIndex, List<BoardRoom> branchChoices)
@@ -217,14 +254,26 @@ public class MapInteractionManager : MonoBehaviour
         rootRect.localPosition = mapUI.contentParent.InverseTransformPoint(currentRect.position);
         rootRect.anchoredPosition += branchChoiceOffset;
 
+        List<WeakGuideEffect> branchGuideEffects = new List<WeakGuideEffect>();
         for (int i = 0; i < branchChoices.Count; i++)
         {
             BoardRoom room = branchChoices[i];
-            CreateBranchChoiceButton(rootRect, room, i, branchChoices.Count);
+            WeakGuideEffect effect = CreateBranchChoiceButton(rootRect, room, i, branchChoices.Count);
+            if (effect != null)
+                branchGuideEffects.Add(effect);
         }
+
+        WeakGuideService.Instance?.ShowGuide(
+            this,
+            WeakGuideIds.MapChooseBranch,
+            branchGuideEffects);
     }
 
-    private void CreateBranchChoiceButton(RectTransform parent, BoardRoom room, int index, int totalCount)
+    private WeakGuideEffect CreateBranchChoiceButton(
+        RectTransform parent,
+        BoardRoom room,
+        int index,
+        int totalCount)
     {
         GameObject buttonObject = new GameObject($"BranchChoice_{room.roomId}", typeof(RectTransform), typeof(Image), typeof(Button));
         buttonObject.transform.SetParent(parent, false);
@@ -268,10 +317,13 @@ public class MapInteractionManager : MonoBehaviour
         text.fontSize = 20f;
         text.color = Color.white;
         text.raycastTarget = false;
+
+        return WeakGuideEffect.GetOrCreate(rect, image);
     }
 
     private void HideBranchChoiceButtons()
     {
+        WeakGuideService.Instance?.ClearGuide(this);
         if (_branchChoiceRoot != null)
             Destroy(_branchChoiceRoot);
         _branchChoiceRoot = null;

@@ -91,7 +91,6 @@ public class MagicCircleSlot
             runtimeDice.faces[i].value = i + 1;
             runtimeDice.faces[i].bonusValue = valueAdd;
             runtimeDice.faces[i].color = Color.black;
-            runtimeDice.faces[i].type = GameEnums.DiceActionType.Attack;
         }
 
         return runtimeDice;

@@ -16,6 +16,12 @@ public class GameFlowController : MonoBehaviour
     [Header("Visual Feedback")]
     public GameObject _selectionModeTip;
 
+#if UNITY_EDITOR
+    [Header("Development")]
+    [Tooltip("勾选后，每次进入 Play Mode 都会清空全部弱引导完成记录，方便重复测试完整引导流程。")]
+    public bool resetAllWeakGuidesOnPlay;
+#endif
+
     // Static access for state classes
     public static GameObject MapPanel => Instance._mapPanel;
     public static GameObject RoomUIRoot => Instance._roomUIRoot;
@@ -28,6 +34,11 @@ public class GameFlowController : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+
+#if UNITY_EDITOR
+        if (Instance == this && resetAllWeakGuidesOnPlay)
+            WeakGuideService.Instance?.ResetAllProgressForDevelopment();
+#endif
     }
 
     void Start()

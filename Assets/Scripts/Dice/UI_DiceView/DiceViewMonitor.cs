@@ -55,6 +55,38 @@ public class DiceViewMonitor : MonoBehaviour
 
         return diceCamera.ViewportPointToRay(new Vector3(normalizedX, normalizedY, 0));
     }
+
+    public PhysicsDice GetDiceUnderScreenPoint(Vector2 screenPos)
+    {
+        if (rectTrans == null || diceCamera == null)
+            return null;
+        if (!RectTransformUtility.RectangleContainsScreenPoint(rectTrans, screenPos, Camera.main))
+            return null;
+
+        int diceLayer = LayerMask.NameToLayer("DiceArea");
+        if (diceLayer < 0) return null;
+
+        RaycastHit[] hits = Physics.RaycastAll(GetDiceRay(screenPos), 1000f, 1 << diceLayer);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        foreach (RaycastHit hit in hits)
+        {
+            PhysicsDice dice = hit.collider.GetComponentInParent<PhysicsDice>();
+            if (dice != null)
+                return dice;
+        }
+        return null;
+    }
+
+    public Vector3 GetWorldPositionFromDice(Vector3 diceWorldPos)
+    {
+        Vector3 viewportPos = diceCamera.WorldToViewportPoint(diceWorldPos);
+        Vector3[] corners = new Vector3[4];
+        rectTrans.GetWorldCorners(corners);
+
+        Vector3 bottomEdge = Vector3.Lerp(corners[0], corners[3], viewportPos.x);
+        Vector3 topEdge = Vector3.Lerp(corners[1], corners[2], viewportPos.x);
+        return Vector3.Lerp(bottomEdge, topEdge, viewportPos.y);
+    }
     
     // 转换为屏幕像素坐标
     public Vector3 GetScreenPosFromDice3D(Vector3 diceWorldPos)

@@ -2,6 +2,7 @@
 - [Dice Forging System](project_forge_system.md) — Forge UI, inventory, icon system, Editor setup
 - [Forge + Dice UI Stage 2026-05-31](project_stage_2026_05_31_forge_dice_ui.md) — Current Forge meditation flow, material UX, UI animations, fixed dice, clone dice, DiceViewMonitor bug
 - [Forge Meditation Refactor Stage 2026-07-03](project_stage_2026_07_03_forge_meditation_refactor.md) — Forge UI module split, removed compatibility fields, bag 9-cell pagination, and constellation overlay visibility fix
+- [Weak Guide System Stage 2026-07-25](project_stage_2026_07_25_weak_guide_system.md) — One-time weak-guide persistence, multi-target/projected visuals, Forge/Meditation, map, branch, and battle drag guides
 - [Map Branch + Reward Spell Selection Stage 2026-06-29](project_stage_2026_06_29_map_reward_flow.md) — Branching map movement/config, room info in node tooltips, and reward spell-to-dice selection panel decoupled from battle UI
 - [Map Authoring Refactor Stage 2026-07-03](project_stage_2026_07_03_map_authoring_refactor.md) — Room-first map authoring, presentation catalog, StartRoomSO, validation tool, and designer-facing chapter creation guide
 - [Dice System Fixes](project_dice_fixes.md) — Text orientation, hover-during-rolling, WaitForStop timeout

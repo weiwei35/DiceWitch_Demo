@@ -19,6 +19,7 @@ public class BattleState : IGameState
 
     public void Exit()
     {
+        BattleManager.Instance?.ExitBattleGuide();
         GameFlowController.SetBattleUIVisible(false);
     }
 

@@ -39,9 +39,17 @@ public class ForgeMaterialInputPanel : MonoBehaviour
     private Func<bool> _canEdit;
     private Action _onChanged;
     private Action<bool> _onBagVisibilityChanged;
+    private Action _onSlotBarOpened;
+    private Action<ForgeResourceSO> _onResourceSelected;
     private int _editingSlotIndex = -1;
     private int _bagPageIndex;
     private bool _slotBarVisible;
+    private bool _bagVisible;
+    private Button _firstAvailableResourceButton;
+    private ForgeResourceSO _firstAvailableResource;
+
+    public bool IsSlotBarVisible => _slotBarVisible;
+    public bool IsBagVisible => _bagVisible;
 
     public bool AllSlotsFilled
     {
@@ -53,11 +61,18 @@ public class ForgeMaterialInputPanel : MonoBehaviour
         }
     }
 
-    public void Initialize(Func<bool> canEdit, Action onChanged, Action<bool> onBagVisibilityChanged = null)
+    public void Initialize(
+        Func<bool> canEdit,
+        Action onChanged,
+        Action<bool> onBagVisibilityChanged = null,
+        Action onSlotBarOpened = null,
+        Action<ForgeResourceSO> onResourceSelected = null)
     {
         _canEdit = canEdit;
         _onChanged = onChanged;
         _onBagVisibilityChanged = onBagVisibilityChanged;
+        _onSlotBarOpened = onSlotBarOpened;
+        _onResourceSelected = onResourceSelected;
         BindButtons();
         CacheSlots();
     }
@@ -85,6 +100,8 @@ public class ForgeMaterialInputPanel : MonoBehaviour
 
     public void RefreshBag()
     {
+        _firstAvailableResourceButton = null;
+        _firstAvailableResource = null;
         if (bagItemContainer == null || resourceButtonPrefab == null || ForgeManager.Instance == null) return;
 
         foreach (Transform child in bagItemContainer) Destroy(child.gameObject);
@@ -145,7 +162,44 @@ public class ForgeMaterialInputPanel : MonoBehaviour
             button.interactable = true;
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() => OnBagResourceClicked(capturedResource));
+
+            if (_firstAvailableResourceButton == null)
+            {
+                _firstAvailableResourceButton = button;
+                _firstAvailableResource = resource;
+            }
         }
+    }
+
+    public bool TryGetFirstMaterialSlotGuideTarget(out Button button)
+    {
+        button = null;
+        if (!_slotBarVisible || materialSlotButtons == null) return false;
+
+        for (int i = 0; i < materialSlotButtons.Count; i++)
+        {
+            Button candidate = materialSlotButtons[i];
+            if (candidate == null || !candidate.gameObject.activeInHierarchy || !candidate.interactable)
+                continue;
+
+            button = candidate;
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool TryGetFirstAvailableResourceGuideTarget(
+        out Button button,
+        out ForgeResourceSO resource)
+    {
+        button = _firstAvailableResourceButton;
+        resource = _firstAvailableResource;
+        return _bagVisible
+            && button != null
+            && resource != null
+            && button.gameObject.activeInHierarchy
+            && button.interactable;
     }
 
     private int GetBagPageCount(int resourceCount)
@@ -174,6 +228,7 @@ public class ForgeMaterialInputPanel : MonoBehaviour
     {
         TooltipSystem.Instance?.Hide();
         _editingSlotIndex = -1;
+        _bagVisible = false;
         HidePopup(bagPanel);
         _onBagVisibilityChanged?.Invoke(false);
     }
@@ -270,6 +325,7 @@ public class ForgeMaterialInputPanel : MonoBehaviour
 
     private void SetSlotBarVisible(bool visible, bool immediate = false)
     {
+        bool wasVisible = _slotBarVisible;
         _slotBarVisible = visible;
 
         if (visible)
@@ -281,8 +337,13 @@ public class ForgeMaterialInputPanel : MonoBehaviour
         {
             TooltipSystem.Instance?.Hide();
             _editingSlotIndex = -1;
+            _bagVisible = false;
             HidePopup(bagPanel, immediate);
             _onBagVisibilityChanged?.Invoke(false);
+        }
+        else if (!wasVisible)
+        {
+            _onSlotBarOpened?.Invoke();
         }
     }
 
@@ -308,9 +369,10 @@ public class ForgeMaterialInputPanel : MonoBehaviour
     {
         _editingSlotIndex = index;
         _bagPageIndex = 0;
+        _bagVisible = true;
         ShowPopup(bagPanel);
-        _onBagVisibilityChanged?.Invoke(true);
         RefreshBag();
+        _onBagVisibilityChanged?.Invoke(true);
     }
 
     private void OnPreviousBagPageClicked()
@@ -349,6 +411,7 @@ public class ForgeMaterialInputPanel : MonoBehaviour
         _slotResources[_editingSlotIndex] = resource;
         RefreshSlot(_editingSlotIndex);
         PlaySlotChangedAnimation(_editingSlotIndex, previousResource != null);
+        _onResourceSelected?.Invoke(resource);
 
         AdvanceMaterialSelection();
         RefreshBag();
@@ -365,6 +428,7 @@ public class ForgeMaterialInputPanel : MonoBehaviour
         }
 
         _editingSlotIndex = -1;
+        _bagVisible = false;
         HidePopup(bagPanel);
         _onBagVisibilityChanged?.Invoke(false);
     }

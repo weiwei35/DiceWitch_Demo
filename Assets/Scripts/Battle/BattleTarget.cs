@@ -10,21 +10,8 @@ public abstract class BattleTarget : MonoBehaviour
     // =========================================================
     public virtual void OnHit(DiceFaceData data, BattleTarget attacker = null)
     {
-        switch (data.type)
-        {
-            case GameEnums.DiceActionType.Attack:
-                // 【核心改动】不再直接扣血，而是打包丢给 BattleManager 的流水线！
-                DamageInfo info = new DamageInfo(attacker, this, data.value, DamageType.Normal);
-                BattleManager.Instance.ProcessDamage(info);
-                break;
-                
-            case GameEnums.DiceActionType.Defend: 
-                GainArmor(data.value);
-                break;
-                
-            case GameEnums.DiceActionType.Magic:
-                break;
-        }
+        DamageInfo info = new DamageInfo(attacker, this, data.value, DamageType.Normal);
+        BattleManager.Instance.ProcessDamage(info);
     }
 
     // 兼容原有的“直接造成伤害”逻辑（例如以前的连锁伤害）

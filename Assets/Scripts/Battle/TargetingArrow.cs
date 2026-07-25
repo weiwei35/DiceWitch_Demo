@@ -10,8 +10,50 @@ public class TargetingArrow : MonoBehaviour
 
     private void Awake()
     {
-        Instance = this;
-        Hide(); // 游戏开始时隐藏
+        if (Instance == null)
+            Instance = this;
+    }
+
+    private void Start()
+    {
+        // 主箭头在首帧渲染前保持隐藏；运行时复制体由创建者自行控制显隐。
+        if (Instance == this)
+            Hide();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
+
+    public TargetingArrow CreateVisualCopy(string objectName, Transform parent, Color color)
+    {
+        GameObject copyObject = Instantiate(gameObject, parent);
+        copyObject.name = objectName;
+
+        TargetingArrow copy = copyObject.GetComponent<TargetingArrow>();
+        copy.SetColor(color);
+        copy.Hide();
+        return copy;
+    }
+
+    public void SetColor(Color color)
+    {
+        if (lineRenderer != null)
+        {
+            lineRenderer.startColor = color;
+            lineRenderer.endColor = color;
+            lineRenderer.material.color = color;
+        }
+
+        if (arrowHead == null) return;
+        Renderer[] renderers = arrowHead.GetComponentsInChildren<Renderer>(true);
+        foreach (Renderer targetRenderer in renderers)
+        {
+            if (targetRenderer != null)
+                targetRenderer.material.color = color;
+        }
     }
 
     public void Show(Vector3 startPos, Vector3 endPos)

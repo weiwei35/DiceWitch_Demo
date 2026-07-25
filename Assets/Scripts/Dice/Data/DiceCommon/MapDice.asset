@@ -16,37 +16,31 @@ MonoBehaviour:
   bodyColor: {r: 1, g: 1, b: 1, a: 1}
   faces:
   - value: 1
-    type: 0
     icon: {fileID: 0}
     color: {r: 0, g: 0, b: 0, a: 1}
     effectDescription: 
     bonusValue: 0
   - value: 1
-    type: 0
     icon: {fileID: 0}
     color: {r: 0, g: 0, b: 0, a: 1}
     effectDescription: 
     bonusValue: 0
   - value: 2
-    type: 0
     icon: {fileID: 0}
     color: {r: 0, g: 0, b: 0, a: 1}
     effectDescription: 
     bonusValue: 0
   - value: 2
-    type: 0
     icon: {fileID: 0}
     color: {r: 0, g: 0, b: 0, a: 1}
     effectDescription: 
     bonusValue: 0
   - value: 3
-    type: 0
     icon: {fileID: 0}
     color: {r: 0, g: 0, b: 0, a: 1}
     effectDescription: 
     bonusValue: 0
   - value: 3
-    type: 0
     icon: {fileID: 0}
     color: {r: 0, g: 0, b: 0, a: 1}
     effectDescription: 

@@ -10,8 +10,9 @@ public class BattleManager : MonoBehaviour
     public static BattleManager Instance;
 
     [Header("References")]
-    public DiceThrower diceThrower; 
-    public Button endTurnButton;    
+    public DiceThrower diceThrower;
+    public DiceViewMonitor battleDiceViewMonitor;
+    public Button endTurnButton;
     
     [Header("Scene Config")]
     // 【恢复】直接在 Inspector 里拖入场景里的固定生成点
@@ -34,11 +35,39 @@ public class BattleManager : MonoBehaviour
     public BattleRoomSO CurrentRoomData => _currentRoomData; // 【新增】对外暴露属性
     public int currentBattleDamageBonus = 0;
     public int diceUsedThisTurn = 0; // 记录本回合使用了几颗骰子
-    void Awake() { Instance = this; }
+
+    private ProjectedDiceWeakGuide _projectedDiceGuide;
+    private PhysicsDice _guidedDice;
+    private string _activeBattleGuideId;
+    private GameEnums.TargetTeam _activeGuideTargetTeam;
+    private float _guideRefreshBlockedUntil;
+    private bool _staticGuideArrowVisible;
+    private TargetingArrow _guideTargetingArrow;
+
+    void Awake()
+    {
+        Instance = this;
+        _projectedDiceGuide = GetComponent<ProjectedDiceWeakGuide>();
+        if (_projectedDiceGuide == null)
+            _projectedDiceGuide = gameObject.AddComponent<ProjectedDiceWeakGuide>();
+    }
+
+    private void LateUpdate()
+    {
+        if (!_isBattleActive)
+            return;
+
+        RefreshBattleDiceGuide();
+        UpdateStaticBattleGuideArrow();
+    }
 
     // --- 新入口：由 GameFlowController 调用 ---
     public void StartNewBattle(BattleRoomSO roomData)
     {
+        WeakGuideService.Instance?.ActivateScreen(this);
+        _guideRefreshBlockedUntil = 0f;
+        ClearCurrentBattleGuide();
+
         // 1. 清理战场 (这是单场景最重要的一步！)
         CleanUpBattlefield();
         _currentRoomData = roomData; 
@@ -58,6 +87,7 @@ public class BattleManager : MonoBehaviour
         {
             Debug.LogError("战斗数据为空！");
         }
+        endTurnButton.onClick.RemoveListener(OnEndTurnClicked);
         endTurnButton.onClick.AddListener(OnEndTurnClicked);
     }
 
@@ -104,6 +134,7 @@ public class BattleManager : MonoBehaviour
     {
         if (!_isBattleActive) return;
         _isBattleActive = false;
+        ExitBattleGuide();
         
         Debug.Log("战斗胜利！");
         StopAllCoroutines();
@@ -230,6 +261,9 @@ public class BattleManager : MonoBehaviour
     {
         if (!_isBattleActive) return; // 如果战斗结束了，按钮无效
         if (!isPlayerTurn) return;
+
+        WeakGuideService.Instance?.CompleteGuide(WeakGuideIds.BattleEndTurn);
+        ClearCurrentBattleGuide();
         
         // 清理当前回合的骰子
         diceThrower.ClearOldDice();
@@ -282,6 +316,7 @@ public class BattleManager : MonoBehaviour
         if (PlayerManager.Instance.currentHp <= 0)
         {
             Debug.Log("游戏结束！");
+            ExitBattleGuide();
             // GameFlowController.Instance.ShowRunSummary(false); // 呼出结算界面
             OnBattleDefeatEvent?.Invoke();
         }
@@ -326,6 +361,174 @@ public class BattleManager : MonoBehaviour
     {
         diceUsedThisTurn++; // 记录使用次数
         OnPlayerUseDice?.Invoke(1);
+    }
+
+    public void NotifyPlayerDiceTargeted(BattleTarget target)
+    {
+        if (target == null) return;
+
+        if (target.team == GameEnums.TargetTeam.Player)
+            WeakGuideService.Instance?.CompleteGuide(WeakGuideIds.BattleThrowToSelf);
+        else if (target.team == GameEnums.TargetTeam.Enemy)
+            WeakGuideService.Instance?.CompleteGuide(WeakGuideIds.BattleThrowToEnemy);
+
+        _guideRefreshBlockedUntil = Time.unscaledTime + 0.45f;
+        ClearCurrentBattleGuide();
+    }
+
+    public void ExitBattleGuide()
+    {
+        ClearCurrentBattleGuide();
+        WeakGuideService.Instance?.DeactivateScreen(this);
+    }
+
+    private void RefreshBattleDiceGuide()
+    {
+        WeakGuideService service = WeakGuideService.Instance;
+        if (service == null
+            || diceThrower == null
+            || battleDiceViewMonitor == null
+            || Time.unscaledTime < _guideRefreshBlockedUntil)
+            return;
+
+        if (isPlayerTurn
+            && endTurnButton != null
+            && endTurnButton.interactable
+            && diceThrower.GetValidDiceCount() == 0)
+        {
+            ShowEndTurnGuide(service);
+            return;
+        }
+
+        string nextGuideId;
+        GameEnums.TargetTeam nextTargetTeam;
+        if (!service.IsCompleted(WeakGuideIds.BattleThrowToSelf))
+        {
+            nextGuideId = WeakGuideIds.BattleThrowToSelf;
+            nextTargetTeam = GameEnums.TargetTeam.Player;
+        }
+        else if (!service.IsCompleted(WeakGuideIds.BattleThrowToEnemy))
+        {
+            nextGuideId = WeakGuideIds.BattleThrowToEnemy;
+            nextTargetTeam = GameEnums.TargetTeam.Enemy;
+        }
+        else
+        {
+            ClearCurrentBattleGuide();
+            return;
+        }
+
+        PhysicsDice nextDice = diceThrower.GetFirstAvailableBattleDice();
+        if (nextDice == null)
+        {
+            ClearCurrentBattleGuide();
+            return;
+        }
+
+        if (_activeBattleGuideId == nextGuideId && _guidedDice == nextDice)
+            return;
+
+        _guidedDice = nextDice;
+        _activeBattleGuideId = nextGuideId;
+        _activeGuideTargetTeam = nextTargetTeam;
+        _projectedDiceGuide.Bind(battleDiceViewMonitor, nextDice);
+        _projectedDiceGuide.Show(this, nextGuideId);
+    }
+
+    private void ShowEndTurnGuide(WeakGuideService service)
+    {
+        if (service.IsCompleted(WeakGuideIds.BattleEndTurn))
+        {
+            ClearCurrentBattleGuide();
+            return;
+        }
+
+        if (_activeBattleGuideId == WeakGuideIds.BattleEndTurn)
+            return;
+
+        _projectedDiceGuide?.Hide();
+        _guidedDice = null;
+        _activeBattleGuideId = WeakGuideIds.BattleEndTurn;
+        HideStaticGuideArrow();
+
+        RectTransform buttonRect = endTurnButton.transform as RectTransform;
+        service.ShowGuide(
+            this,
+            WeakGuideIds.BattleEndTurn,
+            buttonRect,
+            endTurnButton.targetGraphic);
+    }
+
+    private void UpdateStaticBattleGuideArrow()
+    {
+        if (string.IsNullOrWhiteSpace(_activeBattleGuideId)
+            || _projectedDiceGuide == null
+            || !_projectedDiceGuide.IsAvailable
+            || Time.unscaledTime < _guideRefreshBlockedUntil)
+        {
+            HideStaticGuideArrow();
+            return;
+        }
+
+        BattleTarget target = GetGuideArrowTarget();
+        TargetingArrow guideArrow = EnsureGuideTargetingArrow();
+        if (target == null || guideArrow == null)
+        {
+            HideStaticGuideArrow();
+            return;
+        }
+
+        Vector3 arrowStart = _projectedDiceGuide.GetArrowStartWorldPosition()
+            + new Vector3(0f, 0f, -2f);
+        guideArrow.Show(arrowStart, target.transform.position);
+        _staticGuideArrowVisible = true;
+    }
+
+    private TargetingArrow EnsureGuideTargetingArrow()
+    {
+        if (_guideTargetingArrow != null)
+            return _guideTargetingArrow;
+        if (TargetingArrow.Instance == null)
+            return null;
+
+        Color guideColor = WeakGuideService.Instance != null
+            ? WeakGuideService.Instance.glowColor
+            : new Color(1f, 0.96f, 0.8f, 1f);
+        guideColor.a = 0.72f;
+        _guideTargetingArrow = TargetingArrow.Instance.CreateVisualCopy(
+            "WeakGuideTargetArrow",
+            transform,
+            guideColor);
+        return _guideTargetingArrow;
+    }
+
+    private BattleTarget GetGuideArrowTarget()
+    {
+        if (_activeGuideTargetTeam == GameEnums.TargetTeam.Player)
+            return PlayerUITarget.Instance;
+
+        foreach (EnemyTarget enemy in enemies)
+        {
+            if (enemy != null && enemy.currentHp > 0)
+                return enemy;
+        }
+        return null;
+    }
+
+    private void ClearCurrentBattleGuide()
+    {
+        WeakGuideService.Instance?.ClearGuide(this);
+        _projectedDiceGuide?.Hide();
+        _guidedDice = null;
+        _activeBattleGuideId = null;
+        HideStaticGuideArrow();
+    }
+
+    private void HideStaticGuideArrow()
+    {
+        if (_guideTargetingArrow != null)
+            _guideTargetingArrow.Hide();
+        _staticGuideArrowVisible = false;
     }
     // 汇总场上所有敌人的光环，对玩家的伤害进行最终修饰
     public int ProcessGlobalDamageModifiers(int rawDamage, int usedOrder, int remainingAtThrow)

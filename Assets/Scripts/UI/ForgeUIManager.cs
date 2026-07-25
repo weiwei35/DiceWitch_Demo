@@ -38,6 +38,7 @@ public class ForgeUIManager : MonoBehaviour
     private PlayerDice _selectedDice;
     private bool _isCommittingAffix;
     private ForgeInspiration _lastCreatedInspirationForAppear;
+    private ForgeResourceSO _guidedBagResource;
 
     private Image spellIconImage => diceSelection != null ? diceSelection.SpellIconImage : null;
     private Image currentDiceIcon => diceSelection != null ? diceSelection.CurrentDiceIcon : null;
@@ -92,6 +93,7 @@ public class ForgeUIManager : MonoBehaviour
         RefreshOptions();
 
         if (panelRoot != null) panelRoot.SetActive(true);
+        WeakGuideService.Instance?.ActivateScreen(this);
         diceSelection?.StartBreath();
         UpdateUI();
     }
@@ -101,6 +103,7 @@ public class ForgeUIManager : MonoBehaviour
     /// </summary>
     public void Hide()
     {
+        WeakGuideService.Instance?.DeactivateScreen(this);
         diceSelection?.StopBreath();
         DestroyHoldLines();
         constellationRenderer?.ClearAll();
@@ -114,12 +117,37 @@ public class ForgeUIManager : MonoBehaviour
             diceSelection.Initialize(CanSwitchDice, OnSelectedDiceChanged);
 
         if (materialInput != null)
-            materialInput.Initialize(CanEditMaterials, UpdateUI, OnMaterialBagVisibilityChanged);
+            materialInput.Initialize(
+                CanEditMaterials,
+                UpdateUI,
+                OnMaterialBagVisibilityChanged,
+                OnMaterialSlotBarOpened,
+                OnMaterialResourceSelected);
     }
 
     private void OnMaterialBagVisibilityChanged(bool isVisible)
     {
         constellationRenderer?.SetVisible(!isVisible);
+        if (isVisible)
+            WeakGuideService.Instance?.CompleteGuide(WeakGuideIds.ForgeMaterialSlot);
+        else
+            _guidedBagResource = null;
+
+        RefreshWeakGuide();
+    }
+
+    private void OnMaterialSlotBarOpened()
+    {
+        WeakGuideService.Instance?.CompleteGuide(WeakGuideIds.ForgeMaterialEntry);
+        RefreshWeakGuide();
+    }
+
+    private void OnMaterialResourceSelected(ForgeResourceSO resource)
+    {
+        if (resource != null && resource == _guidedBagResource)
+            WeakGuideService.Instance?.CompleteGuide(WeakGuideIds.ForgeFirstResource);
+
+        RefreshWeakGuide();
     }
 
     /// <summary>
@@ -208,6 +236,7 @@ public class ForgeUIManager : MonoBehaviour
         ForgeInspiration inspiration = ForgeManager.Instance.MeditateWithResources(_selectedDice, resources, optionIndex);
         if (inspiration == null) return;
 
+        WeakGuideService.Instance?.CompleteGuide(WeakGuideIds.ForgeMeditate);
         _lastCreatedInspirationForAppear = inspiration;
         materialInput.ClearAfterMeditation();
         materialInput.CloseBagPanel();
@@ -289,13 +318,14 @@ public class ForgeUIManager : MonoBehaviour
         _holdActive = true;
         _holdElapsed = 0f;
         _holdAffix = affix;
-        _holdOptionRect = optionRect;
 
         RectTransform container = inspirationPanel != null ? inspirationPanel.OptionsContainer as RectTransform : null;
         if (container == null) { _holdActive = false; yield break; }
 
         RectTransform centerRect = GetCenterRectTransform();
         RectTransform optionAnchorRect = GetOptionAnchorRect(optionRect);
+        RectTransform holdVisualRect = optionAnchorRect != null ? optionAnchorRect : optionRect;
+        _holdOptionRect = holdVisualRect;
 
         int holdIndex = Mathf.Max(0, inspiration.optionIndex);
         _holdLine = constellationRenderer != null
@@ -305,10 +335,14 @@ public class ForgeUIManager : MonoBehaviour
         _holdCenterIconRect = spellIconImage != null ? spellIconImage.rectTransform : GetCenterRectTransform();
         _holdCenterIconBaseScale = _holdCenterIconRect != null ? _holdCenterIconRect.localScale : Vector3.one;
         _holdCenterIconBasePos = _holdCenterIconRect != null ? _holdCenterIconRect.anchoredPosition : Vector2.zero;
-        _holdOptionBaseScale = optionRect.localScale;
-        _holdOptionBasePos = optionRect.anchoredPosition;
+        _holdOptionBaseScale = holdVisualRect.localScale;
+        _holdOptionBasePos = holdVisualRect.anchoredPosition;
 
+        // 根节点由按钮反馈和弱引导共同管理缩放。长按抖动只写入子图标，
+        // 避免短按取消时把已叠加的呼吸倍率再次保存并乘回根节点。
         ForgeUIEffects.StopTransformTween(optionRect);
+        if (holdVisualRect != optionRect)
+            ForgeUIEffects.StopTransformTween(holdVisualRect);
         ForgeUIEffects.StopTransformTween(_holdCenterIconRect);
 
         float shakeTimer = 0f;
@@ -337,7 +371,7 @@ public class ForgeUIManager : MonoBehaviour
             // Shake both ends of the pending imprint.
             float iconShake = holdShakeIntensity * (1f - progress * 0.45f);
             float scaleShake = holdShakeIntensity * 0.015f * (1f - progress * 0.4f);
-            ForgeUIEffects.ApplyHoldIconShake(optionRect, _holdOptionBasePos, _holdOptionBaseScale, iconShake, scaleShake);
+            ForgeUIEffects.ApplyHoldIconShake(holdVisualRect, _holdOptionBasePos, _holdOptionBaseScale, iconShake, scaleShake);
             ForgeUIEffects.ApplyHoldIconShake(_holdCenterIconRect, _holdCenterIconBasePos, _holdCenterIconBaseScale, iconShake, scaleShake);
 
             yield return null;
@@ -349,7 +383,7 @@ public class ForgeUIManager : MonoBehaviour
             constellationRenderer?.SetShake(_holdLine, Vector2.zero);
             yield return ForgeUIEffects.PlayHoldSuccessFeedback(
                 constellationRenderer != null ? constellationRenderer.GetUiRect(_holdLine) : null,
-                optionRect,
+                holdVisualRect,
                 _holdCenterIconRect);
 
             ResetHoldTransforms();
@@ -363,6 +397,8 @@ public class ForgeUIManager : MonoBehaviour
             {
                 materialInput?.RefundAllSlots();
                 ForgeManager.Instance.CommitAffix(inspiration);
+                if (inspiration.isCommitted)
+                    WeakGuideService.Instance?.CompleteGuide(WeakGuideIds.ForgeCommitInspiration);
                 diceSelection?.RefreshDiceList();
                 diceSelection?.SelectDice(committedDice);
                 _holdLine = null;
@@ -491,6 +527,185 @@ public class ForgeUIManager : MonoBehaviour
             else
                 statusText.text = $"将为 {_selectedDice.diceName} 进行冥想";
         }
+
+        RefreshWeakGuide();
+    }
+
+    private void RefreshWeakGuide()
+    {
+        WeakGuideService guideService = WeakGuideService.Instance;
+        if (guideService == null || panelRoot == null || !panelRoot.activeInHierarchy)
+            return;
+
+        if (materialInput != null && materialInput.IsBagVisible)
+        {
+            if (!guideService.IsCompleted(WeakGuideIds.ForgeFirstResource)
+                && materialInput.TryGetFirstAvailableResourceGuideTarget(
+                    out Button resourceButton,
+                    out ForgeResourceSO resource)
+                && TryGetButtonGuideTarget(
+                    resourceButton,
+                    out RectTransform resourceTarget,
+                    out Graphic resourceGraphic))
+            {
+                _guidedBagResource = resource;
+                guideService.SetScreenSuspended(this, false);
+                guideService.ShowGuide(
+                    this,
+                    WeakGuideIds.ForgeFirstResource,
+                    resourceTarget,
+                    resourceGraphic);
+            }
+            else
+            {
+                _guidedBagResource = null;
+                guideService.ClearGuide(this);
+                guideService.SetScreenSuspended(this, true);
+            }
+            return;
+        }
+
+        _guidedBagResource = null;
+        guideService.SetScreenSuspended(this, false);
+
+        if (HasPendingOptions())
+        {
+            if (!guideService.IsCompleted(WeakGuideIds.ForgeCommitInspiration)
+                && TryGetPreferredInspirationGuideTarget(out RectTransform optionTarget, out Graphic optionGraphic))
+            {
+                guideService.ShowGuide(
+                    this,
+                    WeakGuideIds.ForgeCommitInspiration,
+                    optionTarget,
+                    optionGraphic,
+                    visualMode: WeakGuideVisualMode.HoldCharge);
+            }
+            else
+            {
+                guideService.ClearGuide(this);
+            }
+            return;
+        }
+
+        if (CanMeditate())
+        {
+            if (!guideService.IsCompleted(WeakGuideIds.ForgeMeditate)
+                && TryGetButtonGuideTarget(confirmButton, out RectTransform confirmTarget, out Graphic confirmGraphic))
+            {
+                guideService.ShowGuide(
+                    this,
+                    WeakGuideIds.ForgeMeditate,
+                    confirmTarget,
+                    confirmGraphic);
+            }
+            else
+            {
+                guideService.ClearGuide(this);
+            }
+            return;
+        }
+
+        if (materialInput != null
+            && !materialInput.AllSlotsFilled
+            && materialInput.IsSlotBarVisible
+            && !guideService.IsCompleted(WeakGuideIds.ForgeMaterialSlot)
+            && materialInput.TryGetFirstMaterialSlotGuideTarget(out Button slotButton)
+            && TryGetButtonGuideTarget(
+                slotButton,
+                out RectTransform slotTarget,
+                out Graphic slotGraphic))
+        {
+            guideService.ShowGuide(
+                this,
+                WeakGuideIds.ForgeMaterialSlot,
+                slotTarget,
+                slotGraphic);
+            return;
+        }
+
+        if (materialInput != null
+            && !materialInput.AllSlotsFilled
+            && !guideService.IsCompleted(WeakGuideIds.ForgeMaterialEntry)
+            && TryGetButtonGuideTarget(
+                materialInput.materialSlotBarToggleButton,
+                out RectTransform materialTarget,
+                out Graphic materialGraphic))
+        {
+            guideService.ShowGuide(
+                this,
+                WeakGuideIds.ForgeMaterialEntry,
+                materialTarget,
+                materialGraphic);
+            return;
+        }
+
+        guideService.ClearGuide(this);
+    }
+
+    private bool TryGetPreferredInspirationGuideTarget(
+        out RectTransform target,
+        out Graphic graphic)
+    {
+        target = null;
+        graphic = null;
+
+        ForgeInspiration inspiration = GetPreferredPendingInspiration();
+        GameObject optionObject = FindOptionObject(inspiration);
+        if (optionObject == null) return false;
+
+        ForgeOptionButton optionButton = optionObject.GetComponent<ForgeOptionButton>();
+        if (optionButton != null && optionButton.attachButton != null)
+            return TryGetButtonGuideTarget(optionButton.attachButton, out target, out graphic);
+
+        if (optionButton != null && optionButton.iconImage != null)
+        {
+            target = optionButton.iconImage.rectTransform;
+            graphic = optionButton.iconImage;
+            return true;
+        }
+
+        target = optionObject.transform as RectTransform;
+        graphic = optionObject.GetComponent<Graphic>();
+        return target != null;
+    }
+
+    private ForgeInspiration GetPreferredPendingInspiration()
+    {
+        ForgeSession session = ForgeManager.Instance != null ? ForgeManager.Instance.CurrentSession : null;
+        if (session?.generatedInspirations == null || session.targetDice != _selectedDice)
+            return null;
+
+        for (int i = session.generatedInspirations.Count - 1; i >= 0; i--)
+        {
+            ForgeInspiration inspiration = session.generatedInspirations[i];
+            if (IsCurrentSessionInspiration(inspiration))
+                return inspiration;
+        }
+
+        foreach (ForgeInspiration inspiration in session.generatedInspirations)
+        {
+            if (IsCurrentSessionInspiration(inspiration))
+                return inspiration;
+        }
+
+        return null;
+    }
+
+    private static bool TryGetButtonGuideTarget(
+        Button button,
+        out RectTransform target,
+        out Graphic graphic)
+    {
+        target = null;
+        graphic = null;
+        if (button == null || !button.gameObject.activeInHierarchy || !button.interactable)
+            return false;
+
+        target = button.transform as RectTransform;
+        graphic = button.targetGraphic;
+        if (graphic == null)
+            graphic = button.GetComponent<Graphic>();
+        return target != null;
     }
 
     /// <summary>

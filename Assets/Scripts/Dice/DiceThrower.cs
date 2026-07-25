@@ -37,7 +37,11 @@ public class DiceThrower : MonoBehaviour
     
     private int _settledDiceCount = 0;
     private int _totalDiceExpected = 0; 
-    private Coroutine _throwCoroutine;  
+    private Coroutine _throwCoroutine;
+    private Coroutine _readyCoroutine;
+    private bool _diceReadyForInput;
+
+    public bool AreDiceReadyForInput => _diceReadyForInput && !IsAnyDiceRolling();
 
     public void RegisterDice(PhysicsDice dice)
     {
@@ -101,6 +105,7 @@ public class DiceThrower : MonoBehaviour
     public void SpawnAndThrow(List<BattleDiceEntry> diceEntries)
     {
         ClearOldDice();
+        _diceReadyForInput = false;
 
         _totalDiceExpected = diceEntries.Count; 
         if (_container == null) _container = new GameObject("--- Dice Container ---").transform;
@@ -152,6 +157,7 @@ public class DiceThrower : MonoBehaviour
 
     public PhysicsDice SpawnSingleDice(RuntimeDiceData data, PlayerDice sourceRef = null)
     {
+        _diceReadyForInput = false;
         Vector3 targetPos = layoutCenter != null ? layoutCenter.position : spawnPoint.position;
         GameObject newDiceObj = Instantiate(dicePrefab, targetPos, Random.rotation);
         if (_container != null) newDiceObj.transform.SetParent(_container);
@@ -188,6 +194,7 @@ public class DiceThrower : MonoBehaviour
 
         _settledDiceCount = 0;
         _totalDiceExpected = 1;
+        _diceReadyForInput = true;
         return pDice;
     }
 
@@ -202,6 +209,7 @@ public class DiceThrower : MonoBehaviour
 
         _settledDiceCount = 0;
         _totalDiceExpected = 1;
+        _diceReadyForInput = false;
         RollDiceInPlace(dice, 0);
     }
 
@@ -259,6 +267,18 @@ public class DiceThrower : MonoBehaviour
             dice.transform.DORotateQuaternion(dice.GetCurrentResultRotation(), layoutTweenDuration).SetEase(Ease.OutQuad);
         }
 
+        if (_readyCoroutine != null)
+            StopCoroutine(_readyCoroutine);
+        _readyCoroutine = StartCoroutine(MarkDiceReadyAfterLayout());
+    }
+
+    private IEnumerator MarkDiceReadyAfterLayout()
+    {
+        if (layoutTweenDuration > 0f)
+            yield return new WaitForSeconds(layoutTweenDuration);
+
+        _diceReadyForInput = true;
+        _readyCoroutine = null;
     }
 
     private List<LayoutSlot> BuildLayoutSlots()
@@ -373,8 +393,12 @@ public class DiceThrower : MonoBehaviour
     public void ClearOldDice()
     {
         if (_throwCoroutine != null) StopCoroutine(_throwCoroutine);
+        if (_readyCoroutine != null) StopCoroutine(_readyCoroutine);
 
         StopHighlight();
+        _throwCoroutine = null;
+        _readyCoroutine = null;
+        _diceReadyForInput = false;
         _settledDiceCount = 0; 
         _totalDiceExpected = 0;
 
@@ -394,6 +418,23 @@ public class DiceThrower : MonoBehaviour
         foreach (var dice in activeDiceList)
             if (dice != null && dice.gameObject != null) count++;
         return count;
+    }
+
+    public PhysicsDice GetFirstAvailableBattleDice()
+    {
+        if (!AreDiceReadyForInput) return null;
+
+        foreach (PhysicsDice dice in activeDiceList)
+        {
+            if (dice == null || !dice.gameObject.activeInHierarchy || dice.isRolling)
+                continue;
+
+            DiceDragger dragger = dice.GetComponent<DiceDragger>();
+            if (dragger != null && dragger.enabled)
+                return dice;
+        }
+
+        return null;
     }
 
     public void HighlightDice(PlayerDice targetData)
