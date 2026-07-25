@@ -11,10 +11,12 @@ public class MapState : IGameState
         RewardDiceSelectionPanel.Instance?.Hide();
         GameFlowController.SelectionModeTip?.SetActive(false);
         MagicCircleDisplay.Instance.RefreshAll();
+        MapInteractionManager.Instance?.EnterMapDiceStage();
     }
 
     public void Exit()
     {
+        MapInteractionManager.Instance?.ExitMapDiceStage();
         GameFlowController.MapPanel?.SetActive(false);
     }
 

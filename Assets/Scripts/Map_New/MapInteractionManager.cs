@@ -26,6 +26,7 @@ public class MapInteractionManager : MonoBehaviour
     private bool _isProcessing = false;
     private GameObject _branchChoiceRoot;
     private int? _selectedBranchRoomId;
+    private PhysicsDice _mapDice;
 
     void Awake() { Instance = this; }
 
@@ -66,6 +67,23 @@ public class MapInteractionManager : MonoBehaviour
         }
     }
 
+    public void EnterMapDiceStage()
+    {
+        ReleaseMapDiceReference();
+
+        DiceThrower thrower = DiceThrower.Instance;
+        if (thrower == null) return;
+
+        thrower.ClearOldDice();
+        EnsureMapDice();
+    }
+
+    public void ExitMapDiceStage()
+    {
+        ReleaseMapDiceReference();
+        DiceThrower.Instance?.ClearOldDice();
+    }
+
     public void OnRollDiceClicked()
     {
         if (_isProcessing || _spawnedPawn == null) return;
@@ -74,18 +92,44 @@ public class MapInteractionManager : MonoBehaviour
         rollDiceButton.interactable = false;
 
         DiceThrower thrower = DiceThrower.Instance;
-        PhysicsDice dice = thrower.SpawnSingleDice(RuntimeDiceData.FromSO(mapDiceData));
+        EnsureMapDice();
+        if (_mapDice == null)
+        {
+            _isProcessing = false;
+            rollDiceButton.interactable = true;
+            return;
+        }
 
-        DiceDragger dragger = dice.GetComponent<DiceDragger>();
+        _mapDice.OnDiceSettled -= HandleDiceResult;
+        _mapDice.OnDiceSettled += HandleDiceResult;
+        thrower.RollExistingSingleDice(_mapDice);
+    }
+
+    private void EnsureMapDice()
+    {
+        if (_mapDice != null) return;
+        if (DiceThrower.Instance == null || mapDiceData == null) return;
+
+        _mapDice = DiceThrower.Instance.SpawnIdleSingleDice(RuntimeDiceData.FromSO(mapDiceData));
+        if (_mapDice == null) return;
+
+        DiceDragger dragger = _mapDice.GetComponent<DiceDragger>();
         if (dragger != null) dragger.enabled = false;
+    }
 
-        dice.OnDiceSettled += HandleDiceResult;
+    private void ReleaseMapDiceReference()
+    {
+        if (_mapDice != null)
+            _mapDice.OnDiceSettled -= HandleDiceResult;
+
+        _mapDice = null;
     }
 
     private void HandleDiceResult(int steps)
     {
         Debug.Log($"大地图骰子掷出了：{steps} 点！");
-        DiceThrower.Instance.ClearOldDice();
+        if (_mapDice != null)
+            _mapDice.OnDiceSettled -= HandleDiceResult;
 
         // =========================================================
         // 【新增】掷出骰子了，立刻恢复摄像机的自动跟随模式！
@@ -116,7 +160,12 @@ public class MapInteractionManager : MonoBehaviour
 
                 yield return new WaitUntil(() => _selectedBranchRoomId.HasValue);
 
-                nextIndex = MapManager.Instance.GetRoomStartIndex(_selectedBranchRoomId.Value);
+                int chosenRoomId = _selectedBranchRoomId.Value;
+                MapManager.Instance.CommitBranchChoice(targetIndex, chosenRoomId);
+                if (mapUI != null)
+                    mapUI.UpdateNodeStates(targetIndex);
+
+                nextIndex = MapManager.Instance.GetRoomStartIndex(chosenRoomId);
                 _selectedBranchRoomId = null;
                 HideBranchChoiceButtons();
 

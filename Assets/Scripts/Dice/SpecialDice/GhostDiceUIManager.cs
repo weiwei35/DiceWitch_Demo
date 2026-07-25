@@ -86,7 +86,7 @@ public class GhostDiceUIManager : MonoBehaviour
         if (diceThrower == null) return;
 
         // 1. 位置
-        Vector3 spawnPos = diceThrower.spawnPoint.position;
+        Vector3 spawnPos = diceThrower.layoutCenter != null ? diceThrower.layoutCenter.position : diceThrower.spawnPoint.position;
 
         // 2. 实例化
         GameObject diceObj = Instantiate(diceThrower.dicePrefab, spawnPos, Random.rotation);
@@ -96,14 +96,14 @@ public class GhostDiceUIManager : MonoBehaviour
         {
             // A. 初始化基础数据
             pDice.Initialize(req.data, null); // 来源设为null，因为它是由Ability生成的
+            pDice.SnapFaceUp(pDice.GetMaxValueFaceIndex());
             
             // B. 【关键】注入继承来的属性加成
             pDice.ApplyTemporaryBonus(req.bonusValue);
 
             // C. 注册并投掷
             diceThrower.RegisterDice(pDice);
-            Vector3 force = Vector3.down * 1f; 
-            pDice.Roll(force, Random.insideUnitSphere * 10f);
+            diceThrower.RollDiceInPlace(pDice);
         }
     }
     public void ClearAllGhosts()

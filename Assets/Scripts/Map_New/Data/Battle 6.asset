@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: Battle 6
   m_EditorClassIdentifier: 
   roomName: "\u51CB\u96F6\u5E9F\u589F"
-  roomType: 0
+  roomType: 1
   roomIcon: {fileID: -1963661152, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   description: 
   skipRemainingNodesOnClear: 0
+  battleTier: 0
   enemyWave: {fileID: 11400000, guid: e6bb46d21f028b64287b0682cdb97727, type: 2}
   rewardAbilityDraft: 1

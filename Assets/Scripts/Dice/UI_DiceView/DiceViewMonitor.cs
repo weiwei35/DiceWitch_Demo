@@ -49,8 +49,9 @@ public class DiceViewMonitor : MonoBehaviour
             return new Ray();
         }
 
-        float normalizedX = (localPoint.x / rectTrans.rect.width) + 0.5f;
-        float normalizedY = (localPoint.y / rectTrans.rect.height) + 0.5f;
+        Rect rect = rectTrans.rect;
+        float normalizedX = Mathf.InverseLerp(rect.xMin, rect.xMax, localPoint.x);
+        float normalizedY = Mathf.InverseLerp(rect.yMin, rect.yMax, localPoint.y);
 
         return diceCamera.ViewportPointToRay(new Vector3(normalizedX, normalizedY, 0));
     }

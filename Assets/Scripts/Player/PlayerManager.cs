@@ -3,6 +3,7 @@ using System.Collections;
 using DG.Tweening;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class PlayerManager : MonoBehaviour
 {
@@ -12,6 +13,13 @@ public class PlayerManager : MonoBehaviour
     public int currentHp;
     public int currentArmor;
 
+    [Header("Level Placeholder")]
+    [Min(1)] public int currentLevel = 1;
+    [Range(0f, 1f)] public float levelProgress = 0f;
+
+    [Header("Player Info UI")]
+    [Min(1)] public int armorBarMaxValue = 20;
+    public TMP_Text levelText;
     public bool hasBlockNextDamageShield = false; // 无敌护盾
     public int nextBattleArmorBonus = 0;          // 下场战斗额外护甲
     public int nextBattleDamageBonus = 0;         // 下场战斗额外伤害
@@ -19,6 +27,9 @@ public class PlayerManager : MonoBehaviour
     
     public TMP_Text hpText; 
     public TMP_Text armorText;
+    public Image levelFillImage;
+    public Image hpFillImage;
+    public Image armorFillImage;
 
     void Awake()
     {
@@ -106,9 +117,15 @@ public class PlayerManager : MonoBehaviour
 
     public void UpdateUI()
     {
-        string shieldStr = hasBlockNextDamageShield ? " <color=#00FFFF>[圣盾保护中]</color>" : "";
-        if(hpText) hpText.text = $"HP: {currentHp}/{maxHp}{shieldStr}";
-        if(armorText) armorText.text = $"Armor: {currentArmor}";
+        if (levelText) levelText.text = Mathf.Max(1, currentLevel).ToString();
+        if (hpText) hpText.text = $"{currentHp}/{maxHp}";
+        if (armorText) armorText.text = currentArmor.ToString();
+
+        if (levelFillImage) levelFillImage.fillAmount = Mathf.Clamp01(levelProgress);
+        if (hpFillImage)
+            hpFillImage.fillAmount = maxHp > 0 ? Mathf.Clamp01((float)currentHp / maxHp) : 0f;
+        if (armorFillImage)
+            armorFillImage.fillAmount = Mathf.Clamp01((float)currentArmor / Mathf.Max(1, armorBarMaxValue));
     }
 
     public void Heal(int healAmount)

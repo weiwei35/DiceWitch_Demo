@@ -17,6 +17,12 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public TextMeshProUGUI levelText; // 【新增】显示 "Lv.5"
 
     private MagicCircleSlot _targetSlot;
+    private RectTransform _rectTransform;
+
+    private void Awake()
+    {
+        _rectTransform = transform as RectTransform;
+    }
 
     public void Setup(MagicCircleSlot slotData)
     {
@@ -68,6 +74,8 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (!_targetSlot.isUnlocked) return;
+
+        MagicCircleDisplay.Instance?.MoveHandToSlot(GetSquareCenterInContainer());
 
         // A. 显示 Tips (复用你的 TooltipSystem)
         string title = _targetSlot.currentDice?.diceName ?? "空槽位";
@@ -129,6 +137,8 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        MagicCircleDisplay.Instance?.ReturnHandToDefault();
+
         // 隐藏 Tips
         TooltipSystem.Instance.Hide();
         
@@ -171,6 +181,52 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             // transform.localScale = Vector3.one;
         }
     }
+
+    public void SetRadialLayout(Vector2 targetPosition)
+    {
+        if (_rectTransform == null)
+            _rectTransform = transform as RectTransform;
+
+        // 节点底图已经合并到魔法阵背景中，运行时节点只负责显示内容和接收交互。
+        if (slotBorder != null)
+            slotBorder.enabled = false;
+
+        SetChildCenter(abilityIcon != null ? abilityIcon.rectTransform : null, Vector2.zero);
+        SetChildCenter(lockIcon != null ? lockIcon.transform as RectTransform : null, Vector2.zero);
+        SetLevelBadgePosition(Vector2.zero);
+        _rectTransform.anchoredPosition = targetPosition;
+    }
+
+    public Vector2 GetSquareCenterInContainer()
+    {
+        if (_rectTransform == null)
+            _rectTransform = transform as RectTransform;
+
+        return _rectTransform.anchoredPosition;
+    }
+
+    private static void SetChildCenter(RectTransform child, Vector2 position)
+    {
+        if (child == null) return;
+
+        child.anchorMin = new Vector2(0.5f, 0.5f);
+        child.anchorMax = new Vector2(0.5f, 0.5f);
+        child.anchoredPosition = position;
+    }
+
+    private void SetLevelBadgePosition(Vector2 squareCenterOffset)
+    {
+        if (levelBadgeObj == null) return;
+
+        RectTransform badgeRect = levelBadgeObj.transform as RectTransform;
+        if (badgeRect == null) return;
+
+        badgeRect.anchorMin = new Vector2(0.5f, 0.5f);
+        badgeRect.anchorMax = new Vector2(0.5f, 0.5f);
+        badgeRect.pivot = Vector2.one;
+        badgeRect.anchoredPosition = squareCenterOffset + new Vector2(25f, 25f);
+    }
+
     private void OnDisable()
     {
         // 1. 强制干掉幽灵提示框

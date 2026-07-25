@@ -3,7 +3,26 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Map/Battle Room")]
 public class BattleRoomSO : RoomDataSO
 {
-    protected override GameEnums.RoomType FixedRoomType => GameEnums.RoomType.Battle;
+    [Header("战斗房类型")]
+    [Tooltip("普通怪、精英怪、Boss 都使用 BattleRoomSO；地图表现和房间流程会根据这里区分。")]
+    public GameEnums.EnemyTier battleTier = GameEnums.EnemyTier.Normal;
+
+    protected override GameEnums.RoomType FixedRoomType
+    {
+        get
+        {
+            switch (battleTier)
+            {
+                case GameEnums.EnemyTier.Elite:
+                    return GameEnums.RoomType.Elite;
+                case GameEnums.EnemyTier.Boss:
+                    return GameEnums.RoomType.Boss;
+                case GameEnums.EnemyTier.Normal:
+                default:
+                    return GameEnums.RoomType.Battle;
+            }
+        }
+    }
 
     [Header("Battle Config")]
     // 这个房间里会有什么怪？

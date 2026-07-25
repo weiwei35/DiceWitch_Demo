@@ -354,4 +354,57 @@ public class MapManager : MonoBehaviour
 
         return branchChoices.Count > 1;
     }
+
+    public void CommitBranchChoice(int sourceNodeIndex, int chosenRoomId)
+    {
+        if (sourceNodeIndex < 0 || sourceNodeIndex >= boardNodes.Count) return;
+
+        BoardRoom sourceRoom = GetRoom(boardNodes[sourceNodeIndex].roomId);
+        if (sourceRoom == null || sourceRoom.nextRoomIds == null || !sourceRoom.nextRoomIds.Contains(chosenRoomId))
+            return;
+
+        HashSet<int> chosenReachableRooms = CollectReachableRoomIds(chosenRoomId);
+        HashSet<int> rejectedExclusiveRooms = new HashSet<int>();
+
+        foreach (int nextRoomId in sourceRoom.nextRoomIds)
+        {
+            if (nextRoomId == chosenRoomId) continue;
+
+            foreach (int reachableRoomId in CollectReachableRoomIds(nextRoomId))
+            {
+                if (!chosenReachableRooms.Contains(reachableRoomId))
+                    rejectedExclusiveRooms.Add(reachableRoomId);
+            }
+        }
+
+        foreach (BoardNode node in boardNodes)
+        {
+            if (rejectedExclusiveRooms.Contains(node.roomId))
+                node.isInvalidated = true;
+        }
+    }
+
+    private HashSet<int> CollectReachableRoomIds(int startRoomId)
+    {
+        HashSet<int> visited = new HashSet<int>();
+        Stack<int> pending = new Stack<int>();
+        pending.Push(startRoomId);
+
+        while (pending.Count > 0)
+        {
+            int roomId = pending.Pop();
+            if (!visited.Add(roomId)) continue;
+
+            BoardRoom room = GetRoom(roomId);
+            if (room == null || room.nextRoomIds == null) continue;
+
+            foreach (int nextRoomId in room.nextRoomIds)
+            {
+                if (!visited.Contains(nextRoomId))
+                    pending.Push(nextRoomId);
+            }
+        }
+
+        return visited;
+    }
 }

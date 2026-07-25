@@ -19,6 +19,7 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
     private RoomDataSO _roomData;
     private MapPresentationCatalogSO _presentationCatalog;
+    private Image _frameImage;
 
     // 锻造行 UI 元素（自动查找子物体 ForgeRow/Icon、ForgeRow/Text）
     private Image _forgeIconImage;
@@ -47,10 +48,10 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     {
         EnsureForgeRow();
 
-        // 0. 主图标由房间类型决定，不再在单个节点上手动配置。
+        // 0. 主图标由房间类型 + 运行状态决定，不再在单个节点上手动配置。
         if (baseIconImage != null)
         {
-            Sprite roomIcon = _presentationCatalog != null ? _presentationCatalog.GetRoomIcon(_roomData) : null;
+            Sprite roomIcon = _presentationCatalog != null ? _presentationCatalog.GetRoomStateSprite(_roomData, currentState) : null;
             if (roomIcon != null)
             {
                 baseIconImage.sprite = roomIcon;
@@ -60,6 +61,23 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
             {
                 baseIconImage.sprite = null;
                 baseIconImage.gameObject.SetActive(false);
+                Debug.LogError($"地图房间节点缺少状态贴图: room={GetRoomDebugName()}, state={currentState}", this);
+            }
+        }
+
+        Image frameImage = EnsureFrameImage();
+        if (frameImage != null)
+        {
+            Sprite frameSprite = _presentationCatalog != null ? _presentationCatalog.GetRoomFrameSprite(_roomData) : null;
+            if (frameSprite != null)
+            {
+                frameImage.sprite = frameSprite;
+                frameImage.gameObject.SetActive(true);
+            }
+            else
+            {
+                frameImage.sprite = null;
+                frameImage.gameObject.SetActive(false);
             }
         }
 
@@ -120,17 +138,43 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         if (_forgeText != null)
             _forgeText.gameObject.SetActive(showForgeRow);
 
-        // 3. 更新底图颜色（进度状态）
-        if (backgroundImage != null && _presentationCatalog != null)
+        if (backgroundImage != null)
+            backgroundImage.color = Color.white;
+    }
+
+    private Image EnsureFrameImage()
+    {
+        if (_frameImage != null) return _frameImage;
+
+        Transform existing = transform.Find("RoomFrame");
+        if (existing != null)
         {
-            switch (currentState)
-            {
-                case NodeState.Passed: backgroundImage.color = _presentationCatalog.passedColor; break;
-                case NodeState.Current: backgroundImage.color = _presentationCatalog.currentColor; break;
-                case NodeState.Future: backgroundImage.color = _presentationCatalog.futureColor; break;
-                case NodeState.Disabled: backgroundImage.color = _presentationCatalog.disabledColor; break;
-            }
+            _frameImage = existing.GetComponent<Image>();
+            return _frameImage;
         }
+
+        Transform parent = baseIconImage != null ? baseIconImage.transform.parent : transform;
+        GameObject frameObject = new GameObject("RoomFrame", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        RectTransform frameRect = frameObject.GetComponent<RectTransform>();
+        frameRect.SetParent(parent, false);
+
+        if (baseIconImage != null)
+        {
+            RectTransform baseRect = baseIconImage.rectTransform;
+            frameRect.anchorMin = baseRect.anchorMin;
+            frameRect.anchorMax = baseRect.anchorMax;
+            frameRect.pivot = baseRect.pivot;
+            frameRect.anchoredPosition = baseRect.anchoredPosition;
+            frameRect.sizeDelta = baseRect.sizeDelta;
+            frameRect.localRotation = baseRect.localRotation;
+            frameRect.localScale = baseRect.localScale;
+            frameObject.transform.SetSiblingIndex(baseIconImage.transform.GetSiblingIndex() + 1);
+        }
+
+        _frameImage = frameObject.GetComponent<Image>();
+        _frameImage.raycastTarget = false;
+        _frameImage.gameObject.SetActive(false);
+        return _frameImage;
     }
 
     public void SetState(NodeState newState)
@@ -144,6 +188,14 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         _roomData = roomData;
         _presentationCatalog = presentationCatalog;
         UpdateVisuals();
+    }
+
+    private string GetRoomDebugName()
+    {
+        if (_roomData == null) return "null";
+
+        string roomName = string.IsNullOrEmpty(_roomData.roomName) ? _roomData.name : _roomData.roomName;
+        return $"{roomName} ({_roomData.roomType})";
     }
 
     public void OnNodeClicked()

@@ -12,35 +12,52 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cae61abcadba4edf9af45167a383072, type: 3}
   m_Name: Map_Default
   m_EditorClassIdentifier: 
-  unknownRoomIcon: {fileID: -712617112, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   unknownRoomDisplayName: "\u672A\u77E5"
   roomIcons:
   - roomType: 0
-    icon: {fileID: -1599469985, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    incompleteSprite: {fileID: -1368326342, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    completedSprite: {fileID: -1368326342, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    frameSprite: {fileID: 0}
     displayName: "\u8D77\u70B9"
   - roomType: 1
-    icon: {fileID: 21300000, guid: b63b9702ddcc9b3478f1482cf399f563, type: 3}
+    incompleteSprite: {fileID: 21300000, guid: b63b9702ddcc9b3478f1482cf399f563, type: 3}
+    completedSprite: {fileID: 21300000, guid: c9157e5be776f4c4289b77d7006606c1, type: 3}
+    frameSprite: {fileID: 0}
     displayName: "\u666E\u901A\u6218\u6597"
   - roomType: 2
-    icon: {fileID: 21300000, guid: 1ac1e87be7ede3649ba73717fa8b3f41, type: 3}
+    incompleteSprite: {fileID: 21300000, guid: b63b9702ddcc9b3478f1482cf399f563, type: 3}
+    completedSprite: {fileID: 21300000, guid: c9157e5be776f4c4289b77d7006606c1, type: 3}
+    frameSprite: {fileID: 21300000, guid: 1ac1e87be7ede3649ba73717fa8b3f41, type: 3}
     displayName: "\u7CBE\u82F1\u6218\u6597"
   - roomType: 3
-    icon: {fileID: 21300000, guid: a737c1685f4b06e42aebc5f474a12225, type: 3}
+    incompleteSprite: {fileID: 21300000, guid: b63b9702ddcc9b3478f1482cf399f563, type: 3}
+    completedSprite: {fileID: 21300000, guid: c9157e5be776f4c4289b77d7006606c1, type: 3}
+    frameSprite: {fileID: 21300000, guid: a737c1685f4b06e42aebc5f474a12225, type: 3}
     displayName: Boss
   - roomType: 4
-    icon: {fileID: 1351659694, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    incompleteSprite: {fileID: 0}
+    completedSprite: {fileID: 0}
+    frameSprite: {fileID: 0}
     displayName: "\u4F11\u606F\u70B9"
   - roomType: 5
-    icon: {fileID: 21300000, guid: 99f6a51dbbf430847a3db09cee25ad0d, type: 3}
+    incompleteSprite: {fileID: 21300000, guid: 99f6a51dbbf430847a3db09cee25ad0d, type: 3}
+    completedSprite: {fileID: 21300000, guid: acf782d0a0b00ae49be492c238bd0979, type: 3}
+    frameSprite: {fileID: 0}
     displayName: "\u5546\u5E97"
   - roomType: 6
-    icon: {fileID: -501067757, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    incompleteSprite: {fileID: 0}
+    completedSprite: {fileID: 0}
+    frameSprite: {fileID: 0}
     displayName: "\u5B9D\u7BB1"
   - roomType: 8
-    icon: {fileID: 21300000, guid: e50fbb599bdab25469b08e9999a0d92e, type: 3}
+    incompleteSprite: {fileID: 21300000, guid: e50fbb599bdab25469b08e9999a0d92e, type: 3}
+    completedSprite: {fileID: 21300000, guid: 77edf64cd514c224eb3e9ece14af927d, type: 3}
+    frameSprite: {fileID: 0}
     displayName: "\u4E8B\u4EF6"
   - roomType: 7
-    icon: {fileID: -1599469985, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
+    incompleteSprite: {fileID: 0}
+    completedSprite: {fileID: 0}
+    frameSprite: {fileID: 0}
     displayName: "\u672A\u77E5"
   forgeIcon: {fileID: 658204653, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   nodeEffects:
@@ -143,7 +160,3 @@ MonoBehaviour:
     neutralTooltipTemplate: "<color=#FFD700>\u83B7\u5F97\u4E00\u4EF6\u968F\u673A\u9057\u7269</color>"
     floatingTextTemplate: "\u83B7\u5F97\u9057\u7269"
     floatingTextColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  passedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  currentColor: {r: 0.5, g: 1, b: 1, a: 1}
-  futureColor: {r: 1, g: 1, b: 1, a: 1}
-  disabledColor: {r: 0.3, g: 0.3, b: 0.3, a: 0.6}

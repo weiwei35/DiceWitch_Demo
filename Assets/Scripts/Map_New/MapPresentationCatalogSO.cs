@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(menuName = "Map/Presentation Catalog")]
 public class MapPresentationCatalogSO : ScriptableObject
@@ -8,7 +9,15 @@ public class MapPresentationCatalogSO : ScriptableObject
     public class RoomIconEntry
     {
         public GameEnums.RoomType roomType;
-        public Sprite icon;
+        [Header("Node State Sprites")]
+        [FormerlySerializedAs("futureSprite")]
+        public Sprite incompleteSprite;
+        [FormerlySerializedAs("passedSprite")]
+        public Sprite completedSprite;
+
+        [Header("Frame")]
+        public Sprite frameSprite;
+
         public string displayName;
     }
 
@@ -30,19 +39,12 @@ public class MapPresentationCatalogSO : ScriptableObject
     }
 
     [Header("Room Icons")]
-    public Sprite unknownRoomIcon;
     public string unknownRoomDisplayName = "未知";
     public List<RoomIconEntry> roomIcons = new List<RoomIconEntry>();
 
     [Header("Node Effects")]
     public Sprite forgeIcon;
     public List<NodeEffectEntry> nodeEffects = new List<NodeEffectEntry>();
-
-    [Header("Node State Colors")]
-    public Color passedColor = new Color(0.5f, 0.5f, 0.5f, 1f);
-    public Color currentColor = new Color(0.5f, 1f, 1f, 1f);
-    public Color futureColor = Color.white;
-    public Color disabledColor = new Color(0.3f, 0.3f, 0.3f, 0.6f);
 
     [ContextMenu("Fill Missing Default Entries")]
     public void FillDefaultEntries()
@@ -116,7 +118,7 @@ public class MapPresentationCatalogSO : ScriptableObject
 
     public Sprite GetRoomIcon(RoomDataSO roomData)
     {
-        if (roomData == null) return unknownRoomIcon;
+        if (roomData == null) return null;
 
         return GetRoomIcon(roomData.roomType);
     }
@@ -124,7 +126,34 @@ public class MapPresentationCatalogSO : ScriptableObject
     public Sprite GetRoomIcon(GameEnums.RoomType roomType)
     {
         RoomIconEntry entry = FindRoomIconEntry(roomType);
-        return entry != null && entry.icon != null ? entry.icon : unknownRoomIcon;
+        return entry != null ? entry.incompleteSprite : null;
+    }
+
+    public Sprite GetRoomStateSprite(RoomDataSO roomData, MapNodeAnchor.NodeState state)
+    {
+        if (roomData == null) return null;
+
+        RoomIconEntry entry = FindRoomIconEntry(roomData.roomType);
+        if (entry == null) return null;
+
+        switch (state)
+        {
+            case MapNodeAnchor.NodeState.Passed:
+                return entry.completedSprite;
+            case MapNodeAnchor.NodeState.Current:
+            case MapNodeAnchor.NodeState.Disabled:
+            case MapNodeAnchor.NodeState.Future:
+            default:
+                return entry.incompleteSprite;
+        }
+    }
+
+    public Sprite GetRoomFrameSprite(RoomDataSO roomData)
+    {
+        if (roomData == null) return null;
+
+        RoomIconEntry entry = FindRoomIconEntry(roomData.roomType);
+        return entry != null ? entry.frameSprite : null;
     }
 
     public string GetRoomDisplayName(GameEnums.RoomType roomType)
@@ -206,7 +235,7 @@ public class MapPresentationCatalogSO : ScriptableObject
         return !string.IsNullOrEmpty(text);
     }
 
-    private RoomIconEntry FindRoomIconEntry(GameEnums.RoomType roomType)
+    public RoomIconEntry FindRoomIconEntry(GameEnums.RoomType roomType)
     {
         foreach (RoomIconEntry entry in roomIcons)
         {

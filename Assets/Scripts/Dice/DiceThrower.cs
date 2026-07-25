@@ -7,15 +7,17 @@ public class DiceThrower : MonoBehaviour
 {
     public static DiceThrower Instance;
 
-[Header("Spawn & Fly Settings (入场设定)")]
-    public GameObject dicePrefab; 
-    public Transform spawnPoint;             // 骰子飞出的起点（比如屏幕外、或者角色的手/袋子）
-    public float flyInDuration = 0.3f;       // 飞入排列位置的时长
-    public float flyInDelay = 0.05f;         // 每个骰子飞出的间隔 (像发牌一样)[Header("Pop & Roll Settings (原地弹跳设定)")]
-    public float upwardForce = 8f;           // 向上弹跳的力度 (给大一点，让它们飞高点)
-    public float horizontalScatter = 1.5f;   // 给一点微小的横向随机力，防止它们在空中完美重叠
-    public float torqueForce = 80f;          // 疯狂旋转的扭矩
-    public float popDelay = 0.05f;           // 弹跳起飞的连发间隔，制造“波浪”起飞感[Header("Layout Settings (整理排版)")]
+    [Header("Dice Prefab")]
+    public GameObject dicePrefab;
+    public Transform spawnPoint;
+
+    [Header("In-place Roll Settings")]
+    public float rollSpinDuration = 1.1f;
+    public float rollSettleDuration = 0.32f;
+    public float rollStopInterval = 0.16f;
+    public float randomSpinSpeed = 1260f;
+
+    [Header("Layout Settings (整理排版)")]
     public Transform layoutCenter;           // 最终整齐排列的中心点
     public float diceSpacing = 1.2f;         
     public float layoutTweenDuration = 0.4f; 
@@ -108,7 +110,7 @@ public class DiceThrower : MonoBehaviour
     }
 
     // =========================================================
-    // 【核心演出】飞入排列 -> 停顿 -> 原地起飞翻滚
+    // 【核心演出】固定位置生成 -> 原地随机旋转 -> 依次吸附到结果面
     // =========================================================
     private IEnumerator CinematicThrowSequence(List<BattleDiceEntry> diceEntries)
     {
@@ -117,85 +119,99 @@ public class DiceThrower : MonoBehaviour
         float startX = -totalWidth / 2f;
         Vector3 centerPos = layoutCenter != null ? layoutCenter.position : spawnPoint.position;
 
-        // ---------------------------------------------------------
-        // 阶段 1：从生成点飞入，在半空中或地上排成一排
-        // ---------------------------------------------------------
         for (int i = 0; i < count; i++)
         {
             var entry = diceEntries[i];
             Vector3 targetPos = centerPos + Vector3.right * (startX + i * diceSpacing);
             
-            GameObject newDiceObj = Instantiate(dicePrefab, spawnPoint.position, Quaternion.identity);
+            GameObject newDiceObj = Instantiate(dicePrefab, targetPos, Random.rotation);
             newDiceObj.transform.SetParent(_container);
         
             PhysicsDice pDice = newDiceObj.GetComponent<PhysicsDice>();
             if (pDice != null)
             {
                 pDice.Initialize(entry.combatData, entry.sourceRef, entry.forcedResultValue); 
+                pDice.SnapFaceUp(pDice.GetMaxValueFaceIndex());
                 activeDiceList.Add(pDice);
                 pDice.OnDiceSettled += HandleSingleDiceSettled;
                 
-                Rigidbody rb = pDice.GetComponent<Rigidbody>();
-                if (rb != null) rb.isKinematic = true; 
-
-                // 飞入动画 (改用 OutQuad 会让减速更平滑，接下来的起飞更自然)
-                newDiceObj.transform.DOMove(targetPos, flyInDuration).SetEase(Ease.OutQuad);
+                pDice.StopMotionAndSetKinematic(true);
             }
-
-            // 发牌间隔
-            yield return new WaitForSeconds(flyInDelay);
         }
 
-        // ---------------------------------------------------------
-        // 【关键修复】精确计算最后一次发牌的剩余飞行时间，去掉死板的停顿！
-        // ---------------------------------------------------------
-        float remainingTime = flyInDuration - flyInDelay;
-        if (remainingTime > 0)
-        {
-            yield return new WaitForSeconds(remainingTime);
-        }
+        yield return null;
 
-        // ---------------------------------------------------------
-        // 阶段 2：无缝衔接，原地“砰”地爆开起飞翻滚！
-        // ---------------------------------------------------------
         for (int i = 0; i < activeDiceList.Count; i++)
         {
             PhysicsDice pDice = activeDiceList[i];
             if (pDice == null) continue;
 
-            Vector3 randomScatter = new Vector3(Random.Range(-1f, 1f), 0, Random.Range(-1f, 1f)) * horizontalScatter;
-            Vector3 force = Vector3.up * upwardForce + randomScatter;
-            Vector3 torque = Random.insideUnitSphere * torqueForce;
-            
-            pDice.Roll(force, torque);
-            
-            // 极短的连发起飞间隔，形成波浪感
-            yield return new WaitForSeconds(popDelay);
+            RollDiceInPlace(pDice, i);
         }
     }
 
     public PhysicsDice SpawnSingleDice(RuntimeDiceData data, PlayerDice sourceRef = null)
     {
-        // 幽灵骰子/单体生成也可以复用原地弹起逻辑
         Vector3 targetPos = layoutCenter != null ? layoutCenter.position : spawnPoint.position;
-        GameObject newDiceObj = Instantiate(dicePrefab, targetPos,Quaternion.identity);
+        GameObject newDiceObj = Instantiate(dicePrefab, targetPos, Random.rotation);
         if (_container != null) newDiceObj.transform.SetParent(_container);
 
         PhysicsDice pDice = newDiceObj.GetComponent<PhysicsDice>();
         if (pDice != null)
         {
             pDice.Initialize(data, sourceRef);
+            pDice.SnapFaceUp(pDice.GetMaxValueFaceIndex());
             activeDiceList.Add(pDice);
             pDice.OnDiceSettled += HandleSingleDiceSettled;
             _totalDiceExpected++;
 
-            Vector3 force = Vector3.up * upwardForce + new Vector3(Random.Range(-1f,1f), 0, Random.Range(-1f,1f)) * horizontalScatter;
-            Vector3 torque = Random.insideUnitSphere * torqueForce;
-            pDice.Roll(force, torque);
+            RollDiceInPlace(pDice, 0);
 
             return pDice;
         }
         return null;
+    }
+
+    public PhysicsDice SpawnIdleSingleDice(RuntimeDiceData data, PlayerDice sourceRef = null)
+    {
+        Vector3 targetPos = layoutCenter != null ? layoutCenter.position : spawnPoint.position;
+        GameObject newDiceObj = Instantiate(dicePrefab, targetPos, Random.rotation);
+
+        PhysicsDice pDice = newDiceObj.GetComponent<PhysicsDice>();
+        if (pDice == null) return null;
+
+        pDice.Initialize(data, sourceRef);
+        pDice.SnapFaceUp(pDice.GetMaxValueFaceIndex());
+        RegisterDice(pDice);
+
+        pDice.StopMotionAndSetKinematic(true);
+
+        _settledDiceCount = 0;
+        _totalDiceExpected = 1;
+        return pDice;
+    }
+
+    public void RollExistingSingleDice(PhysicsDice dice)
+    {
+        if (dice == null) return;
+
+        if (!activeDiceList.Contains(dice))
+        {
+            RegisterDice(dice);
+        }
+
+        _settledDiceCount = 0;
+        _totalDiceExpected = 1;
+        RollDiceInPlace(dice, 0);
+    }
+
+    public void RollDiceInPlace(PhysicsDice dice, int stopOrderIndex = 0)
+    {
+        if (dice == null) return;
+
+        int resultFaceIndex = dice.DetermineRollResultFaceIndex();
+        float duration = Mathf.Max(rollSettleDuration, rollSpinDuration + Mathf.Max(0, stopOrderIndex) * rollStopInterval);
+        dice.RollInPlace(resultFaceIndex, duration, rollSettleDuration, randomSpinSpeed);
     }
 
     // ---------------------------------------------------------
@@ -221,8 +237,6 @@ public class DiceThrower : MonoBehaviour
         float startX = -totalWidth / 2f;
         Vector3 centerPos = layoutCenter != null ? layoutCenter.position : spawnPoint.position - Vector3.up * 2f;
 
-        Camera cam = Camera.main;
-
         for (int i = 0; i < count; i++)
         {
             LayoutSlot slot = layoutSlots[i];
@@ -239,19 +253,12 @@ public class DiceThrower : MonoBehaviour
             PhysicsDice dice = slot.dice;
             if (dice == null) continue;
 
-            Rigidbody rb = dice.GetComponent<Rigidbody>();
-            if (rb != null) rb.isKinematic = true;
+            dice.StopMotionAndSetKinematic(true);
 
-            // 小幅度跳跃回到完美阵型
-            dice.transform.DOJump(targetPos, 0.1f, 1, layoutTweenDuration).SetEase(Ease.OutQuad);
-
-            // 角度取整放平 (将倾斜的骰子”咔哒”一声拉正)
-            Vector3 euler = GetOrganizedEuler(dice, cam);
-
-            dice.transform.DORotate(euler, layoutTweenDuration).SetEase(Ease.OutQuad);
+            dice.transform.DOMove(targetPos, layoutTweenDuration).SetEase(Ease.OutQuad);
+            dice.transform.DORotateQuaternion(dice.GetCurrentResultRotation(), layoutTweenDuration).SetEase(Ease.OutQuad);
         }
 
-        DOVirtual.DelayedCall(layoutTweenDuration + 0.05f, RevealForcedDiceResults);
     }
 
     private List<LayoutSlot> BuildLayoutSlots()
@@ -278,17 +285,6 @@ public class DiceThrower : MonoBehaviour
         }
 
         return slots;
-    }
-
-    private void RevealForcedDiceResults()
-    {
-        foreach (var dice in activeDiceList)
-        {
-            if (dice != null && dice.HasPendingForcedResult)
-            {
-                dice.ApplyForcedResultAfterLayout();
-            }
-        }
     }
 
     public Vector3 GetOrganizedEuler(PhysicsDice dice, Camera cam, int forcedUpFaceIndex = -1)

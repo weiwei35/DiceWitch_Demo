@@ -324,7 +324,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -748, y: -255}
-  m_SizeDelta: {x: 100, y: 100}
+  m_SizeDelta: {x: 120, y: 1}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6194958477996770111
 CanvasRenderer:
@@ -435,12 +435,10 @@ MonoBehaviour:
   nodeType: 1
   effectValue: 2
   forgeBonusType: 0
-  baseIconSprite: {fileID: 0}
   backgroundImage: {fileID: 6433530915488934559}
   baseIconImage: {fileID: 6433530915488934559}
   effectIconImage: {fileID: 101313990376115857}
   valueText: {fileID: 3576696863257032524}
-  iconConfig: {fileID: 11400000, guid: fff81805c4b2a4f5fb1fd50408299584, type: 2}
   currentState: 0
 --- !u!1 &8169363534407294336
 GameObject:

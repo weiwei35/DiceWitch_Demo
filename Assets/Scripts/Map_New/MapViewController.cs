@@ -12,11 +12,17 @@ public class MapViewController : MonoBehaviour
     public Dictionary<int, RectTransform> nodeUIRects = new Dictionary<int, RectTransform>();
     public Dictionary<int, MapNodeAnchor> nodeAnchors = new Dictionary<int, MapNodeAnchor>();
 
-    [Header("Route Lines (Temporary)")]
-    public bool showRouteLines = true;       
-    public GameObject linePrefab;            
-    public float lineWidth = 8f;             
-    public Color routeLineColor = new Color(1f, 1f, 1f, 0.5f); 
+    [Header("Route Paths")]
+    public bool showRouteLines = true;
+    public Sprite routeDotSprite;
+    public Vector2 routeDotSize = new Vector2(18f, 18f);
+    public float routeDotSpacing = 28f;
+    public float routeCurveOffset = 90f;
+    public Color routeDotColor = Color.white;
+
+    [Header("Passed Grid Reveal")]
+    [Min(0f)] public float passedGridRevealRadius = 180f;
+    [Min(0f)] public float passedGridRevealFeather = 18f;
 
     [Header("Camera Follow")]
     public Transform targetPawn;           
@@ -29,6 +35,8 @@ public class MapViewController : MonoBehaviour
 
     private float _scrollVelocity = 0f;
     private ScrollRect _scrollRect;
+    private readonly List<MapGridRevealLayer> _gridRevealLayers = new List<MapGridRevealLayer>();
+    private readonly HashSet<int> _revealedNodeIndices = new HashSet<int>();
 
     void Awake() { Instance = this; }
 
@@ -55,6 +63,7 @@ public class MapViewController : MonoBehaviour
         foreach (Transform child in contentParent) Destroy(child.gameObject);
         nodeUIRects.Clear(); 
         nodeAnchors.Clear(); 
+        _gridRevealLayers.Clear();
 
         var nodes = MapManager.Instance.boardNodes;
         if (nodes == null || nodes.Count == 0) return;
@@ -76,8 +85,17 @@ public class MapViewController : MonoBehaviour
             bgRect.localScale = Vector3.one;
             bgRect.localRotation = Quaternion.identity;
             
-            Destroy(bgObj.GetComponent<MapRegionLayout>());
-            foreach (Transform child in bgObj.transform) Destroy(child.gameObject);
+            MapRegionLayout bgLayout = bgObj.GetComponent<MapRegionLayout>();
+            if (bgLayout != null)
+            {
+                KeepOnlyBackgroundLayers(bgLayout);
+                if (bgLayout.passedGridRevealLayer != null)
+                {
+                    bgLayout.passedGridRevealLayer.Initialize();
+                    _gridRevealLayers.Add(bgLayout.passedGridRevealLayer);
+                }
+                Destroy(bgLayout);
+            }
 
             // 分身 B：纯节点层 
             GameObject nodesObj = Instantiate(region.regionPrefab, contentParent);
@@ -101,6 +119,8 @@ public class MapViewController : MonoBehaviour
 
             MapRegionLayout layout = nodesObj.GetComponent<MapRegionLayout>();
             if (layout == null) continue;
+
+            RemoveBackgroundLayers(layout);
 
             for (int i = 0; i < layout.orderedRooms.Count; i++)
             {
@@ -131,9 +151,9 @@ public class MapViewController : MonoBehaviour
         Canvas.ForceUpdateCanvases();
         
         GameObject linesContainer = null;
-        if (showRouteLines && linePrefab != null)
+        if (showRouteLines)
         {
-            linesContainer = new GameObject("RouteLinesContainer");
+            linesContainer = new GameObject("RoutePathsContainer");
             linesContainer.transform.SetParent(contentParent, false);
 
             DrawRouteLines(linesContainer.transform);
@@ -198,26 +218,6 @@ public class MapViewController : MonoBehaviour
         );
     }
 
-    private void DrawLineBetweenNodes(RectTransform rectA, RectTransform rectB, Transform parent)
-    {
-        GameObject lineObj = Instantiate(linePrefab, parent);
-        RectTransform lineRect = lineObj.GetComponent<RectTransform>();
-
-        Vector3 localPosA = parent.InverseTransformPoint(rectA.position);
-        Vector3 localPosB = parent.InverseTransformPoint(rectB.position);
-
-        Vector3 dir = localPosB - localPosA;
-        float distance = dir.magnitude;
-        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-
-        lineRect.localPosition = localPosA;
-        lineRect.sizeDelta = new Vector2(distance, lineWidth);
-        lineRect.localRotation = Quaternion.Euler(0, 0, angle);
-
-        Image img = lineObj.GetComponent<Image>();
-        if (img != null) img.color = routeLineColor;
-    }
-
     private void DrawRouteLines(Transform parent)
     {
         if (MapManager.Instance == null || MapManager.Instance.boardRooms == null) return;
@@ -225,28 +225,81 @@ public class MapViewController : MonoBehaviour
         foreach (BoardRoom room in MapManager.Instance.boardRooms)
         {
             if (room == null) continue;
+            if (room.nextRoomIds == null || room.nextRoomIds.Count == 0) continue;
 
-            for (int i = room.startNodeIndex; i < room.endNodeIndex; i++)
-                DrawRouteLineIfPossible(i, i + 1, parent);
-
-            if (room.nextRoomIds == null) continue;
-
-            foreach (int nextRoomId in room.nextRoomIds)
+            for (int i = 0; i < room.nextRoomIds.Count; i++)
             {
-                BoardRoom nextRoom = MapManager.Instance.GetRoom(nextRoomId);
+                BoardRoom nextRoom = MapManager.Instance.GetRoom(room.nextRoomIds[i]);
                 if (nextRoom == null) continue;
-                DrawRouteLineIfPossible(room.endNodeIndex, nextRoom.startNodeIndex, parent);
+
+                if (!TryGetRoomBoundsLocal(room, parent, out Rect fromBounds)) continue;
+                if (!TryGetRoomBoundsLocal(nextRoom, parent, out Rect toBounds)) continue;
+
+                float edgePadding = Mathf.Max(routeDotSize.x, routeDotSize.y) * 0.5f;
+                Vector2 from = GetBoundsEdgePoint(fromBounds, toBounds.center, edgePadding);
+                Vector2 to = GetBoundsEdgePoint(toBounds, fromBounds.center, edgePadding);
+
+                MapRoutePathRenderer.DrawDottedCurve(
+                    from,
+                    to,
+                    parent,
+                    routeDotSprite,
+                    routeDotSize,
+                    routeDotSpacing,
+                    routeCurveOffset,
+                    routeDotColor,
+                    i,
+                    room.nextRoomIds.Count);
             }
         }
     }
 
-    private void DrawRouteLineIfPossible(int fromNodeIndex, int toNodeIndex, Transform parent)
+    private bool TryGetRoomBoundsLocal(BoardRoom room, Transform parent, out Rect bounds)
     {
-        if (nodeUIRects.TryGetValue(fromNodeIndex, out RectTransform rectA) &&
-            nodeUIRects.TryGetValue(toNodeIndex, out RectTransform rectB))
+        bounds = default;
+        bool hasNode = false;
+        Vector2 min = Vector2.zero;
+        Vector2 max = Vector2.zero;
+
+        for (int nodeIndex = room.startNodeIndex; nodeIndex <= room.endNodeIndex; nodeIndex++)
         {
-            DrawLineBetweenNodes(rectA, rectB, parent);
+            if (!nodeUIRects.TryGetValue(nodeIndex, out RectTransform rect)) continue;
+
+            Vector2 localPosition = parent.InverseTransformPoint(rect.position);
+            Vector2 halfSize = rect.rect.size * 0.5f;
+            Vector2 nodeMin = localPosition - halfSize;
+            Vector2 nodeMax = localPosition + halfSize;
+
+            if (!hasNode)
+            {
+                min = nodeMin;
+                max = nodeMax;
+                hasNode = true;
+            }
+            else
+            {
+                min = Vector2.Min(min, nodeMin);
+                max = Vector2.Max(max, nodeMax);
+            }
         }
+
+        if (!hasNode) return false;
+
+        bounds = Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+        return true;
+    }
+
+    private static Vector2 GetBoundsEdgePoint(Rect bounds, Vector2 target, float padding)
+    {
+        Vector2 center = bounds.center;
+        Vector2 direction = target - center;
+        if (direction.sqrMagnitude <= 0.0001f) return center;
+
+        direction.Normalize();
+        Vector2 halfSize = bounds.size * 0.5f + Vector2.one * Mathf.Max(0f, padding);
+        float scaleX = Mathf.Abs(direction.x) > 0.0001f ? halfSize.x / Mathf.Abs(direction.x) : float.MaxValue;
+        float scaleY = Mathf.Abs(direction.y) > 0.0001f ? halfSize.y / Mathf.Abs(direction.y) : float.MaxValue;
+        return center + direction * Mathf.Min(scaleX, scaleY);
     }
 
     public void UpdateNodeStates(int currentIndex)
@@ -261,6 +314,47 @@ public class MapViewController : MonoBehaviour
             else if (nodeIndex < currentIndex) anchor.SetState(MapNodeAnchor.NodeState.Passed);
             else if (nodeIndex == currentIndex) anchor.SetState(MapNodeAnchor.NodeState.Current);
             else anchor.SetState(MapNodeAnchor.NodeState.Future);
+        }
+
+        UpdatePassedGridReveal(currentIndex);
+    }
+
+    private void KeepOnlyBackgroundLayers(MapRegionLayout layout)
+    {
+        Transform baseGrid = layout.baseGridRoot != null ? layout.baseGridRoot.transform : null;
+        Transform revealGrid = layout.passedGridRevealLayer != null ? layout.passedGridRevealLayer.transform : null;
+
+        foreach (Transform child in layout.transform)
+        {
+            if (child != baseGrid && child != revealGrid)
+                Destroy(child.gameObject);
+        }
+    }
+
+    private void RemoveBackgroundLayers(MapRegionLayout layout)
+    {
+        if (layout.baseGridRoot != null)
+            Destroy(layout.baseGridRoot);
+        if (layout.passedGridRevealLayer != null)
+            Destroy(layout.passedGridRevealLayer.gameObject);
+    }
+
+    private void UpdatePassedGridReveal(int currentIndex)
+    {
+        _revealedNodeIndices.Clear();
+
+        for (int nodeIndex = 0; nodeIndex < MapManager.Instance.boardNodes.Count; nodeIndex++)
+        {
+            BoardNode node = MapManager.Instance.boardNodes[nodeIndex];
+            if (nodeIndex < currentIndex || node.isInvalidated)
+                _revealedNodeIndices.Add(nodeIndex);
+        }
+
+        float feather = Mathf.Min(passedGridRevealFeather, passedGridRevealRadius);
+        foreach (MapGridRevealLayer revealLayer in _gridRevealLayers)
+        {
+            if (revealLayer != null)
+                revealLayer.ApplyReveal(nodeUIRects, _revealedNodeIndices, passedGridRevealRadius, feather);
         }
     }
 }

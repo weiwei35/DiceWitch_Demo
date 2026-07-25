@@ -20,6 +20,7 @@ public class PhysicsDice : MonoBehaviour
     private int _forcedResultValue = 0;
     private bool _forcedResultApplied = false;
     private int _currentResultIndex = -1;
+    private Coroutine _inPlaceRollCoroutine;
     
     public PlayerDice sourceDataRef; 
     public bool HasPendingForcedResult => _forcedResultValue > 0 && !_forcedResultApplied;
@@ -52,113 +53,149 @@ public class PhysicsDice : MonoBehaviour
         _currentResultIndex = -1;
     }
 
-    public void Roll(Vector3 throwForce, Vector3 rotationTorque)
+    public void StopMotionAndSetKinematic(bool isKinematic)
     {
-        isRolling = true;
-        rb.isKinematic = false; // 开启物理
-        rb.maxAngularVelocity = 50f; 
-        rb.AddForce(throwForce, ForceMode.Impulse); // 施加推力
-        rb.AddTorque(rotationTorque, ForceMode.Impulse); // 施加旋转力
-        
-        StartCoroutine(WaitForStop());
+        if (rb == null) return;
+
+        // Unity only allows velocity writes while the Rigidbody is dynamic.
+        if (!isKinematic)
+            rb.isKinematic = false;
+
+        if (!rb.isKinematic)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        rb.isKinematic = isKinematic;
     }
 
-    IEnumerator WaitForStop()
+    public int DetermineRollResultFaceIndex()
     {
-        yield return new WaitForSeconds(0.5f);
+        if (visualManager == null || visualManager.faceDatas == null || visualManager.faceDatas.Length == 0)
+        {
+            Debug.LogError($"{name} 的 DiceVisualManager 未初始化，无法决定投掷结果。", this);
+            return 0;
+        }
+
+        if (HasPendingForcedResult)
+        {
+            int forcedIndex = FindFaceIndexForValue(_forcedResultValue);
+            if (forcedIndex < 0)
+            {
+                Debug.LogError($"{name} 找不到点数为 {_forcedResultValue} 的骰子面，请检查骰子数据配置。", this);
+                return 0;
+            }
+
+            return forcedIndex;
+        }
+
+        return UnityEngine.Random.Range(0, visualManager.faceDatas.Length);
+    }
+
+    public int GetMaxValueFaceIndex()
+    {
+        if (visualManager == null || visualManager.faceDatas == null || visualManager.faceDatas.Length == 0)
+            return 0;
+
+        int bestIndex = 0;
+        int bestValue = int.MinValue;
+        for (int i = 0; i < visualManager.faceDatas.Length; i++)
+        {
+            DiceFaceData data = visualManager.faceDatas[i];
+            if (data == null) continue;
+
+            if (data.TotalValue > bestValue)
+            {
+                bestValue = data.TotalValue;
+                bestIndex = i;
+            }
+        }
+
+        return bestIndex;
+    }
+
+    public void SnapFaceUp(int faceIndex)
+    {
+        if (visualManager == null || visualManager.faceTransforms == null) return;
+
+        faceIndex = Mathf.Clamp(faceIndex, 0, visualManager.faceTransforms.Length - 1);
+        transform.rotation = GetOrganizedRotationWithFaceUp(faceIndex);
+    }
+
+    public Quaternion GetCurrentResultRotation()
+    {
+        if (_currentResultIndex < 0) return transform.rotation;
+        return GetOrganizedRotationWithFaceUp(_currentResultIndex);
+    }
+
+    public void RollInPlace(int resultFaceIndex, float totalDuration, float settleDuration, float spinSpeed)
+    {
+        if (visualManager == null || visualManager.faceDatas == null || visualManager.faceDatas.Length == 0)
+        {
+            Debug.LogError($"{name} 的 DiceVisualManager 未初始化，无法原地投掷。", this);
+            return;
+        }
+
+        resultFaceIndex = Mathf.Clamp(resultFaceIndex, 0, visualManager.faceDatas.Length - 1);
+        if (_inPlaceRollCoroutine != null) StopCoroutine(_inPlaceRollCoroutine);
+        transform.DOKill();
+
+        StopMotionAndSetKinematic(true);
+
+        _inPlaceRollCoroutine = StartCoroutine(RollInPlaceRoutine(resultFaceIndex, totalDuration, settleDuration, spinSpeed));
+    }
+
+    private IEnumerator RollInPlaceRoutine(int resultFaceIndex, float totalDuration, float settleDuration, float spinSpeed)
+    {
+        isRolling = true;
+
+        float safeSettleDuration = Mathf.Clamp(settleDuration, 0.05f, Mathf.Max(0.05f, totalDuration));
+        float randomSpinDuration = Mathf.Max(0f, totalDuration - safeSettleDuration);
+        float axisTimer = 0f;
+        Vector3 spinAxis = UnityEngine.Random.onUnitSphere;
+        if (spinAxis.sqrMagnitude <= 0.0001f) spinAxis = Vector3.up;
 
         float elapsed = 0f;
-        const float maxWait = 5f;
-        while (rb.velocity.sqrMagnitude > 0.01f || rb.angularVelocity.sqrMagnitude > 0.01f)
+        while (elapsed < randomSpinDuration)
         {
             elapsed += Time.deltaTime;
-            if (elapsed >= maxWait) break;
+            axisTimer -= Time.deltaTime;
+            if (axisTimer <= 0f)
+            {
+                spinAxis = UnityEngine.Random.onUnitSphere;
+                if (spinAxis.sqrMagnitude <= 0.0001f) spinAxis = Vector3.up;
+                axisTimer = UnityEngine.Random.Range(0.06f, 0.14f);
+            }
+
+            float speedPulse = Mathf.Lerp(0.75f, 1.25f, UnityEngine.Random.value);
+            transform.Rotate(spinAxis, spinSpeed * speedPulse * Time.deltaTime, Space.World);
             yield return null;
         }
 
+        DiceFaceData resultData = visualManager.GetResultData(resultFaceIndex);
+        _currentResultIndex = resultFaceIndex;
+        if (HasPendingForcedResult)
+        {
+            _forcedResultApplied = true;
+        }
+
+        Quaternion targetRotation = GetOrganizedRotationWithFaceUp(resultFaceIndex);
+        bool tweenFinished = false;
+        transform
+            .DORotateQuaternion(targetRotation, safeSettleDuration)
+            .SetEase(Ease.OutCubic)
+            .OnComplete(() => tweenFinished = true);
+
+        yield return new WaitUntil(() => tweenFinished);
+
+        FinalizeRollResult(resultData, resultFaceIndex);
+        Debug.Log($"原地投掷结束 -> 目标面索引: {resultFaceIndex}, 最终结果: {finalValue}");
+
         isRolling = false;
-        CalculateValue();
-    }
-
-    void CalculateValue()
-    {
-        // 1. 获取所有的面（从 VisualManager 里拿，确保顺序一致）
-        Transform[] faces = visualManager.faceTransforms;
-    
-        // 如果还没赋值，就报错
-        if (faces == null || faces.Length == 0) return;
-
-        float maxY = -999f;
-        int resultIndex = -1;
-
-        // 2. 遍历所有面，看谁的世界坐标 Y 值最大（即位置最高）
-        // 因为骰子中心在地面，所以“朝上”的那个面，绝对是 Y 轴坐标最高的
-        for (int i = 0; i < faces.Length; i++)
-        {
-            // 获取面的世界坐标高度
-            float height = faces[i].position.y;
-
-            if (height > maxY)
-            {
-                maxY = height;
-                resultIndex = i;
-            }
-        }
-
-        // 3. 拿到结果
-        if (resultIndex != -1)
-        {
-            // 从 VisualManager 获取对应的数据
-            DiceFaceData resultData = visualManager.GetResultData(resultIndex);
-
-            _currentResultIndex = resultIndex;
-
-            if (HasPendingForcedResult)
-            {
-                currentResultData = resultData;
-                finalValue = resultData.TotalValue;
-                Debug.Log($"<color=cyan>【节点Buff待生效】骰子自然停稳为 {finalValue}，排布后将被拨动为 {_forcedResultValue}</color>");
-                OnDiceSettled?.Invoke(finalValue);
-                return;
-            }
-
-            FinalizeRollResult(resultData, resultIndex);
-        
-            Debug.Log($"检测结束 -> 朝上的面索引: {resultIndex}, 对应名称: {faces[resultIndex].name}, 结果数值: {finalValue}");
-
-            TriggerRollFinished();
-            OnDiceSettled?.Invoke(finalValue);
-        }
-    }
-
-    public void ApplyForcedResultAfterLayout()
-    {
-        if (!HasPendingForcedResult || visualManager == null || visualManager.faceTransforms == null) return;
-
-        int faceIndex = FindFaceIndexForValue(_forcedResultValue);
-        if (faceIndex < 0) faceIndex = _currentResultIndex >= 0 ? _currentResultIndex : 0;
-
-        DiceFaceData resultData = visualManager.GetResultData(faceIndex);
-        resultData.value = _forcedResultValue;
-        resultData.bonusValue = 0;
-
-        _forcedResultApplied = true;
-        _currentResultIndex = faceIndex;
-        isRolling = true;
-
-        FinalizeRollResult(resultData, faceIndex);
-        Debug.Log($"<color=cyan>【节点Buff生效】骰子被拨动到 {_forcedResultValue}，最终结果: {finalValue}</color>");
-
-        Quaternion targetRotation = GetRotationWithFaceUp(faceIndex);
-        transform.DOKill();
-        Sequence sequence = DOTween.Sequence();
-        sequence.Append(transform.DOJump(transform.position, 0.18f, 1, 0.35f).SetEase(Ease.OutQuad));
-        sequence.Join(transform.DORotateQuaternion(targetRotation, 0.35f).SetEase(Ease.OutBack));
-        sequence.OnComplete(() =>
-        {
-            isRolling = false;
-            TriggerRollFinished();
-        });
+        _inPlaceRollCoroutine = null;
+        TriggerRollFinished();
+        OnDiceSettled?.Invoke(finalValue);
     }
 
     private void FinalizeRollResult(DiceFaceData resultData, int resultIndex)
@@ -207,15 +244,21 @@ public class PhysicsDice : MonoBehaviour
         return -1;
     }
 
-    private Quaternion GetRotationWithFaceUp(int faceIndex)
+    private Quaternion GetOrganizedRotationWithFaceUp(int faceIndex)
     {
         Transform[] faces = visualManager.faceTransforms;
         if (faces == null || faceIndex < 0 || faceIndex >= faces.Length || faces[faceIndex] == null)
             return transform.rotation;
 
+        Vector3 snappedEuler = transform.eulerAngles;
+        snappedEuler.x = Mathf.Round(snappedEuler.x / 90f) * 90f;
+        snappedEuler.y = Mathf.Round(snappedEuler.y / 90f) * 90f;
+        snappedEuler.z = Mathf.Round(snappedEuler.z / 90f) * 90f;
+        Quaternion snappedRotation = Quaternion.Euler(snappedEuler);
+
         Transform face = faces[faceIndex];
         Vector3 localFaceDir = face.localPosition.sqrMagnitude > 0.0001f ? face.localPosition.normalized : face.localRotation * Vector3.forward;
-        Quaternion target = Quaternion.FromToRotation(transform.rotation * localFaceDir, Vector3.up) * transform.rotation;
+        Quaternion target = Quaternion.FromToRotation(snappedRotation * localFaceDir, Vector3.up) * snappedRotation;
 
         Camera cam = Camera.main;
         if (cam == null) return target;

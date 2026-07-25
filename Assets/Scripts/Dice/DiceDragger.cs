@@ -169,12 +169,7 @@ public class DiceDragger : MonoBehaviour
         transform.position = originalPos;
         transform.rotation = originalRot;
         
-        if (rb != null)
-        {
-            rb.isKinematic = keepKinematic;
-            rb.velocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-        }
+        physicsDice.StopMotionAndSetKinematic(keepKinematic);
         
         isDragging = false;
     }

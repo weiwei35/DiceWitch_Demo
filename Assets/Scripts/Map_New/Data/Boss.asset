@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: Boss
   m_EditorClassIdentifier: 
   roomName: "\u66FC\u9640\u7F57\u4E4B\u5FC3"
-  roomType: 0
+  roomType: 3
   roomIcon: {fileID: -1963661152, guid: 0df80aae1b719f1469ffedfffabba0d2, type: 3}
   description: 
   skipRemainingNodesOnClear: 1
+  battleTier: 2
   enemyWave: {fileID: 11400000, guid: 84b6c62d0c3d6984e8151759dbe3959e, type: 2}
   rewardAbilityDraft: 0

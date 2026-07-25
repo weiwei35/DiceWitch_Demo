@@ -57,11 +57,19 @@ public static class MapConfigurationValidator
                 continue;
             }
 
+            if (regionLayout.baseGridRoot == null)
+                LogError($"{regionName} 缺少基础格纹根节点 baseGridRoot。", ref errorCount, region.regionPrefab);
+
+            if (regionLayout.passedGridRevealLayer == null)
+                LogError($"{regionName} 缺少已走过格纹层 passedGridRevealLayer。", ref errorCount, region.regionPrefab);
+            else if (!regionLayout.passedGridRevealLayer.IsConfigured)
+                LogError($"{regionName} 的已走过格纹层缺少 Shader 或覆盖 Image 引用。", ref errorCount, regionLayout.passedGridRevealLayer);
+
             ValidateRegionRooms(regionName, regionLayout, usedRoomTypes, usedNodeTypes, ref errorCount, ref warningCount);
         }
 
         if (config.presentationCatalog != null)
-            ValidateCatalogCoverage(config.presentationCatalog, usedRoomTypes, usedNodeTypes, ref warningCount);
+            ValidateCatalogCoverage(config.presentationCatalog, usedRoomTypes, usedNodeTypes, ref errorCount, ref warningCount);
 
         Debug.Log($"地图配置检查完成：{errorCount} 个错误，{warningCount} 个警告。", config);
     }
@@ -154,12 +162,22 @@ public static class MapConfigurationValidator
         MapPresentationCatalogSO catalog,
         HashSet<GameEnums.RoomType> usedRoomTypes,
         HashSet<GameEnums.BoardNodeType> usedNodeTypes,
+        ref int errorCount,
         ref int warningCount)
     {
         foreach (GameEnums.RoomType roomType in usedRoomTypes)
         {
-            if (catalog.GetRoomIcon(roomType) == null)
-                LogWarning($"PresentationCatalog 缺少房间类型 {roomType} 的 icon。", ref warningCount, catalog);
+            MapPresentationCatalogSO.RoomIconEntry roomEntry = catalog.FindRoomIconEntry(roomType);
+            if (roomEntry == null)
+            {
+                LogError($"PresentationCatalog 缺少房间类型 {roomType} 的表现配置。", ref errorCount, catalog);
+                continue;
+            }
+
+            if (roomEntry.incompleteSprite == null)
+                LogError($"PresentationCatalog 房间类型 {roomType} 缺少未完成贴图 incompleteSprite。", ref errorCount, catalog);
+            if (roomEntry.completedSprite == null)
+                LogError($"PresentationCatalog 房间类型 {roomType} 缺少已完成贴图 completedSprite。", ref errorCount, catalog);
         }
 
         foreach (GameEnums.BoardNodeType nodeType in usedNodeTypes)
@@ -167,7 +185,7 @@ public static class MapConfigurationValidator
             if (nodeType == GameEnums.BoardNodeType.空 || nodeType == GameEnums.BoardNodeType.锻造) continue;
 
             if (catalog.FindNodeEffectEntry(nodeType) == null)
-                LogWarning($"PresentationCatalog 缺少节点效果 {nodeType} 的配置。", ref warningCount, catalog);
+                LogError($"PresentationCatalog 缺少节点效果 {nodeType} 的配置。", ref errorCount, catalog);
         }
     }
 

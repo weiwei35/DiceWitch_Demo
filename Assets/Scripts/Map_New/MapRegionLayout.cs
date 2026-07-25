@@ -3,6 +3,12 @@ using System.Collections.Generic;
 
 public class MapRegionLayout : MonoBehaviour
 {
+    [Header("地图底层")]
+    [Tooltip("常驻显示的基础格纹根节点。运行时会被放在路线和房间节点下方。")]
+    public GameObject baseGridRoot;
+    [Tooltip("只在旧节点和失效分支周围显示的格纹覆盖层。")]
+    public MapGridRevealLayer passedGridRevealLayer;
+
     [Header("路线设置")]
     [Tooltip("按前进顺序，把房间拖进来")]
     public List<MapRoomLayout> orderedRooms = new List<MapRoomLayout>();
@@ -17,8 +23,6 @@ public class MapRegionLayout : MonoBehaviour
             MapRoomLayout room = orderedRooms[i];
             if (room == null) continue;
 
-            DrawRoomInternalLines(room);
-
             MapNodeAnchor roomEndNode = GetLastNode(room);
             if (roomEndNode == null) continue;
 
@@ -31,21 +35,6 @@ public class MapRegionLayout : MonoBehaviour
             {
                 DrawRoomExitLine(roomEndNode, orderedRooms[i + 1]);
             }
-        }
-    }
-
-    private void DrawRoomInternalLines(MapRoomLayout room)
-    {
-        MapNodeAnchor lastNode = null;
-
-        foreach (MapNodeAnchor node in room.roomNodes)
-        {
-            if (node == null) continue;
-
-            if (lastNode != null)
-                Gizmos.DrawLine(lastNode.transform.position, node.transform.position);
-
-            lastNode = node;
         }
     }
 
