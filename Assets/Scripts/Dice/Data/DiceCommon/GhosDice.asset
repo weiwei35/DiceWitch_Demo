@@ -20,7 +20,7 @@ MonoBehaviour:
     color: {r: 0, g: 0, b: 0, a: 1}
     effectDescription: 
     bonusValue: 0
-  - value: 5
+  - value: 6
     icon: {fileID: 0}
     color: {r: 0, g: 0, b: 0, a: 1}
     effectDescription: 

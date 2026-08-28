@@ -11,6 +11,7 @@ public class RuntimeDiceData
     public Color bodyColor = Color.white;
     public DiceFaceData[] faces = new DiceFaceData[6];
     public List<DiceAbilitySO> abilities = new List<DiceAbilitySO>();
+    public DiceSpellSO spell;
 
     public static RuntimeDiceData FromSO(DiceDataSO so)
     {

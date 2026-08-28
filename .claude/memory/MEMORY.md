@@ -5,6 +5,12 @@
 - [Weak Guide System Stage 2026-07-25](project_stage_2026_07_25_weak_guide_system.md) — One-time weak-guide persistence, multi-target/projected visuals, Forge/Meditation, map, branch, and battle drag guides
 - [Map Branch + Reward Spell Selection Stage 2026-06-29](project_stage_2026_06_29_map_reward_flow.md) — Branching map movement/config, room info in node tooltips, and reward spell-to-dice selection panel decoupled from battle UI
 - [Map Authoring Refactor Stage 2026-07-03](project_stage_2026_07_03_map_authoring_refactor.md) — Room-first map authoring, presentation catalog, StartRoomSO, validation tool, and designer-facing chapter creation guide
+- [Map Visual Authoring Stage 2026-08-03](project_stage_2026_08_03_map_visual_authoring.md) — Prefab-authored frames, named passed-node backgrounds, route progress masking, map dice hover, and drifting fog
+- [Reusable UI Ambient Motion Stage 2026-08-10](project_stage_2026_08_10_ui_ambient_motion.md) — Shared UI breath, radius/safe-overflow drift, mouse parallax migration, and Animator exclusion rules
+- [Battle Intro Sequence Stage 2026-08-11](project_stage_2026_08_11_battle_intro_sequence.md) — Battle logic waits for the battle-panel intro before showing slot icons, rolling dice, or enabling input
+- [Enemy Template UI Stage 2026-08-11](project_stage_2026_08_11_enemy_template_ui.md) — Shared enemy status/intent row, named decorative health bar, smooth health fill, and all enemy prefab migration
+- [Scripts Organization Stage 2026-08-13](project_stage_2026_08_13_scripts_organization.md) — Feature-based Scripts/UI folders, GUID-preserving Unity moves, and reference verification baseline
+- [Slot Attribute Removal Stage 2026-08-13](project_stage_2026_08_13_slot_attribute_removal.md) — Complete removal of the retired magic-slot attribute feature while preserving active temporary dice modifiers and forge attributes
 - [Dice System Fixes](project_dice_fixes.md) — Text orientation, hover-during-rolling, WaitForStop timeout
 - [Design Philosophy](feedback_design_philosophy.md) — Keep it simple, WYSIWYG, auto-find over manual config
 - [Plan Before Code](feedback_plan_first.md) — Align on full interaction flow before implementing

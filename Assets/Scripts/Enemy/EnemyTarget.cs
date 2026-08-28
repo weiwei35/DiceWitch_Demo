@@ -24,7 +24,10 @@ public class EnemyTarget : BattleTarget
     [Header("Stats")]
     public int maxHp = 50;
     public int currentHp;
-    public TextMeshPro hpText; // 拖入显示血量的3D Text
+    public TMP_Text hpText;
+    public TMP_Text enemyNameText;
+    public Image hpFillImage;
+    [Min(0f)] public float hpFillTweenDuration = 0.2f;
     
     [Header("Intent")]
     public int nextDamageValue; // 下回合要打多少
@@ -32,7 +35,9 @@ public class EnemyTarget : BattleTarget
     
     // 最终伤害 = 基础 + 成长
     public int CurrentFinalDamage => nextDamageValue + _permanentGrowthValue;
-    public TextMeshPro intentText; // 拖入头顶的一个新的 3D Text
+    public TMP_Text intentText;
+    public Image intentIconImage;
+    public Sprite attackIntentIcon;
     public List<EnemyStatusConfig> initialStatusConfigs; 
     public Transform statusPanel; // 在敌人头顶放一个 Horizontal Layout Group
     public GameObject statusIconPrefab; // 状态图标的预制体
@@ -54,8 +59,11 @@ public class EnemyTarget : BattleTarget
     // UI缓存，避免每次都Destroy重建
     private Dictionary<StatusEffectSO, GameObject> statusUIMap = new Dictionary<StatusEffectSO, GameObject>();
 
+    private Animator anim;
     void Start()
     {
+        anim = transform.GetChild(0).GetComponent<Animator>();
+        
         team = GameEnums.TargetTeam.Enemy;
         originalScale = transform.localScale;
         transform.localScale = Vector3.zero;
@@ -63,7 +71,8 @@ public class EnemyTarget : BattleTarget
         // 弹出来的动画 (0.5秒内变回原大小)
         transform.DOScale(originalScale, 0.5f).SetEase(Ease.OutBack);
         currentHp = maxHp;
-        UpdateUI();
+        UpdateNameUI();
+        UpdateUI(false);
         
         //初始化附加状态
         _permanentGrowthValue = 0;
@@ -91,13 +100,6 @@ public class EnemyTarget : BattleTarget
     // =========================================================
     public void PlanNextMove()
     {
-        // 更新头顶UI显示意图
-        if (intentText != null)
-        {
-            intentText.text = $"A: {CurrentFinalDamage}";
-            intentText.color = Color.red;
-        }
-        
         damageTakenThisRound = 0; 
         UpdateIntentUI();
     }
@@ -109,7 +111,7 @@ public class EnemyTarget : BattleTarget
         if (damageDeal <= 0)
         {
             Debug.Log($"<color=gray>{name} 攻击力为 0，放弃了攻击行动。</color>");
-            transform.DOPunchScale(new Vector3(0.05f, -0.05f, 0), 0.2f);
+            // transform.DOPunchScale(new Vector3(0.05f, -0.05f, 0), 0.2f);
             yield return new WaitForSeconds(0.2f);
             yield break; 
         }
@@ -117,7 +119,8 @@ public class EnemyTarget : BattleTarget
         Vector3 originalPos = transform.position;
         
         // 攻击前摇 (震动/冲刺)
-        transform.DOShakePosition(0.5f, 0.5f);
+        // transform.DOShakePosition(0.5f, 0.5f);
+        anim.SetTrigger("attack");
         yield return new WaitForSeconds(0.5f);
         
         // 造成伤害
@@ -139,17 +142,45 @@ public class EnemyTarget : BattleTarget
     // =========================================================
     // 基础属性与UI
     // =========================================================
-    void UpdateUI()
+    private void UpdateNameUI()
     {
-        if(hpText != null) hpText.text = $"HP: {currentHp}";
+        if (enemyNameText == null) return;
+
+        enemyNameText.text = string.IsNullOrWhiteSpace(targetName)
+            ? gameObject.name.Replace("(Clone)", "").Trim()
+            : targetName;
     }
 
-    void UpdateIntentUI()
+    private void UpdateUI(bool animate = true)
     {
-        if (intentText != null) intentText.text = $"A: {CurrentFinalDamage}";
+        int displayedHp = Mathf.Clamp(currentHp, 0, Mathf.Max(0, maxHp));
+        if (hpText != null)
+            hpText.text = $"{displayedHp}/{Mathf.Max(0, maxHp)}";
+
+        if (hpFillImage == null) return;
+
+        float fill = maxHp > 0 ? Mathf.Clamp01(displayedHp / (float)maxHp) : 0f;
+        hpFillImage.DOKill();
+        if (animate && Application.isPlaying && hpFillTweenDuration > 0f)
+            hpFillImage.DOFillAmount(fill, hpFillTweenDuration).SetEase(Ease.OutQuad);
+        else
+            hpFillImage.fillAmount = fill;
     }
 
-    void Die()
+    private void UpdateIntentUI()
+    {
+        if (intentText != null)
+            intentText.text = CurrentFinalDamage.ToString();
+
+        if (intentIconImage == null) return;
+
+        bool hasIcon = attackIntentIcon != null;
+        intentIconImage.gameObject.SetActive(hasIcon);
+        if (hasIcon)
+            intentIconImage.sprite = attackIntentIcon;
+    }
+
+    IEnumerator Die()
     {
         if (RunTracker.Instance != null) RunTracker.Instance.AddKill(tier);
         if (BattleManager.Instance != null) BattleManager.Instance.OnPlayerUseDice -= HandlePlayerDiceUsed;
@@ -162,6 +193,9 @@ public class EnemyTarget : BattleTarget
 
         DOTween.Kill(transform);
         BattleManager.Instance.RemoveEnemy(this);
+        
+        anim.SetTrigger("die");
+        yield return new WaitForSeconds(1f);
         Destroy(gameObject);
     }
 
@@ -280,7 +314,6 @@ public class EnemyTarget : BattleTarget
             intentText.transform.DOKill();
             intentText.transform.localScale = Vector3.one;
             intentText.transform.DOPunchScale(Vector3.one * 0.4f, 0.2f);
-            intentText.color = Color.red; 
         }
     }
 
@@ -358,13 +391,15 @@ public class EnemyTarget : BattleTarget
         // 4. UI更新与视觉震动
         UpdateUI();
         transform.DOKill(true); 
-        transform.position = originalPosition;
-        transform.DOShakePosition(0.5f, 0.5f);
+        
+        anim.SetTrigger("hit");
+        // transform.position = originalPosition;
+        // transform.DOShakePosition(0.5f, 0.5f);
 
         // 5. 死亡判定
         if (currentHp <= 0)
         {
-            Die();
+            StartCoroutine(Die());
         }
     }
 }

@@ -13,6 +13,9 @@ Shader "UI/DiceWitch/Map Grid Reveal"
         _ColorMask ("Color Mask", Float) = 15
         [HideInInspector] _RevealLocalRect ("Reveal Local Rect", Vector) = (-0.5,-0.5,0.5,0.5)
         [HideInInspector] _RevealUvRect ("Reveal UV Rect", Vector) = (0,0,1,1)
+        [HideInInspector] _RevealMode ("Reveal Mode", Float) = 0
+        [HideInInspector] _RevealCutoffX ("Reveal Cutoff X", Float) = 0
+        [HideInInspector] _RevealCutoffFeather ("Reveal Cutoff Feather", Float) = 0
         [Toggle(UNITY_UI_ALPHACLIP)] _UseUIAlphaClip ("Use Alpha Clip", Float) = 0
     }
 
@@ -83,6 +86,9 @@ Shader "UI/DiceWitch/Map Grid Reveal"
             float _RevealCount;
             float4 _RevealLocalRect;
             float4 _RevealUvRect;
+            float _RevealMode;
+            float _RevealCutoffX;
+            float _RevealCutoffFeather;
 
             v2f vert(appdata_t input)
             {
@@ -100,7 +106,7 @@ Shader "UI/DiceWitch/Map Grid Reveal"
             fixed4 frag(v2f input) : SV_Target
             {
                 fixed4 color = (tex2D(_MainTex, input.texcoord) + _TextureSampleAdd) * input.color;
-                float revealAlpha = 0.0;
+                float circleRevealAlpha = 0.0;
                 float2 uvSize = max(_RevealUvRect.zw - _RevealUvRect.xy, float2(0.00001, 0.00001));
                 float2 normalizedUv = saturate((input.texcoord - _RevealUvRect.xy) / uvSize);
                 float2 localPosition = lerp(_RevealLocalRect.xy, _RevealLocalRect.zw, normalizedUv);
@@ -113,8 +119,15 @@ Shader "UI/DiceWitch/Map Grid Reveal"
                     float innerRadius = max(0.0, circle.z - circle.w);
                     float circleAlpha = 1.0 - smoothstep(innerRadius, circle.z, distanceToCenter);
                     float isCircleEnabled = step((float)i + 0.5, _RevealCount);
-                    revealAlpha = max(revealAlpha, circleAlpha * isCircleEnabled);
+                    circleRevealAlpha = max(circleRevealAlpha, circleAlpha * isCircleEnabled);
                 }
+
+                float cutoffFeather = max(0.0001, _RevealCutoffFeather);
+                float leftRevealAlpha = 1.0 - smoothstep(
+                    _RevealCutoffX - cutoffFeather,
+                    _RevealCutoffX + cutoffFeather,
+                    localPosition.x);
+                float revealAlpha = lerp(circleRevealAlpha, leftRevealAlpha, saturate(_RevealMode));
 
                 color.a *= revealAlpha;
 

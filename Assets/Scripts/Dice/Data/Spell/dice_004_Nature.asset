@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48a866eb57a864ca9bcd0e416e8b4ad5, type: 3}
+  m_Name: dice_004_Nature
+  m_EditorClassIdentifier: 
+  abilityName: "\u81EA\u7136\u5B66\u6D3E"
+  diceColor: {r: 0.7137255, g: 0.75686276, b: 0.5686275, a: 1}
+  icon: {fileID: 21300000, guid: 5e23b65683ed445f5878d9456acd0898, type: 3}
+  description: "\u6BCF\u5F53\u4F7F\u7528\u5176\u4ED6\u9AB0\u5B50\u540E\uFF0C\u7269\u7406\u70B9\u6570+1\uFF0C\u6700\u9AD8\u4E3A6\u3002"
+  spellId: dice_004
+  spellType: 3
+  faceSprites:
+  - {fileID: 21300000, guid: c5d5d71c57ff34899a3f90be64621d8f, type: 3}
+  - {fileID: 21300000, guid: c4d3009fe4831492eb77bd330f970d43, type: 3}
+  - {fileID: 21300000, guid: cf36580b0cdb2499288961590c09abe2, type: 3}
+  - {fileID: 21300000, guid: 0272f6b497aab4e8285da5322ee51ed0, type: 3}
+  - {fileID: 21300000, guid: e587d59ddd2ae446ea4a21474db0327b, type: 3}
+  - {fileID: 21300000, guid: 2a3ff860b6ada45188c75e38873d0ad1, type: 3}
+  triggerVfx: {fileID: 0}

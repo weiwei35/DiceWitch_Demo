@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48a866eb57a864ca9bcd0e416e8b4ad5, type: 3}
+  m_Name: dice_006_PostSaintMath
+  m_EditorClassIdentifier: 
+  abilityName: "\u540E\u5723\u6570\u5B66\u6D3E"
+  diceColor: {r: 0.6431373, g: 0.74509805, b: 0.7607843, a: 1}
+  icon: {fileID: 21300000, guid: d52282a1d991344b9bb33549e3938bf5, type: 3}
+  description: "\u516D\u4E2A\u7269\u7406\u9762\u7684\u70B9\u6570\u7EC4\u6210\u4E3A2\u30012\u30014\u30014\u30016\u30016\u3002"
+  spellId: dice_006
+  spellType: 5
+  faceSprites:
+  - {fileID: 21300000, guid: 64b687087e40b431e8e22426fbfe4006, type: 3}
+  - {fileID: 21300000, guid: 3ee93dc4043e347379d167cd7791f94f, type: 3}
+  - {fileID: 21300000, guid: 6b9d225080e774740b564ad2384af952, type: 3}
+  - {fileID: 21300000, guid: 8c0b71ee578f44795b60009cca7112d4, type: 3}
+  - {fileID: 21300000, guid: 80dd20f06878646d18ec38c385cca272, type: 3}
+  - {fileID: 21300000, guid: 4603e4bb1c809486eb90e3982bc9ebb2, type: 3}
+  triggerVfx: {fileID: 0}

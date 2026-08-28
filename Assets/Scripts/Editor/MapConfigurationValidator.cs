@@ -27,6 +27,9 @@ public static class MapConfigurationValidator
         if (config.presentationCatalog == null)
             LogError("BoardMapConfigSO 缺少 presentationCatalog。", ref errorCount, config);
 
+        if (config.nodePassedBackgroundFolder == null || config.NodePassedBackgroundCount == 0)
+            LogError("BoardMapConfigSO 缺少节点已抵达背景文件夹，或尚未刷新背景索引。", ref errorCount, config);
+
         if (config.regions == null || config.regions.Count == 0)
         {
             LogError("BoardMapConfigSO 没有配置任何章节 Region。", ref errorCount, config);
@@ -57,15 +60,22 @@ public static class MapConfigurationValidator
                 continue;
             }
 
-            if (regionLayout.baseGridRoot == null)
-                LogError($"{regionName} 缺少基础格纹根节点 baseGridRoot。", ref errorCount, region.regionPrefab);
+            UnityEngine.UI.Image rootBackground = region.regionPrefab.GetComponent<UnityEngine.UI.Image>();
+            bool hasRootBackground = rootBackground != null && rootBackground.sprite != null;
+            if (regionLayout.baseGridRoot == null && !hasRootBackground)
+                LogError($"{regionName} 缺少地图底图：请配置根节点 Image，或指定 baseGridRoot。", ref errorCount, region.regionPrefab);
 
             if (regionLayout.passedGridRevealLayer == null)
                 LogError($"{regionName} 缺少已走过格纹层 passedGridRevealLayer。", ref errorCount, region.regionPrefab);
             else if (!regionLayout.passedGridRevealLayer.IsConfigured)
                 LogError($"{regionName} 的已走过格纹层缺少 Shader 或覆盖 Image 引用。", ref errorCount, regionLayout.passedGridRevealLayer);
 
-            ValidateRegionRooms(regionName, regionLayout, usedRoomTypes, usedNodeTypes, ref errorCount, ref warningCount);
+            if (regionLayout.passedRouteRevealLayer == null)
+                LogError($"{regionName} 缺少已走过路线层 passedRouteRevealLayer。", ref errorCount, region.regionPrefab);
+            else if (!regionLayout.passedRouteRevealLayer.IsConfigured)
+                LogError($"{regionName} 的已走过路线层缺少 Shader 或路线 Image 引用。", ref errorCount, regionLayout.passedRouteRevealLayer);
+
+            ValidateRegionRooms(config, regionName, regionLayout, usedRoomTypes, usedNodeTypes, ref errorCount, ref warningCount);
         }
 
         if (config.presentationCatalog != null)
@@ -75,6 +85,7 @@ public static class MapConfigurationValidator
     }
 
     private static void ValidateRegionRooms(
+        BoardMapConfigSO config,
         string regionName,
         MapRegionLayout regionLayout,
         HashSet<GameEnums.RoomType> usedRoomTypes,
@@ -111,7 +122,7 @@ public static class MapConfigurationValidator
                 continue;
             }
 
-            ValidateRoomNodes(roomLabel, room, usedNodeTypes, ref errorCount);
+            ValidateRoomNodes(config, roomLabel, room, usedNodeTypes, ref errorCount);
 
             if (room.nextRooms != null)
             {
@@ -128,6 +139,7 @@ public static class MapConfigurationValidator
     }
 
     private static void ValidateRoomNodes(
+        BoardMapConfigSO config,
         string roomLabel,
         MapRoomLayout room,
         HashSet<GameEnums.BoardNodeType> usedNodeTypes,
@@ -153,8 +165,21 @@ public static class MapConfigurationValidator
                     usedNodeTypes.Add(node.forgeBonusType);
             }
 
-            if (node.backgroundImage == null || node.baseIconImage == null || node.effectIconImage == null || node.valueText == null)
-                LogError($"{roomLabel}/{node.name} 的节点 UI 引用不完整。", ref errorCount, node);
+            if (node.baseIconImage == null
+                || node.frameImage == null
+                || node.effectIconImage == null
+                || node.valueText == null
+                || node.passedBackgroundImage == null)
+            {
+                LogError($"{roomLabel}/{node.name} 的节点 UI 引用不完整（主图标、边框、效果图标、数值文本和已抵达背景均需配置）。", ref errorCount, node);
+            }
+
+            bool isStartNode = room.roomData != null && room.roomData.roomType == GameEnums.RoomType.Start;
+            if (!isStartNode && string.IsNullOrWhiteSpace(node.passedBackgroundSpriteName))
+                LogError($"{roomLabel}/{node.name} 未填写节点已抵达背景图片名。", ref errorCount, node);
+            else if (!string.IsNullOrWhiteSpace(node.passedBackgroundSpriteName)
+                && config.GetNodePassedBackground(node.passedBackgroundSpriteName) == null)
+                LogError($"{roomLabel}/{node.name} 找不到节点背景 Sprite：{node.passedBackgroundSpriteName}。", ref errorCount, node);
         }
     }
 

@@ -109,13 +109,13 @@ To build a new chapter:
 
 ## Important Files
 
-- `Assets/Scripts/Map_New/MapPresentationCatalogSO.cs`
-- `Assets/Scripts/Map_New/SO/BoardMapConfigSO.cs`
-- `Assets/Scripts/Map_New/MapNodeAnchor.cs`
-- `Assets/Scripts/Map_New/MapManager.cs`
-- `Assets/Scripts/Map_New/MapViewController.cs`
-- `Assets/Scripts/Map_New/SO/RoomDataSO.cs`
-- `Assets/Scripts/Map_New/SO/StartRoomSO.cs`
+- `Assets/Scripts/Map/MapPresentationCatalogSO.cs`
+- `Assets/Scripts/Map/SO/BoardMapConfigSO.cs`
+- `Assets/Scripts/Map/MapNodeAnchor.cs`
+- `Assets/Scripts/Map/MapManager.cs`
+- `Assets/Scripts/Map/MapViewController.cs`
+- `Assets/Scripts/Map/SO/RoomDataSO.cs`
+- `Assets/Scripts/Map/SO/StartRoomSO.cs`
 - `Assets/Scripts/Editor/MapConfigurationValidator.cs`
 - `制作文档/地图新建手册.md`
 

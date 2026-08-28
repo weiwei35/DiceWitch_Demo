@@ -32,6 +32,7 @@ public class MagicCircleDisplay : MonoBehaviour
 
     private List<MagicSlotUI> _spawnedSlots = new List<MagicSlotUI>();
     private Vector2 _handDefaultPosition;
+    private bool _slotIconsVisible = true;
 
     void Awake()
     {
@@ -63,6 +64,7 @@ public class MagicCircleDisplay : MonoBehaviour
             MagicSlotUI uiScript = slotObj.GetComponent<MagicSlotUI>();
             uiScript.Setup(dataSlots[i]);
             uiScript.SetRadialLayout(targetPosition);
+            slotObj.SetActive(_slotIconsVisible);
 
             _spawnedSlots.Add(uiScript);
         }
@@ -97,13 +99,23 @@ public class MagicCircleDisplay : MonoBehaviour
         }
     }
 
-    // 刷新显示 (比如刚注入了属性后调用)
+    // 刷新槽位显示。
     public void RefreshAll()
     {
         var dataSlots = MagicCircleManager.Instance.magicSlots;
         for (int i = 0; i < _spawnedSlots.Count; i++)
         {
             _spawnedSlots[i].Setup(dataSlots[i]);
+        }
+    }
+
+    public void SetSlotIconsVisible(bool visible)
+    {
+        _slotIconsVisible = visible;
+        foreach (MagicSlotUI slot in _spawnedSlots)
+        {
+            if (slot != null)
+                slot.gameObject.SetActive(visible);
         }
     }
 

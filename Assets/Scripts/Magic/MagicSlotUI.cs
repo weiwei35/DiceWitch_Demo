@@ -12,10 +12,6 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public GameObject lockIcon;
     public TextMeshProUGUI slotIndexText;
 
-    [Header("Attribute Info")]
-    public GameObject levelBadgeObj; // 【新增】等级角标的父物体
-    public TextMeshProUGUI levelText; // 【新增】显示 "Lv.5"
-
     private MagicCircleSlot _targetSlot;
     private RectTransform _rectTransform;
 
@@ -49,24 +45,12 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
                 abilityIcon.color = Color.white;
             }
 
-            // 2. 【新增】设置属性等级角标
-            if (slotData.currentAttribute != null && slotData.currentAttribute.data != null)
-            {
-                levelBadgeObj.SetActive(true);
-                // 显示绿色或者显眼的颜色
-                levelText.text = $"{slotData.currentAttribute.level}";
-            }
-            else
-            {
-                levelBadgeObj.SetActive(false);
-            }
         }
         else
         {
             // 锁定状态
             lockIcon.SetActive(true);
             abilityIcon.gameObject.SetActive(false);
-            levelBadgeObj.SetActive(false);
             slotBorder.color = Color.gray;
         }
     }
@@ -102,13 +86,6 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             desc += $"<color=yellow>★ {dice.boundAbility.abilityName}</color>";
             if (!string.IsNullOrEmpty(dice.boundAbility.description))
                 desc += $"\n{dice.boundAbility.description}";
-        }
-
-        if (_targetSlot.currentAttribute != null && _targetSlot.currentAttribute.data != null)
-        {
-            var attr = _targetSlot.currentAttribute;
-            if (!string.IsNullOrEmpty(desc)) desc += "\n\n";
-            desc += $"{attr.data.attributeName} Lv.{attr.level}\n效果: +{attr.GetCurrentValue()}";
         }
 
         if (dice.forgeSlots != null)
@@ -193,7 +170,6 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
         SetChildCenter(abilityIcon != null ? abilityIcon.rectTransform : null, Vector2.zero);
         SetChildCenter(lockIcon != null ? lockIcon.transform as RectTransform : null, Vector2.zero);
-        SetLevelBadgePosition(Vector2.zero);
         _rectTransform.anchoredPosition = targetPosition;
     }
 
@@ -212,19 +188,6 @@ public class MagicSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         child.anchorMin = new Vector2(0.5f, 0.5f);
         child.anchorMax = new Vector2(0.5f, 0.5f);
         child.anchoredPosition = position;
-    }
-
-    private void SetLevelBadgePosition(Vector2 squareCenterOffset)
-    {
-        if (levelBadgeObj == null) return;
-
-        RectTransform badgeRect = levelBadgeObj.transform as RectTransform;
-        if (badgeRect == null) return;
-
-        badgeRect.anchorMin = new Vector2(0.5f, 0.5f);
-        badgeRect.anchorMax = new Vector2(0.5f, 0.5f);
-        badgeRect.pivot = Vector2.one;
-        badgeRect.anchoredPosition = squareCenterOffset + new Vector2(25f, 25f);
     }
 
     private void OnDisable()

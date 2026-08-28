@@ -92,7 +92,7 @@ date: 2026-05-31
 ## Forge UI Tooltips
 - Added `ForgeDiceTooltipTarget`.
 - Attach this component to dice/spell icons that should show dice tooltip.
-- Tooltip includes bound ability, slot attribute (looked up through `MagicCircleManager.magicSlots`), and forged affixes.
+- Tooltip includes bound ability and forged affixes. The retired slot-attribute system was removed on 2026-08-13.
 - Blank dice with no special properties shows "没有任何特殊属性".
 
 ## Forge UI Option Display and Lines
@@ -134,13 +134,13 @@ date: 2026-05-31
 - Do not delete map `UI_DiceView (1)`; it is a valid separate map view.
 
 ## Files Touched Most In This Stage
-- `Assets/Scripts/UI/ForgeUIManager.cs`
-- `Assets/Scripts/UI/ForgeOptionButton.cs`
-- `Assets/Scripts/UI/ForgeDiceTooltipTarget.cs`
+- `Assets/Scripts/UI/Forge/ForgeUIManager.cs`
+- `Assets/Scripts/UI/Forge/ForgeOptionButton.cs`
+- `Assets/Scripts/UI/Forge/ForgeDiceTooltipTarget.cs`
 - `Assets/Scripts/Progression/ForgeManager.cs`
 - `Assets/Scripts/Progression/ForgeData.cs`
-- `Assets/Scripts/Dice/UI_DiceView/DiceInputManager.cs`
-- `Assets/Scripts/Dice/UI_DiceView/DiceViewMonitor.cs`
+- `Assets/Scripts/Dice/UI/DiceInputManager.cs`
+- `Assets/Scripts/Dice/UI/DiceViewMonitor.cs`
 - `Assets/Scripts/Dice/DiceThrower.cs`
 - `Assets/Scripts/Dice/DiceDragger.cs`
 - `Assets/Scripts/Dice/PhysicsDice.cs`

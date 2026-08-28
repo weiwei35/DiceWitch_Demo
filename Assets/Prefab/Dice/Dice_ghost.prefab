@@ -1087,6 +1087,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2253f5a4668e7da4bb876f74aeaef2b0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  faceTextureMaterial: {fileID: 2100000, guid: 52e495c86dfb64d70b4ee4c9489d1dd8, type: 2}
+  faceTextureScale: 0.95
   faceTransforms:
   - {fileID: 5558382835457737998}
   - {fileID: 7950821552471759146}
@@ -1096,37 +1098,31 @@ MonoBehaviour:
   - {fileID: 8524929260257328010}
   faceDatas:
   - value: 1
-    type: 0
     icon: {fileID: 0}
     color: {r: 0, g: 0, b: 0, a: 1}
     effectDescription: 
     bonusValue: 0
   - value: 1
-    type: 0
     icon: {fileID: 0}
     color: {r: 0, g: 0, b: 0, a: 1}
     effectDescription: 
     bonusValue: 0
   - value: 1
-    type: 0
     icon: {fileID: 0}
     color: {r: 0, g: 0, b: 0, a: 1}
     effectDescription: 
     bonusValue: 0
   - value: 1
-    type: 0
     icon: {fileID: 0}
     color: {r: 0, g: 0, b: 0, a: 1}
     effectDescription: 
     bonusValue: 0
   - value: 1
-    type: 0
     icon: {fileID: 0}
     color: {r: 0, g: 0, b: 0, a: 1}
     effectDescription: 
     bonusValue: 0
   - value: 1
-    type: 0
     icon: {fileID: 0}
     color: {r: 0, g: 0, b: 0, a: 1}
     effectDescription: 
@@ -1149,7 +1145,6 @@ MonoBehaviour:
   finalValue: 0
   currentResultData:
     value: 0
-    type: 0
     icon: {fileID: 0}
     color: {r: 0, g: 0, b: 0, a: 0}
     effectDescription: 
@@ -1157,10 +1152,10 @@ MonoBehaviour:
   sourceDataRef:
     uid: e83d136c-212e-4609-9cd7-66a53d10b545
     diceName: "\u666E\u901A\u9AB0\u5B50"
+    icon: {fileID: 0}
     boundAbility: {fileID: 0}
-    currentAttribute:
-      data: {fileID: 0}
-      level: 0
+    forgeSlots: []
+    forgeInspirations: []
 --- !u!114 &8352631481789013467
 MonoBehaviour:
   m_ObjectHideFlags: 0

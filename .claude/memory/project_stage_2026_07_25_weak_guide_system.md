@@ -116,13 +116,13 @@ Weak-guide integration must not own or duplicate inventory mutation.
 - `Assets/Scripts/UI/WeakGuide/WeakGuideTarget.cs`
 - `Assets/Scripts/UI/WeakGuide/WeakGuideIds.cs`
 - `Assets/Scripts/UI/WeakGuide/ProjectedDiceWeakGuide.cs`
-- `Assets/Scripts/UI/JuicyButtonEffect.cs`
-- `Assets/Scripts/UI/ForgeUIManager.cs`
-- `Assets/Scripts/UI/ForgeMaterialInputPanel.cs`
-- `Assets/Scripts/Map_New/MapInteractionManager.cs`
+- `Assets/Scripts/UI/Effects/JuicyButtonEffect.cs`
+- `Assets/Scripts/UI/Forge/ForgeUIManager.cs`
+- `Assets/Scripts/UI/Forge/ForgeMaterialInputPanel.cs`
+- `Assets/Scripts/Map/MapInteractionManager.cs`
 - `Assets/Scripts/Battle/BattleManager.cs`
-- `Assets/Scripts/Dice/UI_DiceView/DiceViewMonitor.cs`
-- `Assets/Scripts/Dice/UI_DiceView/DiceInputManager.cs`
+- `Assets/Scripts/Dice/UI/DiceViewMonitor.cs`
+- `Assets/Scripts/Dice/UI/DiceInputManager.cs`
 
 ## Map And Battle Extensions
 

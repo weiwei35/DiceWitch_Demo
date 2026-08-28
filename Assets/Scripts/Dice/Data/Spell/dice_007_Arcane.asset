@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48a866eb57a864ca9bcd0e416e8b4ad5, type: 3}
+  m_Name: dice_007_Arcane
+  m_EditorClassIdentifier: 
+  abilityName: "\u5965\u672F\u5B66\u6D3E"
+  diceColor: {r: 0.21568628, g: 0.08627451, b: 0.16078432, a: 1}
+  icon: {fileID: 21300000, guid: f8eea7361086445718e087706fedbe62, type: 3}
+  description: "\u6BCF\u5F53\u4F7F\u7528\u5176\u4ED6\u9AB0\u5B50\u540E\uFF0C\u91CD\u65B0\u6295\u63B7\u5E76\u968F\u673A\u83B7\u5F971\u81F36\u70B9\u3002"
+  spellId: dice_007
+  spellType: 6
+  faceSprites:
+  - {fileID: 21300000, guid: f595d3142b6314dfb9c8a3964bd8b91d, type: 3}
+  - {fileID: 21300000, guid: 9baec5eb1854444a7afe0f510a0ef21b, type: 3}
+  - {fileID: 21300000, guid: 18549b98020c04126a45cda5f15bfc76, type: 3}
+  - {fileID: 21300000, guid: e7993389c051e428198e95566f2f92ee, type: 3}
+  - {fileID: 21300000, guid: 35d1eecb1befa46458b55b49f6746945, type: 3}
+  - {fileID: 21300000, guid: e90e0848f633f46a3826151b4f1d0630, type: 3}
+  triggerVfx: {fileID: 0}

@@ -13,10 +13,23 @@ public class BattleManager : MonoBehaviour
     public DiceThrower diceThrower;
     public DiceViewMonitor battleDiceViewMonitor;
     public Button endTurnButton;
+
+    [Header("Battle Intro")]
+    public Animator battleIntroAnimator;
     
-    [Header("Scene Config")]
-    // 【恢复】直接在 Inspector 里拖入场景里的固定生成点
-    public List<Transform> fixedSpawnPoints; 
+    [Header("Odd Enemy Formation")]
+    public Transform enemyLayoutCenter;
+    [Min(0.1f)] public float oddHorizontalSpacing = 3.8f;
+    [Range(0.1f, 1f)] public float oddCenterScale = 1f;
+    [Min(0f)] public float oddScaleStep = 0.2f;
+    [Range(0.1f, 1f)] public float oddMinimumScale = 0.75f;
+
+    [Header("Even Enemy Formation")]
+    [Min(0.1f)] public float evenHorizontalSpacing = 4.4f;
+    [Range(0.1f, 1f)] public float evenCenterScale = 1f;
+    [Min(0f)] public float evenScaleStep = 0.1f;
+    [Range(0.1f, 1f)] public float evenMinimumScale = 0.95f;
+    public float evenVerticalOffset = -0.2f;
     
     [Header("Runtime State")]
     public List<EnemyTarget> enemies = new List<EnemyTarget>();
@@ -35,6 +48,7 @@ public class BattleManager : MonoBehaviour
     public BattleRoomSO CurrentRoomData => _currentRoomData; // 【新增】对外暴露属性
     public int currentBattleDamageBonus = 0;
     public int diceUsedThisTurn = 0; // 记录本回合使用了几颗骰子
+    public bool IsBattleActive => _isBattleActive;
 
     private ProjectedDiceWeakGuide _projectedDiceGuide;
     private PhysicsDice _guidedDice;
@@ -43,6 +57,11 @@ public class BattleManager : MonoBehaviour
     private float _guideRefreshBlockedUntil;
     private bool _staticGuideArrowVisible;
     private TargetingArrow _guideTargetingArrow;
+    private Coroutine _battleStartCoroutine;
+    private bool _isDiceSpellResponding;
+    private bool _diceCameraFitted; // 每场战斗只适配一次骰子相机（固定机位）
+    private readonly List<MouseParallaxUI> _pausedIntroParallax = new List<MouseParallaxUI>();
+    private static readonly System.Random EnemyPlacementRandom = new System.Random();
 
     void Awake()
     {
@@ -68,20 +87,24 @@ public class BattleManager : MonoBehaviour
         _guideRefreshBlockedUntil = 0f;
         ClearCurrentBattleGuide();
 
+        if (_battleStartCoroutine != null)
+        {
+            StopCoroutine(_battleStartCoroutine);
+            _battleStartCoroutine = null;
+        }
+        ResumeIntroParallax();
+
         // 1. 清理战场 (这是单场景最重要的一步！)
         CleanUpBattlefield();
-        _currentRoomData = roomData; 
-        // =========================================================
-        // 继承全局伤害 Buff 到本场战斗 (持续一整场)
-        // =========================================================
-        currentBattleDamageBonus = PlayerManager.Instance.nextBattleDamageBonus;
-        PlayerManager.Instance.nextBattleDamageBonus = 0; // 提取后清空
+        _currentRoomData = roomData;
         
         // 3. 开始战斗逻辑
         if (roomData != null && roomData.enemyWave != null)
         {
             Debug.Log($"<color=orange>开始战斗：{roomData.roomName}</color>");
-            StartBattle(roomData.enemyWave); // 调用你原有的 StartBattle
+            MagicCircleDisplay.Instance?.SetSlotIconsVisible(false);
+            PauseIntroParallax();
+            _battleStartCoroutine = StartCoroutine(StartBattleAfterIntro(roomData.enemyWave));
         }
         else
         {
@@ -89,6 +112,66 @@ public class BattleManager : MonoBehaviour
         }
         endTurnButton.onClick.RemoveListener(OnEndTurnClicked);
         endTurnButton.onClick.AddListener(OnEndTurnClicked);
+    }
+
+    private IEnumerator StartBattleAfterIntro(WaveDataSO waveData)
+    {
+        Animator animator = battleIntroAnimator;
+        if (animator != null && animator.runtimeAnimatorController != null && animator.gameObject.activeInHierarchy)
+        {
+            animator.enabled = true;
+            animator.Play(0, 0, 0f);
+            animator.Update(0f);
+
+            yield return null;
+            while (animator != null
+                && animator.isActiveAndEnabled
+                && (animator.IsInTransition(0) || animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1f))
+            {
+                yield return null;
+            }
+
+            if (animator == null || !animator.gameObject.activeInHierarchy)
+            {
+                _battleStartCoroutine = null;
+                yield break;
+            }
+        }
+        else
+        {
+            yield return null;
+        }
+
+        _battleStartCoroutine = null;
+        if (animator != null)
+            animator.enabled = false;
+        ResumeIntroParallax();
+        MagicCircleDisplay.Instance?.RefreshAll();
+        MagicCircleDisplay.Instance?.SetSlotIconsVisible(true);
+        StartBattle(waveData);
+    }
+
+    private void PauseIntroParallax()
+    {
+        _pausedIntroParallax.Clear();
+        if (battleIntroAnimator == null) return;
+
+        foreach (MouseParallaxUI parallax in battleIntroAnimator.GetComponentsInChildren<MouseParallaxUI>(true))
+        {
+            if (parallax == null || !parallax.enabled) continue;
+            _pausedIntroParallax.Add(parallax);
+            parallax.enabled = false;
+        }
+    }
+
+    private void ResumeIntroParallax()
+    {
+        foreach (MouseParallaxUI parallax in _pausedIntroParallax)
+        {
+            if (parallax != null)
+                parallax.enabled = true;
+        }
+        _pausedIntroParallax.Clear();
     }
 
     // --- 清理逻辑 ---
@@ -110,8 +193,9 @@ public class BattleManager : MonoBehaviour
             GhostDiceUIManager.Instance.ClearAllGhosts();
         }
         // 4. 重置 UI 状态
-        _isBattleActive = true;
-        // endTurnButton.interactable = true;
+        _isBattleActive = false;
+        isPlayerTurn = false;
+        endTurnButton.interactable = false;
     }
 
     // =========================================================
@@ -121,9 +205,13 @@ public class BattleManager : MonoBehaviour
     public void StartBattle(WaveDataSO waveData)
     {
         _isBattleActive = true;
-        
-        // 使用固定的生成点
-        SpawnEnemies(waveData, fixedSpawnPoints);
+        _diceCameraFitted = false; // 每场新战斗重新允许适配一次骰子相机
+
+        // 直到入场动画真正结束才消费下一场战斗 Buff，避免中途退出时丢失。
+        currentBattleDamageBonus = PlayerManager.Instance.nextBattleDamageBonus;
+        PlayerManager.Instance.nextBattleDamageBonus = 0;
+
+        SpawnEnemies(waveData);
         
         // 开启第一回合
         StartNewRound();
@@ -168,33 +256,99 @@ public class BattleManager : MonoBehaviour
     // =========================================================
 
     // 生成敌人逻辑
-    void SpawnEnemies(WaveDataSO waveData, List<Transform> spawnPoints)
+    void SpawnEnemies(WaveDataSO waveData)
     {
         // 清理旧列表
         enemies.Clear();
+
+        if (enemyLayoutCenter == null)
+        {
+            Debug.LogError("Enemy formation center is not configured.");
+            return;
+        }
         
         // 创建或获取容器
         if (_enemyContainer == null) _enemyContainer = new GameObject("--- Enemies ---").transform;
         
         // 遍历生成
-        for (int i = 0; i < waveData.enemyPrefabs.Count; i++)
-        {
-            // 防止生成点不够用
-            if (spawnPoints == null || i >= spawnPoints.Count) break; 
+        int count = waveData.enemyPrefabs.Count;
+        bool useEvenFormation = count % 2 == 0;
+        float spacing = useEvenFormation ? evenHorizontalSpacing : oddHorizontalSpacing;
+        float centerScale = Mathf.Min(1f, useEvenFormation ? evenCenterScale : oddCenterScale);
+        float scaleStep = useEvenFormation ? evenScaleStep : oddScaleStep;
+        float minimumScale = Mathf.Min(centerScale, useEvenFormation ? evenMinimumScale : oddMinimumScale);
+        List<int> placementOrder = BuildEnemyPlacementOrder(waveData.enemyPrefabs);
+        EnemyTarget[] targetsByWaveOrder = new EnemyTarget[count];
 
-            GameObject prefab = waveData.enemyPrefabs[i];
-            Transform point = spawnPoints[i];
+        for (int placementIndex = 0; placementIndex < count; placementIndex++)
+        {
+            int sourceIndex = placementOrder[placementIndex];
+            GameObject prefab = waveData.enemyPrefabs[sourceIndex];
+            float slot = GetSymmetricEnemySlot(placementIndex, count);
+            float distanceFromCenter = Mathf.Max(0f, Mathf.Abs(slot) - (count % 2 == 0 ? 0.5f : 0f));
+            float layoutScale = Mathf.Clamp(centerScale - distanceFromCenter * scaleStep, minimumScale, 1f);
+            Vector3 spawnPosition = enemyLayoutCenter.position
+                + enemyLayoutCenter.right * (slot * spacing)
+                + enemyLayoutCenter.up * (useEvenFormation ? evenVerticalOffset : 0f);
 
             // 实例化
-            GameObject enemyObj = Instantiate(prefab, point.position, point.rotation);
+            GameObject enemyObj = Instantiate(prefab, spawnPosition, enemyLayoutCenter.rotation);
+            enemyObj.transform.localScale *= layoutScale;
             enemyObj.transform.SetParent(_enemyContainer);
             
             EnemyTarget target = enemyObj.GetComponent<EnemyTarget>();
             if (target != null)
-            {
-                enemies.Add(target);
-            }
+                targetsByWaveOrder[sourceIndex] = target;
         }
+
+        foreach (EnemyTarget target in targetsByWaveOrder)
+            if (target != null)
+                enemies.Add(target);
+    }
+
+    private static List<int> BuildEnemyPlacementOrder(List<GameObject> prefabs)
+    {
+        int count = prefabs.Count;
+        var order = new List<int>(count);
+        var tiers = new int[count];
+        var maxHealth = new int[count];
+        var randomTieBreakers = new int[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            order.Add(i);
+            EnemyTarget target = prefabs[i] != null ? prefabs[i].GetComponent<EnemyTarget>() : null;
+            tiers[i] = target != null ? (int)target.tier : int.MinValue;
+            maxHealth[i] = target != null ? target.maxHp : int.MinValue;
+            randomTieBreakers[i] = EnemyPlacementRandom.Next();
+        }
+
+        order.Sort((a, b) =>
+        {
+            int comparison = tiers[b].CompareTo(tiers[a]);
+            if (comparison != 0) return comparison;
+
+            comparison = maxHealth[b].CompareTo(maxHealth[a]);
+            if (comparison != 0) return comparison;
+
+            comparison = randomTieBreakers[a].CompareTo(randomTieBreakers[b]);
+            return comparison != 0 ? comparison : a.CompareTo(b);
+        });
+
+        return order;
+    }
+
+    private static float GetSymmetricEnemySlot(int index, int count)
+    {
+        if (count % 2 == 1)
+        {
+            if (index == 0) return 0f;
+            int distance = (index + 1) / 2;
+            return index % 2 == 1 ? -distance : distance;
+        }
+
+        float halfSlot = index / 2 + 0.5f;
+        return index % 2 == 0 ? -halfSlot : halfSlot;
     }
 
     // 敌人死亡逻辑
@@ -252,7 +406,16 @@ public class BattleManager : MonoBehaviour
             Debug.Log($"<color=cyan>【节点Buff生效】本次战斗第 {fixedDiceIndex + 1} 颗骰子将被拨动为 {fixedValue}</color>");
         }
         diceThrower.SpawnAndThrow(newDeck);
-    
+
+        // 骰子相机固定机位：每场战斗只在首次生成骰子时按初始数量适配一次
+        if (!_diceCameraFitted && battleDiceViewMonitor != null)
+        {
+            battleDiceViewMonitor.FitCameraToWorldBounds(
+                diceThrower.GetLayoutCenterWorld(),
+                diceThrower.GetLayoutBoundsSize(newDeck.Count));
+            _diceCameraFitted = true;
+        }
+
         Debug.Log("--- 玩家回合开始 ---");
     }
 
@@ -261,6 +424,7 @@ public class BattleManager : MonoBehaviour
     {
         if (!_isBattleActive) return; // 如果战斗结束了，按钮无效
         if (!isPlayerTurn) return;
+        if (_isDiceSpellResponding) return;
 
         WeakGuideService.Instance?.CompleteGuide(WeakGuideIds.BattleEndTurn);
         ClearCurrentBattleGuide();
@@ -363,6 +527,13 @@ public class BattleManager : MonoBehaviour
         OnPlayerUseDice?.Invoke(1);
     }
 
+    public void SetDiceSpellResponseActive(bool active)
+    {
+        _isDiceSpellResponding = active;
+        if (endTurnButton != null)
+            endTurnButton.interactable = !active && _isBattleActive && isPlayerTurn;
+    }
+
     public void NotifyPlayerDiceTargeted(BattleTarget target)
     {
         if (target == null) return;
@@ -378,6 +549,15 @@ public class BattleManager : MonoBehaviour
 
     public void ExitBattleGuide()
     {
+        if (_battleStartCoroutine != null)
+        {
+            StopCoroutine(_battleStartCoroutine);
+            _battleStartCoroutine = null;
+        }
+        if (battleIntroAnimator != null)
+            battleIntroAnimator.enabled = false;
+        ResumeIntroParallax();
+
         ClearCurrentBattleGuide();
         WeakGuideService.Instance?.DeactivateScreen(this);
     }

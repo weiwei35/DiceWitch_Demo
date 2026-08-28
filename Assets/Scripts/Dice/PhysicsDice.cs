@@ -7,6 +7,8 @@ using DG.Tweening;
 
 public class PhysicsDice : MonoBehaviour
 {
+    private static readonly int HandDrawSettledId = Shader.PropertyToID("_HandDrawSettled");
+
     public DiceVisualManager visualManager;
     public Renderer diceRenderer;
     private Rigidbody rb;
@@ -21,10 +23,14 @@ public class PhysicsDice : MonoBehaviour
     private bool _forcedResultApplied = false;
     private int _currentResultIndex = -1;
     private Coroutine _inPlaceRollCoroutine;
+    private bool _usesBattleHandDraw;
     
     public PlayerDice sourceDataRef; 
     public bool HasPendingForcedResult => _forcedResultValue > 0 && !_forcedResultApplied;
     public int CurrentResultIndex => _currentResultIndex;
+    public int PhysicalValue => currentResultData != null ? currentResultData.value : 0;
+    public DiceSpellSO Spell => _sourceData != null ? _sourceData.spell : null;
+    [System.NonSerialized] public MiniDiceCluster miniCluster;
     
     // 当骰子停下并算出结果时触发的事件
     public event Action<int> OnDiceSettled;
@@ -36,7 +42,8 @@ public class PhysicsDice : MonoBehaviour
     public void Initialize(RuntimeDiceData data, PlayerDice sourceRef = null, int forcedResultValue = 0)
     {
         // 1. (可选) 修改骰子本体颜色，方便区分
-        diceRenderer.material.color = data.bodyColor;
+        if (!_usesBattleHandDraw)
+            diceRenderer.material.color = data.bodyColor;
 
         // 2. 将数据传给 VisualManager 去更新显示的文字和图标
         if (visualManager != null)
@@ -51,6 +58,30 @@ public class PhysicsDice : MonoBehaviour
         _forcedResultValue = forcedResultValue;
         _forcedResultApplied = false;
         _currentResultIndex = -1;
+    }
+
+    public void EnableBattleHandDraw(Material bodyMaterial, Material faceMaterial)
+    {
+        _usesBattleHandDraw = bodyMaterial != null || faceMaterial != null;
+
+        if (diceRenderer != null && bodyMaterial != null)
+            diceRenderer.sharedMaterial = bodyMaterial;
+
+        visualManager?.SetFaceTextureMaterial(faceMaterial);
+        SetHandDrawSettled(false);
+    }
+
+    public void SetHandDrawSettled(bool settled)
+    {
+        if (diceRenderer != null)
+        {
+            MaterialPropertyBlock properties = new MaterialPropertyBlock();
+            diceRenderer.GetPropertyBlock(properties);
+            properties.SetFloat(HandDrawSettledId, settled ? 1f : 0f);
+            diceRenderer.SetPropertyBlock(properties);
+        }
+
+        visualManager?.SetHandDrawSettled(settled);
     }
 
     public void StopMotionAndSetKinematic(bool isKinematic)
@@ -129,7 +160,22 @@ public class PhysicsDice : MonoBehaviour
         return GetOrganizedRotationWithFaceUp(_currentResultIndex);
     }
 
+    public Quaternion GetFaceUpRotation(int faceIndex)
+    {
+        return GetOrganizedRotationWithFaceUp(faceIndex);
+    }
+
     public void RollInPlace(int resultFaceIndex, float totalDuration, float settleDuration, float spinSpeed)
+    {
+        StartInPlaceRoll(resultFaceIndex, totalDuration, settleDuration, spinSpeed, true);
+    }
+
+    public void RollPhysicalInPlace(int resultFaceIndex, float totalDuration, float settleDuration, float spinSpeed)
+    {
+        StartInPlaceRoll(resultFaceIndex, totalDuration, settleDuration, spinSpeed, false);
+    }
+
+    private void StartInPlaceRoll(int resultFaceIndex, float totalDuration, float settleDuration, float spinSpeed, bool applyRollHooks)
     {
         if (visualManager == null || visualManager.faceDatas == null || visualManager.faceDatas.Length == 0)
         {
@@ -143,10 +189,10 @@ public class PhysicsDice : MonoBehaviour
 
         StopMotionAndSetKinematic(true);
 
-        _inPlaceRollCoroutine = StartCoroutine(RollInPlaceRoutine(resultFaceIndex, totalDuration, settleDuration, spinSpeed));
+        _inPlaceRollCoroutine = StartCoroutine(RollInPlaceRoutine(resultFaceIndex, totalDuration, settleDuration, spinSpeed, applyRollHooks));
     }
 
-    private IEnumerator RollInPlaceRoutine(int resultFaceIndex, float totalDuration, float settleDuration, float spinSpeed)
+    private IEnumerator RollInPlaceRoutine(int resultFaceIndex, float totalDuration, float settleDuration, float spinSpeed, bool applyRollHooks)
     {
         isRolling = true;
 
@@ -189,12 +235,16 @@ public class PhysicsDice : MonoBehaviour
 
         yield return new WaitUntil(() => tweenFinished);
 
-        FinalizeRollResult(resultData, resultFaceIndex);
+        if (applyRollHooks)
+            FinalizeRollResult(resultData, resultFaceIndex);
+        else
+            SetPhysicalResult(resultData.value);
         Debug.Log($"原地投掷结束 -> 目标面索引: {resultFaceIndex}, 最终结果: {finalValue}");
 
         isRolling = false;
         _inPlaceRollCoroutine = null;
-        TriggerRollFinished();
+        if (applyRollHooks)
+            TriggerRollFinished();
         OnDiceSettled?.Invoke(finalValue);
     }
 
@@ -231,7 +281,7 @@ public class PhysicsDice : MonoBehaviour
         }
     }
 
-    private int FindFaceIndexForValue(int value)
+    public int FindFaceIndexForValue(int value)
     {
         if (visualManager?.faceDatas == null) return -1;
 
@@ -297,7 +347,7 @@ public class PhysicsDice : MonoBehaviour
         }
         return result;
     }
-    // 【新增】供外部调用，给所有面增加临时属性加成
+    // 供法术等战斗效果给所有面增加临时点数。
     public void ApplyTemporaryBonus(int bonusAmount)
     {
         if (bonusAmount == 0) return;
@@ -401,6 +451,24 @@ public class PhysicsDice : MonoBehaviour
             // 如果你想让它掉在地上时正好是 1 点朝上，可以设置 rotation
             // 这里为了简单，暂不修改 transform，因为蛇形跟随会覆盖位置
         }
+    }
+
+    public void SetPhysicalResult(int value)
+    {
+        int faceIndex = FindFaceIndexForValue(value);
+        if (faceIndex < 0)
+        {
+            Debug.LogError($"{name} 找不到点数为 {value} 的物理面。", this);
+            return;
+        }
+
+        int preservedBonus = currentResultData != null ? currentResultData.bonusValue : 0;
+        DiceFaceData data = visualManager.GetResultData(faceIndex);
+        data.bonusValue = preservedBonus;
+        _currentResultIndex = faceIndex;
+        currentResultData = data;
+        finalValue = data.TotalValue;
+        visualManager.UpdateFaceVisual(faceIndex, data);
     }
 
     private void OnDestroy()

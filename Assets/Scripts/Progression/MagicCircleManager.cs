@@ -7,11 +7,12 @@ public class MagicCircleManager : MonoBehaviour
 
     [Header("Magic Circle")]
     public Sprite defaultDiceIcon;
+    public Color defaultDiceColor = new Color(0.533276404f, 0.346704056f, 0.527115126f, 1f);
+    public Sprite[] defaultFaceSprites = new Sprite[6];
     public List<MagicCircleSlot> magicSlots = new List<MagicCircleSlot>();
 
     public List<PlayerDice> allOwnedDice = new List<PlayerDice>();
-    public List<SlotAttributeSO> allAttributesLibrary_Slot = new List<SlotAttributeSO>();
-    public List<DiceAbilitySO> allAttributesLibrary_Dice = new List<DiceAbilitySO>();
+    public List<DiceAbilitySO> allAbilitiesLibrary = new List<DiceAbilitySO>();
 
     void Awake()
     {
@@ -34,7 +35,6 @@ public class MagicCircleManager : MonoBehaviour
             MagicCircleSlot newSlot = new MagicCircleSlot();
             newSlot.slotID = i;
             newSlot.isUnlocked = (i < 3);
-            newSlot.currentAttribute = null;
             magicSlots.Add(newSlot);
         }
 
@@ -77,31 +77,10 @@ public class MagicCircleManager : MonoBehaviour
         return deck;
     }
 
-    public void Debug_SetSlotAttribute(int slotIndex, SlotAttributeSO newAttributeData)
-    {
-        if (slotIndex < 0 || slotIndex >= magicSlots.Count) return;
-        MagicCircleSlot slot = magicSlots[slotIndex];
-
-        slot.currentAttribute = new RuntimeSlotAttribute(newAttributeData);
-        Debug.Log($"槽位 {slotIndex} 属性已变更为：{newAttributeData.attributeName}");
-    }
-
-    public void Debug_UpgradeSlotAttribute(int slotIndex)
-    {
-        if (slotIndex < 0 || slotIndex >= magicSlots.Count) return;
-        MagicCircleSlot slot = magicSlots[slotIndex];
-
-        if (slot.currentAttribute != null)
-        {
-            slot.currentAttribute.level++;
-            Debug.Log($"槽位 {slotIndex} 属性升级！当前 Lv.{slot.currentAttribute.level}");
-        }
-    }
-
     public List<DiceAbilitySO> GetRandomAbilities(int count)
     {
         List<DiceAbilitySO> result = new List<DiceAbilitySO>();
-        List<DiceAbilitySO> pool = new List<DiceAbilitySO>(allAttributesLibrary_Dice);
+        List<DiceAbilitySO> pool = allAbilitiesLibrary.FindAll(ability => ability is DiceSpellSO);
 
         for (int i = 0; i < count; i++)
         {
@@ -113,6 +92,14 @@ public class MagicCircleManager : MonoBehaviour
             pool.RemoveAt(randomIndex);
         }
         return result;
+    }
+
+    public Sprite GetDefaultFaceSprite(int value)
+    {
+        int index = value - 1;
+        return defaultFaceSprites != null && index >= 0 && index < defaultFaceSprites.Length
+            ? defaultFaceSprites[index]
+            : null;
     }
 
     public void ImprintAbilityToDice(PlayerDice targetDice, DiceAbilitySO ability)
@@ -139,18 +126,4 @@ public class MagicCircleManager : MonoBehaviour
         Debug.Log($"<color=cyan>【养成成功】骰子 [{targetDice.uid}] 已获得能力：{ability.abilityName}</color>");
     }
 
-    public List<SlotAttributeSO> GetRandomAttributes(int count)
-    {
-        List<SlotAttributeSO> result = new List<SlotAttributeSO>();
-        List<SlotAttributeSO> pool = new List<SlotAttributeSO>(allAttributesLibrary_Slot);
-
-        for (int i = 0; i < count; i++)
-        {
-            if (pool.Count == 0) break;
-            int randomIndex = Random.Range(0, pool.Count);
-            result.Add(pool[randomIndex]);
-            pool.RemoveAt(randomIndex);
-        }
-        return result;
-    }
 }

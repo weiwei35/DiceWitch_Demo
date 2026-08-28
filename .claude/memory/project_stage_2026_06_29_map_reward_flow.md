@@ -43,7 +43,8 @@ Scene/editor preview:
   - empty `nextRooms` connects to the next ordered room.
 
 Runtime map route lines:
-- `MapViewController.DrawRouteLines()` draws room-internal lines and room-exit branch lines from `BoardRoom.nextRoomIds`.
+- Historical implementation: `MapViewController.DrawRouteLines()` drew room-exit branch lines from `BoardRoom.nextRoomIds`.
+- Superseded on 2026-08-03: runtime procedural route dots were removed. Route lines are now independent, hand-authored UI artwork inside the region prefab. Scene-view Gizmo helpers remain.
 
 ## Map Node Tooltips
 
@@ -88,7 +89,7 @@ The important change is that `TargetSelectionState` no longer uses battle `Magic
 
 ## New Reward Dice Selection UI Scripts
 
-### `Assets/Scripts/UI/RewardDiceSelectionPanel.cs`
+### `Assets/Scripts/UI/Rewards/RewardDiceSelectionPanel.cs`
 
 Responsibilities:
 - Owns the independent dice selection panel shown after selecting a reward spell.
@@ -107,12 +108,12 @@ Inspector fields for a custom panel:
 - `spellNameText`
 - `spellDescriptionText`
 
-### `Assets/Scripts/UI/RewardDiceSlotButton.cs`
+### `Assets/Scripts/UI/Rewards/RewardDiceSlotButton.cs`
 
 Responsibilities:
 - Displays one selectable dice slot/dice.
 - Shows dice icon, slot label, and dice name.
-- Shows tooltip for bound ability, slot attribute, and forged affixes.
+- Shows tooltip for bound ability and forged affixes. The retired slot-attribute system was removed on 2026-08-13.
 - Does not call battle `DiceThrower.HighlightDice`; this keeps the reward panel independent from battle 3D dice and battle dice tray state.
 
 ## State Flow Changes
@@ -141,18 +142,18 @@ Now hides `RewardDiceSelectionPanel` as a cleanup guard when entering map state.
 
 | File | Purpose |
 |---|---|
-| `Assets/Scripts/Map_New/BoardRoom.cs` | Runtime room graph data for branch paths |
-| `Assets/Scripts/Map_New/MapRoomLayout.cs` | Design-time room config, including `nextRooms` |
-| `Assets/Scripts/Map_New/MapRegionLayout.cs` | Ordered room list and Scene-view reference lines |
-| `Assets/Scripts/Map_New/MapManager.cs` | Builds `boardRooms`, resolves next node/branch choices |
-| `Assets/Scripts/Map_New/MapInteractionManager.cs` | Stepwise map movement and branch choice buttons |
-| `Assets/Scripts/Map_New/MapViewController.cs` | Runtime route lines and room data injection into node anchors |
-| `Assets/Scripts/Map_New/MapNodeAnchor.cs` | Node visual/tips, now includes room info |
-| `Assets/Scripts/GameManager/SpellDraftState.cs` | Spell draft state, still hands chosen spell to target selection |
-| `Assets/Scripts/GameManager/TargetSelectionState.cs` | Reward target selection now opens independent panel |
-| `Assets/Scripts/GameManager/MapState.cs` | Cleanup guard for reward dice selection panel |
-| `Assets/Scripts/UI/RewardDiceSelectionPanel.cs` | Independent reward dice selection panel |
-| `Assets/Scripts/UI/RewardDiceSlotButton.cs` | Button UI for selecting a dice slot/dice |
+| `Assets/Scripts/Map/BoardRoom.cs` | Runtime room graph data for branch paths |
+| `Assets/Scripts/Map/MapRoomLayout.cs` | Design-time room config, including `nextRooms` |
+| `Assets/Scripts/Map/MapRegionLayout.cs` | Ordered room list and Scene-view reference lines |
+| `Assets/Scripts/Map/MapManager.cs` | Builds `boardRooms`, resolves next node/branch choices |
+| `Assets/Scripts/Map/MapInteractionManager.cs` | Stepwise map movement and branch choice buttons |
+| `Assets/Scripts/Map/MapViewController.cs` | Runtime route lines and room data injection into node anchors |
+| `Assets/Scripts/Map/MapNodeAnchor.cs` | Node visual/tips, now includes room info |
+| `Assets/Scripts/GameFlow/SpellDraftState.cs` | Spell draft state, still hands chosen spell to target selection |
+| `Assets/Scripts/GameFlow/TargetSelectionState.cs` | Reward target selection now opens independent panel |
+| `Assets/Scripts/GameFlow/MapState.cs` | Cleanup guard for reward dice selection panel |
+| `Assets/Scripts/UI/Rewards/RewardDiceSelectionPanel.cs` | Independent reward dice selection panel |
+| `Assets/Scripts/UI/Rewards/RewardDiceSlotButton.cs` | Button UI for selecting a dice slot/dice |
 
 ## Caveats / Future UI Work
 

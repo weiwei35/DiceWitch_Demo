@@ -6,7 +6,7 @@ using System.Collections.Generic;
 public struct GhostRequest
 {
     public RuntimeDiceData data; // 幽灵的基础模板
-    public int bonusValue;          // 要继承的额外点数 (来自槽位属性)
+    public int bonusValue;          // 要继承的临时额外点数
 }
 public class GhostDiceUIManager : MonoBehaviour
 {
@@ -98,7 +98,7 @@ public class GhostDiceUIManager : MonoBehaviour
             pDice.Initialize(req.data, null); // 来源设为null，因为它是由Ability生成的
             pDice.SnapFaceUp(pDice.GetMaxValueFaceIndex());
             
-            // B. 【关键】注入继承来的属性加成
+            // B. 注入继承来的临时点数
             pDice.ApplyTemporaryBonus(req.bonusValue);
 
             // C. 注册并投掷

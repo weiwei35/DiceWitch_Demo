@@ -341,6 +341,7 @@ public class DiceDragger : MonoBehaviour
                 }
             }
         }
+        DiceThrower.Instance?.HandlePlayerDiceResolved(physicsDice, physicsDice.PhysicalValue);
         Destroy(gameObject);
     }
 

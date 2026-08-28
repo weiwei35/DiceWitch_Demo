@@ -143,12 +143,12 @@ When the material bag opens, `ForgeUIManager` hides constellation lines/nodes to
 
 ## Important Files
 
-- `Assets/Scripts/UI/ForgeUIManager.cs`
-- `Assets/Scripts/UI/ForgeDiceSelectionPanel.cs`
-- `Assets/Scripts/UI/ForgeMaterialInputPanel.cs`
-- `Assets/Scripts/UI/ForgeInspirationPanel.cs`
-- `Assets/Scripts/UI/ForgeConstellationRenderer.cs`
-- `Assets/Scripts/UI/ForgeResourceButton.cs`
+- `Assets/Scripts/UI/Forge/ForgeUIManager.cs`
+- `Assets/Scripts/UI/Forge/ForgeDiceSelectionPanel.cs`
+- `Assets/Scripts/UI/Forge/ForgeMaterialInputPanel.cs`
+- `Assets/Scripts/UI/Forge/ForgeInspirationPanel.cs`
+- `Assets/Scripts/UI/Forge/ForgeConstellationRenderer.cs`
+- `Assets/Scripts/UI/Forge/ForgeResourceButton.cs`
 
 ## Verification
 
@@ -158,4 +158,3 @@ Unity MCP script refresh and compilation completed with no C# errors after:
 - deletion of old compatibility fields
 - bag 9-cell pagination
 - constellation overlay visibility fix
-

@@ -13,7 +13,7 @@ public class Ability_Ghost : DiceAbilitySO
         {
             int bonusToPass = 0;
 
-            // 1. 从来源骰子获取当前的属性加成值
+            // 1. 从来源骰子获取当前的临时点数修正
             if (sourceDice != null)
             {
                 // 获取当前那一面的数据

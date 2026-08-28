@@ -1,9 +1,16 @@
 using UnityEngine;
-using TMPro; // 如果你用的是TextMeshPro
-// using UnityEngine.UI; // 如果你用的是图片
+using TMPro;
 
 public class DiceVisualManager : MonoBehaviour
 {
+    private static readonly int HandDrawSettledId = Shader.PropertyToID("_HandDrawSettled");
+
+    [Header("Face Texture")]
+    [Tooltip("支持缩进显示的骰面材质。")]
+    public Material faceTextureMaterial;
+    [Tooltip("骰面贴图占完整平面的比例；越小，露出的圆角骰子本体越多。")]
+    [Range(0.5f, 1f)] public float faceTextureScale = 0.95f;
+
     // 按顺序拖入那6个子物体：Up, Down, Forward, Back, Right, Left
     // 顺序必须和 PhysicsDice.cs 里的 faceDirections 数组顺序一致！
     public Transform[] faceTransforms; 
@@ -31,17 +38,48 @@ public class DiceVisualManager : MonoBehaviour
         }
     }
 
+    public void SetFaceTextureMaterial(Material material)
+    {
+        if (material == null) return;
+
+        faceTextureMaterial = material;
+        foreach (Transform face in faceTransforms)
+        {
+            Renderer faceRenderer = face != null ? face.GetComponent<Renderer>() : null;
+            if (faceRenderer != null)
+                faceRenderer.sharedMaterial = material;
+        }
+    }
+
+    public void SetHandDrawSettled(bool settled)
+    {
+        float value = settled ? 1f : 0f;
+        foreach (Transform face in faceTransforms)
+        {
+            Renderer faceRenderer = face != null ? face.GetComponent<Renderer>() : null;
+            if (faceRenderer == null) continue;
+
+            MaterialPropertyBlock properties = new MaterialPropertyBlock();
+            faceRenderer.GetPropertyBlock(properties);
+            properties.SetFloat(HandDrawSettledId, value);
+            faceRenderer.SetPropertyBlock(properties);
+        }
+    }
+
     // 核心功能：升级/修改某一面的内容
     public void UpdateFaceVisual(int faceIndex, DiceFaceData data)
     {
         // faceDatas[faceIndex] = data;
         Transform faceObj = faceTransforms[faceIndex];
 
-        TextMeshPro text = faceObj.GetComponentInChildren<TextMeshPro>();
+        TextMeshPro text = faceObj.GetComponentInChildren<TextMeshPro>(true);
+        bool usesFaceTexture = data.icon != null;
         if (text != null)
         {
+            text.gameObject.SetActive(!usesFaceTexture);
+
             // --- 修改显示逻辑 ---
-            if (data.bonusValue != 0)
+            if (!usesFaceTexture && data.bonusValue != 0)
             {
                 string sign = data.bonusValue > 0 ? "+" : "";
                 string color = data.bonusValue > 0 ? "#00FF00" : "#FF5555";
@@ -56,19 +94,37 @@ public class DiceVisualManager : MonoBehaviour
                 // text.text = data.TotalValue.ToString();
                 // 可以在这里改变材质发光或者字体颜色来提示玩家
             }
-            else
+            else if (!usesFaceTexture)
             {
                 text.text = data.value.ToString();
                 // text.color = Color.white; // 记得重置颜色
             }
         }
 
-        // 假设你还有一个 SpriteRenderer 显示图标（比如剑、盾）
-        SpriteRenderer icon = faceObj.GetComponentInChildren<SpriteRenderer>();
-        if(icon != null) icon.sprite = data.icon;
+        // 六个面本身已经是贴合骰子的平面，直接替换纹理即可，无需额外创建 Sprite 子物体。
+        Renderer faceRenderer = faceObj.GetComponent<Renderer>();
+        if (faceRenderer != null)
+        {
+            faceRenderer.enabled = usesFaceTexture;
+            if (usesFaceTexture)
+            {
+                if (faceTextureMaterial != null)
+                    faceRenderer.sharedMaterial = faceTextureMaterial;
+
+                MaterialPropertyBlock properties = new MaterialPropertyBlock();
+                faceRenderer.GetPropertyBlock(properties);
+                properties.SetTexture("_MainTex", data.icon.texture);
+                properties.SetFloat("_FaceScale", faceTextureScale);
+                faceRenderer.SetPropertyBlock(properties);
+            }
+            else
+            {
+                faceRenderer.SetPropertyBlock(null);
+            }
+        }
         
         // 甚至可以改颜色
-        if(text != null) text.color = data.color;
+        if(text != null && !usesFaceTexture) text.color = data.color;
     }
 
     // 获取当前朝上那一面的数据
@@ -87,7 +143,7 @@ public class DiceFaceData
     public Color color;      // 颜色：红、蓝...
     public string effectDescription; // "造成流血"
     
-    public int bonusValue;   // 【新增】加成数值 (来自槽位属性)
+    public int bonusValue;   // 法术和战斗流程施加的临时点数修正
     
     // 【新增】获取总值的快捷属性
     public int TotalValue => value + bonusValue; 
