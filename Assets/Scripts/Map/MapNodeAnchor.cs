@@ -50,7 +50,7 @@ public class MapNodeAnchor : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
             {
                 baseIconImage.sprite = null;
                 baseIconImage.gameObject.SetActive(false);
-                Debug.LogError($"地图房间节点缺少状态贴图: room={GetRoomDebugName()}, state={currentState}", this);
+                // Debug.LogError($"地图房间节点缺少状态贴图: room={GetRoomDebugName()}, state={currentState}", this);
             }
         }
 
